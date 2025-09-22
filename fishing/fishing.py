@@ -140,21 +140,23 @@ class Fishing(commands.Cog):
         if have < amount:
             return await ctx.send(f"❌ You only have {have}× **{match}** to sell.")
 
-        # Remove sold fish from inventory
+        # Remove sold fish
         for _ in range(amount):
             inventory.remove(match)
         await user_conf.caught.set(inventory)
 
-        # Deposit to bank
+        # Calculate payout
         total = self.fish_prices[match] * amount
+
+        # Find and invoke the Bank deposit command
         deposit_cmd = ctx.bot.get_command("bank deposit") or ctx.bot.get_command("deposit")
         if not deposit_cmd:
             return await ctx.send("⚠️ I can’t find the Bank cog. Make sure it’s loaded.")
 
-        # Most Bank deposits accept (ctx, amount[, member])
+        # Most deposit commands accept (ctx, amount[, member])
         await ctx.invoke(deposit_cmd, total)
 
-        # Tell them how to check their balance
+        # Let the user check their new balance
         await ctx.send(
             f"💰 You sold {amount}× **{match}** for **{total}** coins.\n"
             f"Check your balance with `{ctx.clean_prefix}balance`."
