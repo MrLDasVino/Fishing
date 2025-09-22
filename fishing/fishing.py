@@ -1,7 +1,7 @@
 import random
 import asyncio
 from redbot.core import commands, Config
-from redbot.core.utils.bank import deposit_credits, get_currency_name
+from redbot.core.api.bank import deposit_credits, get_currency_name
 
 class fishing(commands.Cog):
     """A simple fishing minigame with random events."""
