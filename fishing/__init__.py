@@ -1,4 +1,6 @@
-from .fishing import setup as _cog_setup
+from .fishing import Fishing
 
-def setup(bot):
-    _cog_setup(bot)
+async def setup(bot):
+    """The entry point Red will await when loading your cog."""
+    cog = Fishing(bot)
+    await bot.add_cog(cog)
