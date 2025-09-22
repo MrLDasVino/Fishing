@@ -1,8 +1,9 @@
 import random
 import asyncio
 from redbot.core import commands, Config
+from redbot.core.utils import bank
 
-class Fishing(commands.Cog):
+class fishing(commands.Cog):
     """A simple fishing minigame with random events."""
 
     def __init__(self, bot):
@@ -15,6 +16,15 @@ class Fishing(commands.Cog):
             "rod_broken": False # whether they need a repair
         }
         self.config.register_user(**default_user)
+        
+                # Sale prices for each fish
+        self.fish_prices = {
+            "Tiny Fish": 5,
+            "Small Fish": 10,
+            "Medium Fish": 20,
+            "Large Fish": 40,
+            "Legendary Fish": 100,
+        }
 
     @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.command()
@@ -107,6 +117,44 @@ class Fishing(commands.Cog):
         await user_conf.rod_broken.set(False)
         await user_conf.coins.set(coins - cost)
         await ctx.send("🔧 Your rod is repaired! Time to cast again.")
+        
+    @commands.command()
+    async def sell(self, ctx, amount: int, *, fish_name: str):
+        """
+        Sell a number of fish for Red credits.
+        Usage: [p]sell 3 Medium Fish
+        """
+        user_conf = self.config.user(ctx.author)
+        inventory = await user_conf.caught()
+
+        # Case-insensitive lookup
+        match = next(
+            (fish for fish in self.fish_prices if fish.lower() == fish_name.lower()),
+            None
+        )
+        if not match:
+            valid = ", ".join(self.fish_prices.keys())
+            return await ctx.send(f"❌ Unknown fish `{fish_name}`. You can sell: {valid}")
+
+        have = inventory.count(match)
+        if have < amount:
+            return await ctx.send(f"❌ You only have {have}× **{match}** to sell.")
+
+        # Remove sold fish from inventory
+        for _ in range(amount):
+            inventory.remove(match)
+        await user_conf.caught.set(inventory)
+
+        # Deposit to bank
+        total = self.fish_prices[match] * amount
+        new_balance = await bank.deposit_credits(ctx.author, total)
+        currency = await bank.get_currency_name(ctx.guild)
+
+        await ctx.send(
+            f"💰 You sold {amount}× **{match}** for **{total}** {currency}.\n"
+            f"Your new balance is **{new_balance}** {currency}."
+        )
+    
 
 def setup(bot):
     bot.add_cog(Fishing(bot))
