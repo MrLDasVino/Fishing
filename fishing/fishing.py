@@ -147,12 +147,17 @@ class Fishing(commands.Cog):
 
         # Deposit to bank
         total = self.fish_prices[match] * amount
-        new_balance = await deposit_credits(ctx.author, total)
-        currency    = await get_currency_name(ctx.guild)
+        deposit_cmd = ctx.bot.get_command("bank deposit") or ctx.bot.get_command("deposit")
+        if not deposit_cmd:
+            return await ctx.send("⚠️ I can’t find the Bank cog. Make sure it’s loaded.")
 
+        # Most Bank deposits accept (ctx, amount[, member])
+        await ctx.invoke(deposit_cmd, total)
+
+        # Tell them how to check their balance
         await ctx.send(
-            f"💰 You sold {amount}× **{match}** for **{total}** {currency}.\n"
-            f"Your new balance is **{new_balance}** {currency}."
+            f"💰 You sold {amount}× **{match}** for **{total}** coins.\n"
+            f"Check your balance with `{ctx.clean_prefix}balance`."
         )
     
 
