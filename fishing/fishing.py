@@ -3,7 +3,7 @@ import asyncio
 from redbot.core import commands, bank, Config
 
 
-class fishing(commands.Cog):
+class Fishing(commands.Cog):
     """A simple fishing minigame with random events."""
 
     def __init__(self, bot):
@@ -156,5 +156,5 @@ class fishing(commands.Cog):
         )
     
 
-def setup(bot):
-    bot.add_cog(Fishing(bot))
+async def setup(bot):
+    await bot.add_cog(Fishing(bot))
