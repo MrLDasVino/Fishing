@@ -4,5 +4,6 @@
   "short": "A simple fishing minigame",
   "description": "Cast a line, catch fish, treasure chests, even break your rod!",
   "author": "Elvin",
-  "requirements": []
+  "requirements": [],
+  "install_modes": ["default"]
 }
