@@ -1,7 +1,7 @@
 import random
 import asyncio
 from redbot.core import commands, Config
-from redbot.core.utils import bank
+from redbot.core.utils.bank import deposit_credits, get_currency_name
 
 class fishing(commands.Cog):
     """A simple fishing minigame with random events."""
@@ -147,8 +147,8 @@ class fishing(commands.Cog):
 
         # Deposit to bank
         total = self.fish_prices[match] * amount
-        new_balance = await bank.deposit_credits(ctx.author, total)
-        currency = await bank.get_currency_name(ctx.guild)
+        new_balance = await deposit_credits(ctx.author, total)
+        currency    = await get_currency_name(ctx.guild)
 
         await ctx.send(
             f"💰 You sold {amount}× **{match}** for **{total}** {currency}.\n"
