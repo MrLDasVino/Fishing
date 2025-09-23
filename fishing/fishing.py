@@ -1,5 +1,6 @@
 import random
 import asyncio
+import discord
 from typing import Dict, Tuple, List, Optional
 
 from redbot.core import commands, bank, Config
@@ -513,16 +514,16 @@ class Fishing(commands.Cog):
         await self._inc_stat(ctx.author, "casts", 1)
         # Small chance to find rod components
         r = random.random()
-        if r < 0.10:
-            items = await user_conf.items()
-            items.append("Rod Fragment")
-            await user_conf.items.set(items)
-            return False, f"🛠️ You salvage pieces, get **{coins} {currency}** and a **Rod Fragment**!"
         if r < 0.03:
             items = await user_conf.items()
             items.append("Rod Core")
             await user_conf.items.set(items)
             return False, f"🛠️ You salvage rare parts, get **{coins} {currency}** and a **Rod Core**!"
+        if r < 0.10:
+            items = await user_conf.items()
+            items.append("Rod Fragment")
+            await user_conf.items.set(items)
+            return False, f"🛠️ You salvage pieces, get **{coins} {currency}** and a **Rod Fragment**!"
         if random.random() < 0.15:
             data = await user_conf.caught()
             data.append("Treasure Map")
@@ -629,11 +630,11 @@ class Fishing(commands.Cog):
             if message:
                 await ctx.send(message)
 
-    # ---------- fishlist command (chunked, filterable) ----------
+    # ---------- fishlist command (embed pagination, filterable) ----------
     @commands.command()
     async def fishlist(self, ctx, *, filter_by: str = None):
-        """Show available fish with price and rarity. Optionally filter by rarity, biome, or name."""
-        lines = []
+        """Show available fish with price and rarity. Optionally filter by rarity, biome, or name.
+        Displays results in an embed that can be paged with reactions."""
         rarity_order = {"Common": 0, "Uncommon": 1, "Rare": 2, "Epic": 3, "Legendary": 4, "Mythic": 5, "Boss": 6}
         items = list(self.fish_definitions.items())
 
@@ -650,29 +651,110 @@ class Fishing(commands.Cog):
             items = filtered
 
         items = sorted(items, key=lambda kv: (rarity_order.get(kv[1].get("rarity", ""), 99), -kv[1].get("price", 0)))
-        for name, info in items:
-            emoji = info.get("emoji", "")
-            rarity = info.get("rarity", "Unknown")
-            price = info.get("price", 0)
-            biome = info.get("biome", "")
-            lines.append(f"{emoji} **{name}** — {rarity} — Price: **{price}** — {biome}")
 
-        if not lines:
+        if not items:
             return await ctx.send("No fish match that filter.")
 
-        header = "**Available Fish**\n\n"
-        chunk_size = 1900
-        current = header
-        for line in lines:
-            if len(current) + len(line) + 1 > chunk_size:
-                await ctx.send(current)
-                current = ""
-            if current:
-                current += "\n" + line
-            else:
-                current = line
-        if current:
-            await ctx.send(current)
+        # Prepare pages (embed per N items)
+        per_page = 8
+        pages: List[List[Tuple[str, Dict]]] = [items[i:i+per_page] for i in range(0, len(items), per_page)]
+
+        def make_embed(page_idx: int):
+            page_items = pages[page_idx]
+            embed = discord.Embed(title="Available Fish", colour=discord.Colour.blue())
+            if filter_by:
+                embed.description = f"Filter: **{filter_by}**"
+            for name, info in page_items:
+                emoji = info.get("emoji", "")
+                rarity = info.get("rarity", "Unknown")
+                price = info.get("price", 0)
+                biome = info.get("biome", "")
+                embed.add_field(
+                    name=f"{emoji} {name}",
+                    value=f"**Rarity:** {rarity}\n**Price:** {price}\n**Biome:** {biome}",
+                    inline=False,
+                )
+            embed.set_footer(text=f"Page {page_idx+1}/{len(pages)} — Use reactions to navigate")
+            return embed
+
+        # Send first embed
+        message = await ctx.send(embed=make_embed(0))
+
+        # If only one page, nothing to paginate
+        if len(pages) == 1:
+            return
+
+        # Reaction controls
+        left = "⬅️"
+        right = "➡️"
+        first = "⏮️"
+        last = "⏭️"
+        stop = "⏹️"
+        controls = [first, left, stop, right, last]
+
+        for r in controls:
+            try:
+                await message.add_reaction(r)
+            except Exception:
+                return
+
+        current = 0
+
+        def check(reaction, user):
+            return (
+                reaction.message.id == message.id
+                and user.id == ctx.author.id
+                and str(reaction.emoji) in controls
+            )
+
+        # Pagination loop: waits for reaction events until timeout
+        while True:
+            try:
+                reaction, user = await ctx.bot.wait_for("reaction_add", timeout=120.0, check=check)
+            except asyncio.TimeoutError:
+                try:
+                    await message.clear_reactions()
+                except Exception:
+                    pass
+                break
+
+            # remove user's reaction to keep the UI clean
+            try:
+                await message.remove_reaction(reaction.emoji, user)
+            except Exception:
+                pass
+
+            emoji = str(reaction.emoji)
+            if emoji == stop:
+                try:
+                    await message.clear_reactions()
+                except Exception:
+                    pass
+                break
+            elif emoji == left:
+                current = (current - 1) % len(pages)
+                try:
+                    await message.edit(embed=make_embed(current))
+                except Exception:
+                    pass
+            elif emoji == right:
+                current = (current + 1) % len(pages)
+                try:
+                    await message.edit(embed=make_embed(current))
+                except Exception:
+                    pass
+            elif emoji == first:
+                current = 0
+                try:
+                    await message.edit(embed=make_embed(current))
+                except Exception:
+                    pass
+            elif emoji == last:
+                current = len(pages) - 1
+                try:
+                    await message.edit(embed=make_embed(current))
+                except Exception:
+                    pass
 
     # ---------- fishstats, achievements, repairrod, sell ----------
     @commands.command()
