@@ -314,80 +314,92 @@ class Fishing(commands.Cog):
         return False, f"✉️ A note promises a small reward. You find **{coins} {currency}** tucked inside. New balance: **{new_bal}** {currency}."
 
     # ---------- Core fish command ----------
-        @commands.cooldown(1, 30, commands.BucketType.user)
-        @commands.command()
-        async def fish(self, ctx):
-            """Cast your line and see what you reel in (edits the waiting message with the result)."""
-            user_conf = self.config.user(ctx.author)
-            if await user_conf.rod_broken():
-                return await ctx.send(
-                    "🎣 Your rod is broken! Use "
-                    f"`{ctx.clean_prefix}repairrod` to fix it for 20 coins."
-                )
-        
-            # send the initial "waiting" message and keep a reference to edit later
-            waiting_msg = await ctx.send("🎣 You cast your line and wait patiently…")
-        
-            await asyncio.sleep(random.uniform(1.5, 5.5))
-        
-            # Build event selection based on handler weights and dynamic modifiers
-            keys = list(self.event_handlers.keys())
-            weights = [self.event_handlers[k][1] for k in keys]
-        
-            # Apply simple modifiers: if user has bait, increase fish and double weights
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.command()
+    async def fish(self, ctx):
+        """Cast your line and see what you reel in (edits the waiting message with the result)."""
+        user_conf = self.config.user(ctx.author)
+        if await user_conf.rod_broken():
+            return await ctx.send(
+                "🎣 Your rod is broken! Use "
+                f"`{ctx.clean_prefix}repairrod` to fix it for 20 coins."
+            )
+    
+        # send the initial "waiting" message and keep a reference to edit later
+        waiting_msg = await ctx.send("🎣 You cast your line and wait patiently…")
+    
+        await asyncio.sleep(random.uniform(1.5, 5.5))
+    
+        # Build event selection based on handler weights and dynamic modifiers
+        keys = list(self.event_handlers.keys())
+        weights = [self.event_handlers[k][1] for k in keys]
+    
+        # Apply simple modifiers: if user has bait, increase fish and double weights
+        try:
             bait_amount = await user_conf.bait()
-            if bait_amount > 0:
-                # consume one bait on cast with high chance
-                if random.random() < 0.9:
-                    await user_conf.bait.set(max(0, bait_amount - 1))
-                # raise fish/double weights
-                for i, k in enumerate(keys):
-                    if k in ("fish", "double"):
-                        weights[i] = int(weights[i] * 1.6)
-        
-            # If user has a temporary 'luck' flag, bias towards rarer/beneficial events
+        except Exception:
+            bait_amount = 0
+        if bait_amount and bait_amount > 0:
+            # consume one bait on cast with high chance
+            if random.random() < 0.9:
+                await user_conf.bait.set(max(0, bait_amount - 1))
+            # raise fish/double weights
+            for i, k in enumerate(keys):
+                if k in ("fish", "double"):
+                    weights[i] = int(weights[i] * 1.6)
+    
+        # If user has a temporary 'luck' flag, bias towards rarer/beneficial events
+        try:
             luck = await user_conf.luck()
-            if luck and luck > 0:
-                await user_conf.luck.set(max(0, luck - 1))
-                for i, k in enumerate(keys):
-                    if k in ("fish", "double", "treasure", "pearl", "merchant"):
-                        weights[i] = int(weights[i] * 2)
-        
-            # Ensure all weights positive
-            weights = [max(1, w) for w in weights]
-        
-            # pick event and call handler
-            chosen = random.choices(keys, weights=weights, k=1)[0]
-            handler = self.event_handlers[chosen][0]
-        
-            # Call handler. Handlers return (sent_directly: bool, message: str)
+        except Exception:
+            luck = 0
+        if luck and luck > 0:
+            await user_conf.luck.set(max(0, luck - 1))
+            for i, k in enumerate(keys):
+                if k in ("fish", "double", "treasure", "pearl", "merchant"):
+                    weights[i] = int(weights[i] * 2)
+    
+        # Ensure all weights positive
+        weights = [max(1, w) for w in weights]
+    
+        # pick event and call handler
+        chosen = random.choices(keys, weights=weights, k=1)[0]
+        handler = self.event_handlers[chosen][0]
+    
+        # Call handler. Handlers are defined to return (sent_directly: bool, message: str)
+        try:
             result = await handler(ctx, user_conf)
-        
-            # Normalize handler return formats for safety
-            sent_directly = False
-            message = None
-            if isinstance(result, tuple) and len(result) >= 2:
-                sent_directly, message = result[0], result[1]
-            elif isinstance(result, tuple) and len(result) == 1:
-                message = result[0]
-            elif isinstance(result, str):
-                message = result
-        
-            # If handler sent its own message already, still edit the waiting message with a short note
+        except Exception as e:
+            # If a handler raised, edit the waiting message with an error and re-raise for logs
             try:
-                if message:
-                    # Avoid editing to overly long content. If message > 2000, truncate safely.
-                    if len(message) > 1900:
-                        message = message[:1897] + "..."
-                    await waiting_msg.edit(content=message)
-                else:
-                    # fallback edit when handler already sent or no message returned
-                    await waiting_msg.edit(content="…An event occurred. Check the channel for details.")
+                await waiting_msg.edit(content="⚠️ An error occurred while resolving the event.")
             except Exception:
-                # If edit fails for any reason, attempt to send a new message as fallback
-                if message:
-                    await ctx.send(message)
-
+                pass
+            raise
+    
+        # Normalize handler return formats for safety
+        sent_directly = False
+        message = None
+        if isinstance(result, tuple) and len(result) >= 2:
+            sent_directly, message = result[0], result[1]
+        elif isinstance(result, tuple) and len(result) == 1:
+            message = result[0]
+        elif isinstance(result, str):
+            message = result
+    
+        # Edit the waiting message with the event result (truncate to avoid >2000 chars)
+        try:
+            if message:
+                if len(message) > 1900:
+                    message = message[:1897] + "..."
+                await waiting_msg.edit(content=message)
+            else:
+                # If handler already sent its own message or returned nothing, show a neutral edit
+                await waiting_msg.edit(content="…An event occurred. See the channel for details.")
+        except Exception:
+            # If editing fails, fallback to sending the message as a new message
+            if message:
+                await ctx.send(message)
 
     # ---------- Other commands (fishlist, fishstats, repairrod, sell) ----------
     @commands.command()
