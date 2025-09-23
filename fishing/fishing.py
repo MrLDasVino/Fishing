@@ -6,7 +6,7 @@ from redbot.core import commands, bank, Config
 
 
 class Fishing(commands.Cog):
-    """Fishing minigame with lots of fish, many events, and achievements."""
+    """Fishing minigame with lots of fish, many events, achievements, and rod upgrades."""
 
     def __init__(self, bot):
         self.bot = bot
@@ -27,6 +27,8 @@ class Fishing(commands.Cog):
                 "consecutive_catches": 0,
                 "bait_collected_total": 0,
             },
+            "items": [],         # non-fish items like "Rod Fragment", "Rod Core", "Treasure Map"
+            "rod_level": 0,      # 0 = basic
         }
         self.config.register_user(**default_user)
 
@@ -122,6 +124,18 @@ class Fishing(commands.Cog):
             "Boss": 6,
         }
 
+        # ---------- Rod upgrade system settings ----------
+        # level -> requirements (fragments, coins)
+        self.rod_upgrade_requirements = {
+            1: {"fragments": 3, "coins": 0},
+            2: {"fragments": 6, "coins": 50},
+            3: {"fragments": 10, "coins": 150},
+        }
+        # how rod level affects chance for good events
+        self.rod_level_fish_multiplier = {0: 1.0, 1: 1.2, 2: 1.4, 3: 1.6}
+        # reduce chance for break/hook_snag by multiplying their base weight
+        self.rod_level_break_reduction = {0: 1.0, 1: 0.8, 2: 0.6, 3: 0.4}
+
         # ---------- Event registry ----------
         # key -> (handler coroutine, base weight)
         self.event_handlers = {
@@ -175,7 +189,6 @@ class Fishing(commands.Cog):
         earned.append(ach_id)
         await user_conf.achievements.set(earned)
         name, desc, _ = self.achievements[ach_id]
-        # small rewards for some achievements
         reward = 0
         if ach_id in ("first_fish", "first_cast"):
             reward = 5
@@ -330,10 +343,18 @@ class Fishing(commands.Cog):
         coins = random.randint(10, 60)
         new_bal, currency = await self._deposit(ctx.author, coins, ctx)
         await self._inc_stat(ctx.author, "casts", 1)
+        # chance to drop rod fragment on treasure
+        if random.random() < 0.06:
+            items = await user_conf.items()
+            items.append("Rod Fragment")
+            await user_conf.items.set(items)
+            msg_frag = " You also find a **Rod Fragment** among the loot!"
+        else:
+            msg_frag = ""
         msg_ach = None
         if not await self._has_achievement(ctx.author, "treasure_hunter"):
             msg_ach = await self._award_achievement(ctx, ctx.author, "treasure_hunter")
-        base = f"🎁 You hauled up a treasure chest and got **{coins}** {currency}! Your new balance is **{new_bal} {currency}**."
+        base = f"🎁 You hauled up a treasure chest and got **{coins}** {currency}! Your new balance is **{new_bal} {currency}**.{msg_frag}"
         if msg_ach:
             return False, base + "\n\n" + msg_ach
         return False, base
@@ -342,7 +363,7 @@ class Fishing(commands.Cog):
         coins = random.randint(5, 30)
         new_bal, currency = await self._deposit(ctx.author, coins, ctx)
         await self._inc_stat(ctx.author, "casts", 1)
-        return False, f"📜 You found a message in a bottle and earned **{coins}** {currency}! Your new balance is **{new_bal} {currency}**."
+        return False, f"📜 You found a message in a bottle and earned **{coins} {currency}**! Your new balance is **{new_bal} {currency}**."
 
     async def _event_storm(self, ctx, user_conf):
         if random.random() < 0.2:
@@ -359,8 +380,16 @@ class Fishing(commands.Cog):
         data.extend(caught)
         await user_conf.caught.set(data)
         await self._inc_stat(ctx.author, "casts", 1)
+        # small chance to find a rod fragment in an old net
+        if random.random() < 0.08:
+            items = await user_conf.items()
+            items.append("Rod Fragment")
+            await user_conf.items.set(items)
+            found = " You also find a **Rod Fragment** tangled in the net."
+        else:
+            found = ""
         names = ", ".join(caught)
-        return False, f"🕸️ You snagged an old net with {net_fish_count} things tangled inside: {names}."
+        return False, f"🕸️ You snagged an old net with {net_fish_count} things tangled inside: {names}.{found}"
 
     async def _event_bait_find(self, ctx, user_conf):
         bait_found = random.randint(1, 5)
@@ -482,6 +511,18 @@ class Fishing(commands.Cog):
         coins = random.randint(5, 40)
         new_bal, currency = await self._deposit(ctx.author, coins, ctx)
         await self._inc_stat(ctx.author, "casts", 1)
+        # Small chance to find rod components
+        r = random.random()
+        if r < 0.10:
+            items = await user_conf.items()
+            items.append("Rod Fragment")
+            await user_conf.items.set(items)
+            return False, f"🛠️ You salvage pieces, get **{coins} {currency}** and a **Rod Fragment**!"
+        if r < 0.03:
+            items = await user_conf.items()
+            items.append("Rod Core")
+            await user_conf.items.set(items)
+            return False, f"🛠️ You salvage rare parts, get **{coins} {currency}** and a **Rod Core**!"
         if random.random() < 0.15:
             data = await user_conf.caught()
             data.append("Treasure Map")
@@ -541,6 +582,20 @@ class Fishing(commands.Cog):
             for i, k in enumerate(keys):
                 if k in ("fish", "double", "treasure", "pearl", "merchant"):
                     weights[i] = int(weights[i] * 2)
+
+        # rod level modifier - increase chance for fish/double/treasure and reduce break weight
+        try:
+            rod_level = await user_conf.rod_level()
+        except Exception:
+            rod_level = 0
+        fish_mult = self.rod_level_fish_multiplier.get(rod_level, 1.0)
+        break_reduc = self.rod_level_break_reduction.get(rod_level, 1.0)
+
+        for i, k in enumerate(keys):
+            if k in ("fish", "double", "treasure", "pearl", "merchant"):
+                weights[i] = int(weights[i] * fish_mult)
+            if k in ("break", "hook_snag"):
+                weights[i] = max(1, int(weights[i] * break_reduc))
 
         weights = [max(1, w) for w in weights]
         chosen = random.choices(keys, weights=weights, k=1)[0]
@@ -639,10 +694,17 @@ class Fishing(commands.Cog):
         )
         bal = await bank.get_balance(ctx.author)
         currency = await bank.get_currency_name(ctx.guild)
+        items = await self.config.user(ctx.author).items()
+        itemline = ""
+        if items:
+            inv_counts = {}
+            for it in items:
+                inv_counts[it] = inv_counts.get(it, 0) + 1
+            itemline = "\n\nItems:\n" + "\n".join(f"• {iname}: {count}" for iname, count in inv_counts.items())
         await ctx.send(
             f"**{ctx.author.display_name}'s Fishing Stats**\n\n"
             f"Balance: **{bal}** {currency}\n"
-            f"{breakdown}"
+            f"{breakdown}{itemline}"
         )
 
     @commands.command()
@@ -735,6 +797,77 @@ class Fishing(commands.Cog):
         if msgs:
             message += "\n\n" + "\n".join(msgs)
         await ctx.send(message)
+
+    # ---------- Rod view and upgrade commands ----------
+    @commands.command()
+    async def rod(self, ctx):
+        """Show your rod level and fragments/cores."""
+        user_conf = self.config.user(ctx.author)
+        lvl = await user_conf.rod_level()
+        items = await user_conf.items()
+        fragments = items.count("Rod Fragment")
+        cores = items.count("Rod Core")
+        next_req = self.rod_upgrade_requirements.get(lvl + 1)
+        if next_req:
+            req_text = f"{next_req['fragments']} fragments"
+            if next_req.get("coins", 0):
+                req_text += f" and {next_req['coins']} coins"
+        else:
+            req_text = "Max level reached"
+        await ctx.send(
+            f"🎣 Rod Level: **{lvl}**\n"
+            f"• Rod Fragments: **{fragments}**\n"
+            f"• Rod Cores: **{cores}**\n"
+            f"Next upgrade requires: {req_text}"
+        )
+
+    @commands.command()
+    async def upgraderod(self, ctx):
+        """Upgrade your rod using fragments/cores and (optional) coins."""
+        user_conf = self.config.user(ctx.author)
+        lvl = await user_conf.rod_level()
+        target = lvl + 1
+        req = self.rod_upgrade_requirements.get(target)
+        if not req:
+            return await ctx.send("🔒 Your rod is already at max level.")
+
+        items = await user_conf.items()
+        fragments = items.count("Rod Fragment")
+        cores = items.count("Rod Core")
+
+        # If player has one Rod Core, let it substitute an entire upgrade
+        if cores >= 1:
+            items.remove("Rod Core")
+            await user_conf.items.set(items)
+            await user_conf.rod_level.set(target)
+            return await ctx.send(f"✨ You used a Rod Core and upgraded your rod to level **{target}**!")
+
+        need_frag = req["fragments"]
+        cost = req.get("coins", 0)
+        if fragments < need_frag:
+            return await ctx.send(f"❌ You need **{need_frag} Rod Fragments** (you have {fragments}).")
+
+        if cost and not await bank.can_spend(ctx.author, cost):
+            bal = await bank.get_balance(ctx.author)
+            currency = await bank.get_currency_name(ctx.guild)
+            return await ctx.send(f"❌ Upgrade costs **{cost} {currency}**, you only have **{bal} {currency}**.")
+
+        # consume fragments
+        removed = 0
+        new_items = []
+        for it in items:
+            if it == "Rod Fragment" and removed < need_frag:
+                removed += 1
+                continue
+            new_items.append(it)
+        await user_conf.items.set(new_items)
+
+        # withdraw coins if needed
+        if cost:
+            await bank.withdraw_credits(ctx.author, cost)
+
+        await user_conf.rod_level.set(target)
+        await ctx.send(f"🔧 Upgrade complete! Your rod is now level **{target}**.")
 
     async def cog_unload(self):
         pass
