@@ -248,6 +248,27 @@ class Fishing(commands.Cog):
             "charity": (self._event_charity, 1),
             "salvage": (self._event_salvage, 2),
             "message": (self._event_message, 2),
+            "bubble_burst": (self._event_bubble_burst, 4),
+            "kelp_tangle": (self._event_kelp_tangle, 3),
+            "whale_song": (self._event_whale_song, 1),
+            "siren_call": (self._event_siren_call, 1),
+            "tide_pool": (self._event_tide_pool, 3),
+            "meteor_shower": (self._event_meteor_shower, 1),
+            "coral_gift": (self._event_coral_gift, 2),
+            "water_sprite": (self._event_water_sprite, 3),
+            "whirlpool": (self._event_whirlpool, 2),
+            "fisherman_friend": (self._event_fisherman_friend, 2),
+            "barnacle_pearl": (self._event_barnacle_pearl, 2),
+            "crystal_wash": (self._event_crystal_wash, 1),
+            "echo_call": (self._event_echo_call, 1),
+            "drifting_crate": (self._event_drifting_crate, 2),
+            "phantom_net": (self._event_phantom_net, 2),
+            "lazy_sun": (self._event_lazy_sun, 2),
+            "thunder_clap": (self._event_thunder_clap, 1),
+            "sponge_cache": (self._event_sponge_cache, 3),
+            "tide_change": (self._event_tide_change, 1),
+            "moon_phase": (self._event_moon_phase, 1),
+            "rift_glimpse": (self._event_rift_glimpse, 1),
         }
 
     # ---------- Helpers ----------
@@ -640,6 +661,230 @@ class Fishing(commands.Cog):
         new_bal, currency = await self._deposit(ctx.author, coins, ctx)
         await self._inc_stat(ctx.author, "casts", 1)
         return False, f"✉️ You find **{coins} {currency}** tucked in a note. New balance: **{new_bal} {currency}**."
+        async def _event_bubble_burst(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.25:
+            # small fish
+            catch = self._random_fish()
+            data = await user_conf.caught()
+            data.append(catch)
+            await user_conf.caught.set(data)
+            await self._maybe_update_unique_and_highest(ctx.author, catch)
+            return False, f" bubbles! You spot a small fish and catch a **{catch}**!"
+        else:
+            bait = random.randint(1, 2)
+            current = await user_conf.bait()
+            await user_conf.bait.set(current + bait)
+            return False, f" Bubbles reveal some bait. You found **{bait}** bait."
+
+    async def _event_kelp_tangle(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.15:
+            data = await user_conf.caught()
+            data.append("Seagrass Fish")
+            await user_conf.caught.set(data)
+            await self._maybe_update_unique_and_highest(ctx.author, "Seagrass Fish")
+            return False, "🪴 Your line tangles in kelp but you free a **Seagrass Fish**!"
+        return False, "🪴 Your line gets tangled in kelp — nothing worth keeping this time."
+
+    async def _event_whale_song(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        await user_conf.luck.set((await user_conf.luck()) + 3)
+        return False, "🐋 A whale sings — your luck rises for a few casts."
+
+    async def _event_siren_call(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        r = random.random()
+        if r < 0.12:
+            # mythic reward
+            catch = self._random_fish()
+            data = await user_conf.caught()
+            data.append(catch)
+            await user_conf.caught.set(data)
+            await self._maybe_update_unique_and_highest(ctx.author, catch)
+            return False, f"🧜 A siren lures something incredible — you catch a **{catch}**!"
+        if r < 0.35:
+            # lose an item
+            items = await user_conf.items()
+            if items:
+                lost = items.pop(random.randrange(len(items)))
+                await user_conf.items.set(items)
+                return False, f"🧜 A siren's song steals **{lost}** from you!"
+        return False, "🧜 A haunting song passes by. You steady the line and move on."
+
+    async def _event_tide_pool(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        count = random.randint(2, 5)
+        caught = [self._random_fish() for _ in range(count)]
+        data = await user_conf.caught()
+        data.extend(caught)
+        await user_conf.caught.set(data)
+        for c in caught:
+            await self._maybe_update_unique_and_highest(ctx.author, c)
+        return False, f"🌊 You explore a tide pool and net {len(caught)} fish: {', '.join(caught)}."
+
+    async def _event_meteor_shower(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.10:
+            # celestial fish
+            data = await user_conf.caught()
+            data.append("Star Pike")
+            await user_conf.caught.set(data)
+            await self._maybe_update_unique_and_highest(ctx.author, "Star Pike")
+            return False, "☄️ Meteor light guides you to a **Star Pike**!"
+        else:
+            coins = random.randint(10, 50)
+            new_bal, currency = await self._deposit(ctx.author, coins, ctx)
+            return False, f"☄️ Falling sparks wash ashore coins — you get **{coins} {currency}**."
+
+    async def _event_coral_gift(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.25:
+            items = await user_conf.items()
+            items.append("Coral Trinket")
+            await user_conf.items.set(items)
+            return False, "🪸 The coral cradles a **Coral Trinket** and gives it to you."
+        coins = random.randint(5, 25)
+        new_bal, currency = await self._deposit(ctx.author, coins, ctx)
+        return False, f"🪸 Tiny coral pieces yield **{coins} {currency}**."
+
+    async def _event_water_sprite(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.5:
+            bait = random.randint(1, 3)
+            current = await user_conf.bait()
+            await user_conf.bait.set(current + bait)
+            return False, f"🧚 A water sprite blesses you with **{bait}** bait."
+        await user_conf.luck.set((await user_conf.luck()) + 1)
+        return False, "🧚 A sprite whispers. Your luck increases slightly."
+
+    async def _event_whirlpool(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        data = await user_conf.caught()
+        if data:
+            lost = []
+            lost_count = min(random.randint(1, 3), len(data))
+            for _ in range(lost_count):
+                lost.append(data.pop(random.randrange(len(data))))
+            await user_conf.caught.set(data)
+            return False, f"🌀 A whirlpool swallows {', '.join(lost)} from your haul!"
+        return False, "🌀 A whirlpool churns but you had nothing to lose."
+
+    async def _event_fisherman_friend(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        inv = await user_conf.caught()
+        if not inv:
+            coins = random.randint(1, 8)
+            new_bal, currency = await self._deposit(ctx.author, coins, ctx)
+            return False, f"🧑‍⚖️ A helpful fisherman tips you **{coins} {currency}**."
+        fish = random.choice(inv)
+        premium = int(self.fish_prices.get(fish, 10) * random.uniform(1.4, 2.5))
+        inv.remove(fish)
+        await user_conf.caught.set(inv)
+        new_bal, currency = await self._deposit(ctx.author, premium, ctx)
+        return False, f"🧑‍⚖️ A friendly fisherman buys your **{fish}** for **{premium} {currency}** on the spot."
+
+    async def _event_barnacle_pearl(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.12:
+            value = random.randint(30, 120)
+            new_bal, currency = await self._deposit(ctx.author, value, ctx)
+            return False, f"🐚 You pry open a barnacle and find a pearl worth **{value} {currency}**!"
+        return False, "🐚 Barnacles cling to nothing of value this time."
+
+    async def _event_crystal_wash(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.10:
+            data = await user_conf.caught()
+            data.append("Crystal Trout")
+            await user_conf.caught.set(data)
+            await self._maybe_update_unique_and_highest(ctx.author, "Crystal Trout")
+            return False, "🔹 A crystal wash frees a **Crystal Trout** into your net!"
+        return False, "🔹 Shimmering water passes but nothing uncommon shows."
+
+    async def _event_echo_call(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.5:
+            await user_conf.luck.set((await user_conf.luck()) + 2)
+            return False, "🔔 Echoes call — your next casts are luckier."
+        return False, "🔔 You hear distant echoes; nothing else."
+
+    async def _event_drifting_crate(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        coins = random.randint(5, 40)
+        new_bal, currency = await self._deposit(ctx.author, coins, ctx)
+        items = await user_conf.items()
+        if random.random() < 0.10:
+            items.append("Rod Fragment")
+            await user_conf.items.set(items)
+            return False, f"📦 You pull a drifting crate with **{coins} {currency}** and a **Rod Fragment**!"
+        return False, f"📦 You open a drifting crate and find **{coins} {currency}**."
+
+    async def _event_phantom_net(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.08:
+            data = await user_conf.caught()
+            data.append("Spectral Herring")
+            await user_conf.caught.set(data)
+            await self._maybe_update_unique_and_highest(ctx.author, "Spectral Herring")
+            return False, "👻 A ghostly net yields a **Spectral Herring**!"
+        return False, "👻 An old phantom net drops off a tangle of junk."
+
+    async def _event_lazy_sun(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        await user_conf.luck.set((await user_conf.luck()) + 1)
+        return False, "☀️ The sun is calm — common and uncommon fish are more likely."
+
+    async def _event_thunder_clap(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        # reduce luck briefly but maybe rare storm fish
+        if random.random() < 0.08:
+            data = await user_conf.caught()
+            data.append("Stormwing Tuna")
+            await user_conf.caught.set(data)
+            await self._maybe_update_unique_and_highest(ctx.author, "Stormwing Tuna")
+            return False, "⚡ A thunderclap unleashes a **Stormwing Tuna**!"
+        # small luck penalty
+        await user_conf.luck.set(max(0, (await user_conf.luck()) - 1))
+        return False, "⚡ A thunderclap startles the water; luck reduced slightly."
+
+    async def _event_sponge_cache(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        bait_found = random.randint(1, 3)
+        current = await user_conf.bait()
+        await user_conf.bait.set(current + bait_found)
+        if random.random() < 0.06:
+            items = await user_conf.items()
+            items.append("Rod Fragment")
+            await user_conf.items.set(items)
+            return False, f"🧽 A sponge cache yields **{bait_found}** bait and a **Rod Fragment**!"
+        return False, f"🧽 A sponge cache yields **{bait_found}** bait."
+
+    async def _event_tide_change(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        # temporarily give player a small luck boost and message; actual biome weighting handled elsewhere if implemented
+        await user_conf.luck.set((await user_conf.luck()) + 1)
+        return False, "🌊 The tide changes — coastal/reef spawns feel stronger for a short time."
+
+    async def _event_moon_phase(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.05:
+            data = await user_conf.caught()
+            data.append("Silver Seraph")
+            await user_conf.caught.set(data)
+            await self._maybe_update_unique_and_highest(ctx.author, "Silver Seraph")
+            return False, "🌕 Under the moon's eye you catch a **Silver Seraph**!"
+        return False, "🌕 The moon glances off the water — a quiet, promising night."
+
+    async def _event_rift_glimpse(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.03:
+            data = await user_conf.caught()
+            data.append("Abyssal Wisp")
+            await user_conf.caught.set(data)
+            await self._maybe_update_unique_and_highest(ctx.author, "Abyssal Wisp")
+            return False, "🔱 A rift glimpse draws forth an **Abyssal Wisp**!"
+        return False, "🔱 You glimpse a rift far below; nothing pulled up this time."
 
     # ---------- Core fish command ----------
     @commands.cooldown(1, 30, commands.BucketType.user)
