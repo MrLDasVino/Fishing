@@ -12,8 +12,8 @@ class Fishing(commands.Cog):
         # Unique identifier for our config store
         self.config = Config.get_conf(self, identifier=1234567890123)
         default_user = {
-            "caught": [],       # list of fish names
-            "rod_broken": False # whether they need a repair
+            "caught": [],        # list of fish names
+            "rod_broken": False  # whether they need a repair
         }
         self.config.register_user(**default_user)
 
@@ -40,15 +40,66 @@ class Fishing(commands.Cog):
         await ctx.send("🎣 You cast your line and wait patiently…")
         await asyncio.sleep(random.uniform(2, 6))
 
-        # Decide event
-        event = random.choices(
-            ["nothing", "fish", "break", "treasure"],
-            weights=[50, 40, 5, 5],
+        # Extended event list
+        event, = random.choices(
+            [
+                "nothing",
+                "junk",
+                "fish",
+                "double",
+                "shark",
+                "break",
+                "treasure",
+                "bottle",
+                "storm",
+            ],
+            weights=[40, 5, 30, 5, 3, 5, 5, 5, 2],
             k=1,
-        )[0]
+        )
 
         if event == "nothing":
             return await ctx.send("…No bites this time. Better luck next cast!")
+
+        if event == "junk":
+            return await ctx.send("👢 You pulled up an old boot. Better luck next time!")
+
+        if event == "fish":
+            fishes = [
+                ("Tiny Fish", 60),
+                ("Small Fish", 25),
+                ("Medium Fish", 10),
+                ("Large Fish", 4),
+                ("Legendary Fish", 1),
+            ]
+            names, weights = zip(*fishes)
+            catch = random.choices(names, weights=weights, k=1)[0]
+            data = await user_conf.caught()
+            data.append(catch)
+            await user_conf.caught.set(data)
+            return await ctx.send(f"🐟 You caught a **{catch}**!")
+
+        if event == "double":
+            fishes = [
+                ("Tiny Fish", 60),
+                ("Small Fish", 25),
+                ("Medium Fish", 10),
+                ("Large Fish", 4),
+                ("Legendary Fish", 1),
+            ]
+            names, weights = zip(*fishes)
+            catch1, catch2 = random.choices(names, weights=weights, k=2)
+            data = await user_conf.caught()
+            data.extend([catch1, catch2])
+            await user_conf.caught.set(data)
+            return await ctx.send(f"🐟🐟 Double catch! You got **{catch1}** and **{catch2}**!")
+
+        if event == "shark":
+            data = await user_conf.caught()
+            if data:
+                lost = data.pop()
+                await user_conf.caught.set(data)
+                return await ctx.send(f"🦈 A shark snatches your **{lost}**! Ouch.")
+            return await ctx.send("🦈 A shark swims by, but you had nothing yet to lose.")
 
         if event == "break":
             await user_conf.rod_broken.set(True)
@@ -63,20 +114,17 @@ class Fishing(commands.Cog):
                 f"Your new balance is **{new_bal}** {currency}."
             )
 
-        # else: fish
-        fishes = [
-            ("Tiny Fish", 60),
-            ("Small Fish", 25),
-            ("Medium Fish", 10),
-            ("Large Fish", 4),
-            ("Legendary Fish", 1),
-        ]
-        names, weights = zip(*fishes)
-        catch = random.choices(names, weights=weights, k=1)[0]
-        data = await user_conf.caught()
-        data.append(catch)
-        await user_conf.caught.set(data)
-        await ctx.send(f"🐟 You caught a **{catch}**!")
+        if event == "bottle":
+            coins = random.randint(5, 25)
+            new_bal = await bank.deposit_credits(ctx.author, coins)
+            currency = await bank.get_currency_name(ctx.guild)
+            return await ctx.send(
+                f"📜 You found a message in a bottle and earned **{coins}** {currency}!\n"
+                f"Your new balance is **{new_bal}** {currency}."
+            )
+
+        if event == "storm":
+            return await ctx.send("⛈️ A sudden storm! Your line snaps back with nothing to show.")
 
     @commands.command()
     async def fishstats(self, ctx):
@@ -133,10 +181,9 @@ class Fishing(commands.Cog):
         user_conf = self.config.user(ctx.author)
         inventory = await user_conf.caught()
 
-        # Case‐insensitive lookup
         match = next(
             (fish for fish in self.fish_prices if fish.lower() == fish_name.lower()),
-            None
+            None,
         )
         if not match:
             valid = ", ".join(self.fish_prices.keys())
@@ -151,7 +198,7 @@ class Fishing(commands.Cog):
             inventory.remove(match)
         await user_conf.caught.set(inventory)
 
-        # Calculate payout & deposit
+        # Deposit to bank
         total = self.fish_prices[match] * amount
         new_bal = await bank.deposit_credits(ctx.author, total)
         currency = await bank.get_currency_name(ctx.guild)
@@ -165,4 +212,5 @@ class Fishing(commands.Cog):
 async def setup(bot):
     """Entry point for Red to load this cog."""
     await bot.add_cog(Fishing(bot))
+
 
