@@ -196,12 +196,42 @@ class Fishing(commands.Cog):
             "maris": {
                 "display": "Maris the Merchant",
                 "greeting": "Maris smiles and polishes a brass scale. 'Looking for work or wares?'",
-                "quests": ["maris_fragment_hunt"],
+                "quests": ["maris_fragment_hunt", "merchant_supply", "reef_expedition", "legend_hunt"],
             },
             "oldfinn": {
                 "display": "Old Finn",
                 "greeting": "'Hm, a keen eye for fish? I remember the river in my day…'",
-                "quests": ["finn_first_catch"],
+                "quests": ["finn_first_catch", "boss_sightings", "river_cleanse"],
+            },
+            "lira": {
+                "display": "Lira the Tidewatcher",
+                "greeting": "'The tides speak to those who listen.'",
+                "quests": ["tide_pool_mini", "midnight_hunt", "tide_change_event"],
+            },
+            "garron": {
+                "display": "Garron the Salvor",
+                "greeting": "'I barter salvage and stories. Bring me trinkets.'",
+                "quests": ["drifter_hunt", "drifting_crate_run", "reef_expedition"],
+            },
+            "selene": {
+                "display": "Selene the Moonseer",
+                "greeting": "'The moon favors careful anglers.'",
+                "quests": ["moon_phase_patrol", "midnight_hunt", "aurora_call"],
+            },
+            "berta": {
+                "display": "Berta the Baitsmith",
+                "greeting": "'Need bait? Or a quick job to earn some?'",
+                "quests": ["easy_bait_run", "angler_apprentice", "seasonal_bounty"],
+            },
+            "thorin": {
+                "display": "Thorin the Tactician",
+                "greeting": "'I can set up a challenge if you're brave.'",
+                "quests": ["epic_refinement", "legend_hunt", "mythic_probe"],
+            },
+            "nym": {
+                "display": "Nym of the Marsh",
+                "greeting": "'The marsh keeps its secrets; trade me what you find.'",
+                "quests": ["mire_tasks", "mossback_call", "river_cleanse"],
             },
         }
         self.quests = {
@@ -221,6 +251,160 @@ class Fishing(commands.Cog):
                 ],
                 "rewards": {"coins": 75, "items": {"Rod Core": 1}},
                 "repeatable": True,
+            },
+            "easy_bait_run": {
+                "title": "Bait Run",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Common", "count": 2, "desc": "Catch 2 Common fish."},
+                ],
+                "rewards": {"coins": 10, "items": {"Chum": 1}},
+                "repeatable": True,
+            },
+            "river_cleanse": {
+                "title": "River Cleanse",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Common", "count": 4, "desc": "Collect 4 Common fish from the river."},
+                    {"type": "deliver_item", "item": "Treasure Map", "count": 1, "desc": "Deliver any Treasure Map."},
+                ],
+                "rewards": {"coins": 30, "items": {"Rod Fragment": 1}},
+                "repeatable": False,
+            },
+            "angler_apprentice": {
+                "title": "Angler Apprentice",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Uncommon", "count": 3, "desc": "Catch 3 Uncommon fish."},
+                    {"type": "sell_value", "amount": 50, "desc": "Sell fish totalling 50 coins."},
+                ],
+                "rewards": {"coins": 50, "items": {"Chum": 2}},
+                "repeatable": True,
+            },
+            "reef_expedition": {
+                "title": "Reef Expedition",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Rare", "count": 2, "desc": "Catch 2 Rare fish from reef biomes."},
+                    {"type": "deliver_item", "item": "Coral Trinket", "count": 1, "desc": "Deliver a Coral Trinket if you have one."},
+                ],
+                "rewards": {"coins": 100, "items": {"Rod Fragment": 2}},
+                "repeatable": False,
+            },
+            "midnight_hunt": {
+                "title": "Midnight Hunt",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Rare", "count": 3, "desc": "Catch 3 Rare fish at night."},
+                    {"type": "visit_npc", "npc": "maris", "desc": "Report back to Maris."},
+                ],
+                "rewards": {"coins": 150, "items": {"Chum": 3}},
+                "repeatable": True,
+            },
+            "epic_refinement": {
+                "title": "Epic Refinement",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Epic", "count": 2, "desc": "Gather 2 Epic fish."},
+                    {"type": "deliver_item", "item": "Rod Fragment", "count": 1, "desc": "Deliver 1 Rod Fragment."},
+                ],
+                "rewards": {"coins": 250, "items": {"Rod Core": 1}},
+                "repeatable": False,
+            },
+            "boss_sightings": {
+                "title": "Boss Sightings",
+                "steps": [
+                    {"type": "visit_npc", "npc": "oldfinn", "desc": "Hear the old tales from Old Finn."},
+                    {"type": "collect_fish", "rarity": "Boss", "count": 1, "desc": "Survive and secure evidence of a Boss encounter."},
+                ],
+                "rewards": {"coins": 0, "items": {"Map": 1}},
+                "repeatable": False,
+            },
+            "mythic_probe": {
+                "title": "Mythic Probe",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Mythic", "count": 1, "desc": "Catch one Mythic rarity fish."},
+                ],
+                "rewards": {"coins": 500, "items": {"Rod Core": 1}},
+                "repeatable": False,
+            },
+            "seasonal_bounty": {
+                "title": "Seasonal Bounty",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Uncommon", "count": 5, "desc": "Catch 5 Uncommon fish during this season."},
+                    {"type": "sell_value", "amount": 200, "desc": "Sell fish totalling 200 coins this season."},
+                ],
+                "rewards": {"coins": 200, "items": {"Chum": 5}},
+                "repeatable": True,
+            },
+            "merchant_supply": {
+                "title": "Merchant Supply",
+                "steps": [
+                    {"type": "deliver_item", "item": "Rod Fragment", "count": 5, "desc": "Bring 5 Rod Fragments to the merchant."},
+                ],
+                "rewards": {"coins": 300, "items": {"Rod Core": 1}},
+                "repeatable": True,
+            },
+            "legend_hunt": {
+                "title": "Legend Hunt",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Legendary", "count": 2, "desc": "Bring back 2 Legendary fish."},
+                    {"type": "visit_npc", "npc": "maris", "desc": "Claim your reward from Maris."},
+                ],
+                "rewards": {"coins": 400, "items": {"Rod Core": 2}},
+                "repeatable": False,
+            },
+            "tide_pool_mini": {
+                "title": "Tide Pool Mini",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Common", "count": 3, "desc": "Collect 3 small fish from a tide pool."},
+                ],
+                "rewards": {"coins": 20, "items": {}},
+                "repeatable": True,
+            },
+            "drifter_hunt": {
+                "title": "Drifter Hunt",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Common", "count": 2, "desc": "Grab some fish from floating debris."},
+                ],
+                "rewards": {"coins": 30, "items": {}},
+                "repeatable": True,
+            },
+            "drifting_crate_run": {
+                "title": "Crate Run",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Uncommon", "count": 2, "desc": "Collect two Uncommon fish from drifting waters."},
+                ],
+                "rewards": {"coins": 45, "items": {"Rod Fragment": 1}},
+                "repeatable": True,
+            },
+            "moon_phase_patrol": {
+                "title": "Moon Patrol",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Rare", "count": 1, "desc": "Catch a Rare fish under moonlight."},
+                    {"type": "visit_npc", "npc": "selene", "desc": "Report success to Selene."},
+                ],
+                "rewards": {"coins": 120, "items": {"Chum": 2}},
+                "repeatable": False,
+            },
+            "aurora_call": {
+                "title": "Aurora Call",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Legendary", "count": 1, "desc": "Catch a Legendary fish influenced by aurora."},
+                ],
+                "rewards": {"coins": 220, "items": {"Rod Fragment": 2}},
+                "repeatable": False,
+            },
+            "mire_tasks": {
+                "title": "Mire Tasks",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Uncommon", "count": 3, "desc": "Catch 3 Uncommon fish in the marsh."},
+                ],
+                "rewards": {"coins": 40, "items": {"Chum": 1}},
+                "repeatable": True,
+            },
+            "mossback_call": {
+                "title": "Mossback Call",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Uncommon", "count": 4, "desc": "Gather 4 Mossback-style fish."},
+                    {"type": "visit_npc", "npc": "nym", "desc": "Report to Nym of the Marsh."},
+                ],
+                "rewards": {"coins": 90, "items": {"Rod Fragment": 1}},
+                "repeatable": False,
             },
         }
 
