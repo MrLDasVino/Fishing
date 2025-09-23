@@ -1,13 +1,13 @@
 import random
 import asyncio
 import discord
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List, Optional, Any
 
 from redbot.core import commands, bank, Config
 
 
 class Fishing(commands.Cog):
-    """Fishing minigame with lots of fish, many events, achievements, rod upgrades, and fish fusion/crafting."""
+    """Fishing minigame with fish, events, achievements, rod upgrades, crafting, NPC traders and questlines."""
 
     def __init__(self, bot):
         self.bot = bot
@@ -30,11 +30,11 @@ class Fishing(commands.Cog):
             },
             "items": [],         # non-fish items like "Rod Fragment", "Rod Core", "Treasure Map", "Chum"
             "rod_level": 0,      # 0 = basic
+            "quests": {},        # per-user quest state: {"active": quest_id or None, "step": int, "progress": {...}}
         }
         self.config.register_user(**default_user)
 
         # ---------- Fish definitions (expand as needed) ----------
-        # name -> {weight, price, emoji, rarity, biome}
         self.fish_definitions = {
             "Tiny Minnow": {"weight": 200, "price": 2, "emoji": "><>", "rarity": "Common", "biome": "Pond"},
             "Mosquito Fish": {"weight": 180, "price": 3, "emoji": "🐟", "rarity": "Common", "biome": "Marsh"},
@@ -91,7 +91,6 @@ class Fishing(commands.Cog):
             "Moray Eel": {"weight": 18, "price": 50, "emoji": "🦎", "rarity": "Epic", "biome": "Reef"},
         }
 
-        # Derived prices
         self.fish_prices = {name: info["price"] for name, info in self.fish_definitions.items()}
 
         # ---------- Achievement definitions ----------
@@ -126,23 +125,15 @@ class Fishing(commands.Cog):
         }
 
         # ---------- Rod upgrade system settings ----------
-        # level -> requirements (fragments, coins)
         self.rod_upgrade_requirements = {
             1: {"fragments": 3, "coins": 0},
             2: {"fragments": 6, "coins": 50},
             3: {"fragments": 10, "coins": 150},
         }
-        # how rod level affects chance for good events
         self.rod_level_fish_multiplier = {0: 1.0, 1: 1.2, 2: 1.4, 3: 1.6}
-        # reduce chance for break/hook_snag by multiplying their base weight
         self.rod_level_break_reduction = {0: 1.0, 1: 0.8, 2: 0.6, 3: 0.4}
 
         # ---------- Crafting recipes ----------
-        # "recipe_id": {"name": display, "requirements": {...}, "result": {...}, "description": str}
-        # Requirements support:
-        #  - specific fish names keyed as "fish:<name>" => count
-        #  - rarity keyed as "rarity:<rarity>" => count (any fish of that rarity)
-        #  - "any_fish" => count (any fish)
         self.crafting_recipes = {
             "chum": {
                 "name": "Chum",
@@ -164,8 +155,43 @@ class Fishing(commands.Cog):
             },
         }
 
+        # ---------- NPCs and questlines ----------
+        # Simple NPC definitions with short questlines
+        # Each quest: id -> {title, steps: [ {type, args, desc}... ], rewards: {...}, repeatable: bool}
+        # Step types: "collect_fish" (rarity/name + count), "deliver_item" (item name + count), "visit" (just progress), "sell_value" (currency)
+        self.npcs = {
+            "maris": {
+                "display": "Maris the Merchant",
+                "greeting": "Maris smiles and polishes a brass scale. 'Looking for work or wares?'",
+                "quests": ["maris_fragment_hunt"],
+            },
+            "oldfinn": {
+                "display": "Old Finn",
+                "greeting": "'Hm, a keen eye for fish? I remember the river in my day…'",
+                "quests": ["finn_first_catch"],
+            },
+        }
+        self.quests = {
+            "finn_first_catch": {
+                "title": "A Young Angler's Proving",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Common", "count": 3, "desc": "Catch 3 Common fish."},
+                    {"type": "visit_npc", "npc": "oldfinn", "desc": "Return to Old Finn."},
+                ],
+                "rewards": {"coins": 25, "items": {"Rod Fragment": 1}},
+                "repeatable": False,
+            },
+            "maris_fragment_hunt": {
+                "title": "Fragments for a Discount",
+                "steps": [
+                    {"type": "deliver_item", "item": "Rod Fragment", "count": 3, "desc": "Bring 3 Rod Fragments."},
+                ],
+                "rewards": {"coins": 75, "items": {"Rod Core": 1}},
+                "repeatable": True,
+            },
+        }
+
         # ---------- Event registry ----------
-        # key -> (handler coroutine, base weight)
         self.event_handlers = {
             "nothing": (self._event_nothing, 35),
             "junk": (self._event_junk, 6),
@@ -202,7 +228,6 @@ class Fishing(commands.Cog):
         currency = await bank.get_currency_name(ctx.guild)
         return new_bal, currency
 
-    # Achievement utilities
     async def _has_achievement(self, user, ach_id: str) -> bool:
         earned = await self.config.user(user).achievements()
         return ach_id in earned
@@ -217,7 +242,6 @@ class Fishing(commands.Cog):
         earned.append(ach_id)
         await user_conf.achievements.set(earned)
         name, desc, _ = self.achievements[ach_id]
-        # small rewards for some achievements
         reward = 0
         if ach_id in ("first_fish", "first_cast"):
             reward = 5
@@ -288,7 +312,6 @@ class Fishing(commands.Cog):
         stats["highest_value_catch"] = max(stats.get("highest_value_catch", 0), price)
         stats["consecutive_catches"] = stats.get("consecutive_catches", 0) + 1
         await conf.stats.set(stats)
-        # Award mythic achievement if applicable
         rarity = self.fish_definitions.get(fish_name, {}).get("rarity", "")
         if rarity == "Mythic" and not await self._has_achievement(user, "mythic_catch"):
             await self._award_achievement(self.bot.get_guild(0) or None, user, "mythic_catch")
@@ -325,9 +348,43 @@ class Fishing(commands.Cog):
         msgs = await self._check_and_award(ctx, ctx.author)
         info = self.fish_definitions[catch]
         base = f"{info['emoji']} You caught a **{catch}** ({info['rarity']})!"
+        # Quest progress: increment if an active quest needs this fish
+        await self._advance_quest_on_catch(ctx.author, catch)
         if msgs:
             return False, base + "\n\n" + "\n".join(msgs)
         return False, base
+
+    async def _advance_quest_on_catch(self, user, fish_name: str):
+        user_conf = self.config.user(user)
+        qstate = await user_conf.quests()
+        active = qstate.get("active")
+        if not active:
+            return
+        qdef = self.quests.get(active)
+        if not qdef:
+            return
+        # check current step
+        step_idx = qstate.get("step", 0)
+        if step_idx >= len(qdef["steps"]):
+            return
+        step = qdef["steps"][step_idx]
+        if step["type"] == "collect_fish":
+            needed = step.get("count", 1)
+            rarity = step.get("rarity")
+            name = step.get("name")
+            # compute how many of the required fish the user now has caught (or in inventory)
+            inv = await user_conf.caught()
+            have = 0
+            if name:
+                have = inv.count(name)
+            else:
+                for f in inv:
+                    if f in self.fish_definitions and self.fish_definitions[f].get("rarity") == rarity:
+                        have += 1
+            if have >= needed:
+                # advance step
+                qstate["step"] = step_idx + 1
+                await user_conf.quests.set(qstate)
 
     async def _event_double(self, ctx, user_conf):
         catch1 = self._random_fish()
@@ -338,6 +395,9 @@ class Fishing(commands.Cog):
         await self._maybe_update_unique_and_highest(ctx.author, catch1)
         await self._maybe_update_unique_and_highest(ctx.author, catch2)
         await self._inc_stat(ctx.author, "casts", 1)
+        # try advance quest for both
+        await self._advance_quest_on_catch(ctx.author, catch1)
+        await self._advance_quest_on_catch(ctx.author, catch2)
         msg_ach = None
         if not await self._has_achievement(ctx.author, "double_catch"):
             msg_ach = await self._award_achievement(ctx, ctx.author, "double_catch")
@@ -372,7 +432,6 @@ class Fishing(commands.Cog):
         coins = random.randint(10, 60)
         new_bal, currency = await self._deposit(ctx.author, coins, ctx)
         await self._inc_stat(ctx.author, "casts", 1)
-        # chance to drop rod fragment on treasure
         if random.random() < 0.06:
             items = await user_conf.items()
             items.append("Rod Fragment")
@@ -409,7 +468,6 @@ class Fishing(commands.Cog):
         data.extend(caught)
         await user_conf.caught.set(data)
         await self._inc_stat(ctx.author, "casts", 1)
-        # small chance to find a rod fragment in an old net
         if random.random() < 0.08:
             items = await user_conf.items()
             items.append("Rod Fragment")
@@ -418,6 +476,9 @@ class Fishing(commands.Cog):
         else:
             found = ""
         names = ", ".join(caught)
+        # advance for quest catches
+        for f in caught:
+            await self._advance_quest_on_catch(ctx.author, f)
         return False, f"🕸️ You snagged an old net with {net_fish_count} things tangled inside: {names}.{found}"
 
     async def _event_bait_find(self, ctx, user_conf):
@@ -540,7 +601,6 @@ class Fishing(commands.Cog):
         coins = random.randint(5, 40)
         new_bal, currency = await self._deposit(ctx.author, coins, ctx)
         await self._inc_stat(ctx.author, "casts", 1)
-        # Small chance to find rod components
         r = random.random()
         if r < 0.03:
             items = await user_conf.items()
@@ -571,11 +631,11 @@ class Fishing(commands.Cog):
         await self._inc_stat(ctx.author, "casts", 1)
         return False, f"✉️ You find **{coins} {currency}** tucked in a note. New balance: **{new_bal} {currency}**."
 
-    # ---------- Core fish command (edits initial waiting message) ----------
+    # ---------- Core fish command ----------
     @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.command()
     async def fish(self, ctx):
-        """Cast your line and see what you reel in (edits the waiting message with the result)."""
+        """Cast your line and see what you reel in."""
         user_conf = self.config.user(ctx.author)
         if await user_conf.rod_broken():
             return await ctx.send(
@@ -612,14 +672,13 @@ class Fishing(commands.Cog):
                 if k in ("fish", "double", "treasure", "pearl", "merchant"):
                     weights[i] = int(weights[i] * 2)
 
-        # rod level modifier - increase chance for fish/double/treasure and reduce break weight
+        # rod level modifier
         try:
             rod_level = await user_conf.rod_level()
         except Exception:
             rod_level = 0
         fish_mult = self.rod_level_fish_multiplier.get(rod_level, 1.0)
         break_reduc = self.rod_level_break_reduction.get(rod_level, 1.0)
-
         for i, k in enumerate(keys):
             if k in ("fish", "double", "treasure", "pearl", "merchant"):
                 weights[i] = int(weights[i] * fish_mult)
@@ -646,7 +705,6 @@ class Fishing(commands.Cog):
         elif isinstance(result, str):
             message = result
 
-        # Edit waiting message with the result, truncating if necessary
         try:
             if message:
                 if len(message) > 1900:
@@ -658,11 +716,10 @@ class Fishing(commands.Cog):
             if message:
                 await ctx.send(message)
 
-    # ---------- fishlist command (embed pagination, filterable) ----------
+    # ---------- fishlist with embeds pagination ----------
     @commands.command()
     async def fishlist(self, ctx, *, filter_by: str = None):
-        """Show available fish with price and rarity. Optionally filter by rarity, biome, or name.
-        Displays results in an embed that can be paged with reactions."""
+        """Show available fish with price and rarity in a paged embed."""
         rarity_order = {"Common": 0, "Uncommon": 1, "Rare": 2, "Epic": 3, "Legendary": 4, "Mythic": 5, "Boss": 6}
         items = list(self.fish_definitions.items())
 
@@ -683,7 +740,6 @@ class Fishing(commands.Cog):
         if not items:
             return await ctx.send("No fish match that filter.")
 
-        # Prepare pages (embed per N items)
         per_page = 8
         pages: List[List[Tuple[str, Dict]]] = [items[i:i+per_page] for i in range(0, len(items), per_page)]
 
@@ -705,21 +761,12 @@ class Fishing(commands.Cog):
             embed.set_footer(text=f"Page {page_idx+1}/{len(pages)} — Use reactions to navigate")
             return embed
 
-        # Send first embed
         message = await ctx.send(embed=make_embed(0))
-
-        # If only one page, nothing to paginate
         if len(pages) == 1:
             return
 
-        # Reaction controls
-        left = "⬅️"
-        right = "➡️"
-        first = "⏮️"
-        last = "⏭️"
-        stop = "⏹️"
+        left = "⬅️"; right = "➡️"; first = "⏮️"; last = "⏭️"; stop = "⏹️"
         controls = [first, left, stop, right, last]
-
         for r in controls:
             try:
                 await message.add_reaction(r)
@@ -735,7 +782,6 @@ class Fishing(commands.Cog):
                 and str(reaction.emoji) in controls
             )
 
-        # Pagination loop: waits for reaction events until timeout
         while True:
             try:
                 reaction, user = await ctx.bot.wait_for("reaction_add", timeout=120.0, check=check)
@@ -746,7 +792,6 @@ class Fishing(commands.Cog):
                     pass
                 break
 
-            # remove user's reaction to keep the UI clean
             try:
                 await message.remove_reaction(reaction.emoji, user)
             except Exception:
@@ -897,11 +942,9 @@ class Fishing(commands.Cog):
         total = self.fish_definitions[match]["price"] * amount
         new_bal = await bank.deposit_credits(ctx.author, total)
         currency = await bank.get_currency_name(ctx.guild)
-        # update sell total stat
         stats = await user_conf.stats()
         stats["sell_total"] = stats.get("sell_total", 0) + total
         await user_conf.stats.set(stats)
-        # check achievements on sell
         msgs = await self._check_and_award(ctx, ctx.author)
         message = f"💰 You sold {amount}× **{match}** for **{total}** {currency}!\nYour new balance is **{new_bal} {currency}**."
         if msgs:
@@ -941,24 +984,15 @@ class Fishing(commands.Cog):
         reqs = recipe["requirements"]
         user_conf = self.config.user(ctx.author)
         inventory = await user_conf.caught()
-        inv_counts = {}
-        for f in inventory:
-            inv_counts[f] = inv_counts.get(f, 0) + 1
-        rarity_counts = self._count_inventory_by_rarity(inventory)
-
-        # Helper: attempt to consume required fish and return removed list and remaining inventory
+        remaining_inv = list(inventory)
         removed_fish = []
 
-        # Check specific requirements
-        # - any_fish
-        remaining_inv = list(inventory)  # copy to mutate
         ok = True
         for key, needed in reqs.items():
             if key == "any_fish":
                 if len(remaining_inv) < needed:
                     ok = False
                     break
-                # remove arbitrary fish (lowest value first to be fair)
                 remaining_inv.sort(key=lambda n: self.fish_definitions.get(n, {}).get("price", 0))
                 for _ in range(needed):
                     removed_fish.append(remaining_inv.pop(0))
@@ -968,7 +1002,6 @@ class Fishing(commands.Cog):
                 if have < needed:
                     ok = False
                     break
-                # remove matching rarity fish
                 to_remove = needed
                 new_rem = []
                 for f in remaining_inv:
@@ -984,7 +1017,6 @@ class Fishing(commands.Cog):
                 if have < needed:
                     ok = False
                     break
-                # remove that many
                 removed = 0
                 new_rem = []
                 for f in remaining_inv:
@@ -995,25 +1027,19 @@ class Fishing(commands.Cog):
                     new_rem.append(f)
                 remaining_inv = new_rem
             else:
-                # unknown requirement type
                 ok = False
                 break
 
         if not ok:
             return await ctx.send("❌ You don't have the necessary fish/items to craft that recipe.")
 
-        # All checks passed: apply recipe effect
-        # Persist remaining inventory
         await user_conf.caught.set(remaining_inv)
-
         result = recipe["result"]
         messages = []
-        # coin reward
         if "coins" in result:
             amt = int(result["coins"])
             new_bal, currency = await self._deposit(ctx.author, amt, ctx)
             messages.append(f"🏆 Craft successful: **{recipe['name']}** — you received **{amt} {currency}**! New balance: **{new_bal} {currency}**.")
-        # add items
         if "item" in result:
             items = await user_conf.items()
             items.append(result["item"])
@@ -1028,7 +1054,6 @@ class Fishing(commands.Cog):
             added = ", ".join(f"{c}× {n}" for n, c in result["items"].items())
             messages.append(f"🔧 Craft successful: **{recipe['name']}** — you received {added}.")
 
-        # final message: show removed fish summary and results
         removed_summary = {}
         for r in removed_fish:
             removed_summary[r] = removed_summary.get(r, 0) + 1
@@ -1049,19 +1074,15 @@ class Fishing(commands.Cog):
         if not match:
             return await ctx.send(f"❌ You don't have **{item_name}** in your items.")
 
-        # Handle known consumables
         if match == "Chum":
-            # consume and give luck
             items.remove(match)
             await user_conf.items.set(items)
-            # increase luck by 3 (stackable)
             current = await user_conf.luck()
             await user_conf.luck.set(current + 3)
             return await ctx.send("🪼 You used **Chum**. Your luck increased by **3** for the next casts.")
-        # default: non-consumable or unknown
         return await ctx.send(f"❌ **{match}** cannot be used directly.")
 
-    # ---------- Rod view and upgrade commands ----------
+    # ---------- Rod view and upgrade ----------
     @commands.command()
     async def rod(self, ctx):
         """Show your rod level and fragments/cores."""
@@ -1098,7 +1119,6 @@ class Fishing(commands.Cog):
         fragments = items.count("Rod Fragment")
         cores = items.count("Rod Core")
 
-        # If player has one Rod Core, let it substitute an entire upgrade
         if cores >= 1:
             items.remove("Rod Core")
             await user_conf.items.set(items)
@@ -1115,7 +1135,6 @@ class Fishing(commands.Cog):
             currency = await bank.get_currency_name(ctx.guild)
             return await ctx.send(f"❌ Upgrade costs **{cost} {currency}**, you only have **{bal} {currency}**.")
 
-        # consume fragments
         removed = 0
         new_items = []
         for it in items:
@@ -1125,16 +1144,64 @@ class Fishing(commands.Cog):
             new_items.append(it)
         await user_conf.items.set(new_items)
 
-        # withdraw coins if needed
         if cost:
             await bank.withdraw_credits(ctx.author, cost)
 
         await user_conf.rod_level.set(target)
         await ctx.send(f"🔧 Upgrade complete! Your rod is now level **{target}**.")
 
-    async def cog_unload(self):
-        pass
+    # ---------- NPC and Quest Commands ----------
+    @commands.command()
+    async def npcs(self, ctx):
+        """List known NPCs in the world."""
+        lines = ["**Known NPCs**"]
+        for key, info in self.npcs.items():
+            lines.append(f"• **{info['display']}** — Command: `{ctx.clean_prefix}talknpc {key}`")
+        await ctx.send("\n".join(lines))
 
+    @commands.command()
+    async def talknpc(self, ctx, npc_key: str):
+        """Talk to an NPC to get greeting or start quests."""
+        npc = self.npcs.get(npc_key.lower())
+        if not npc:
+            return await ctx.send("❌ Unknown NPC. Use `npcs` to see available NPCs.")
+        user_conf = self.config.user(ctx.author)
+        qstate = await user_conf.quests()
+        # show greeting and list NPC quests
+        lines = [f"**{npc['display']}**", npc.get("greeting", "")]
+        available = []
+        for qid in npc.get("quests", []):
+            qdef = self.quests.get(qid)
+            if not qdef:
+                continue
+            # if not repeatable and already completed, skip
+            if not qdef.get("repeatable", False):
+                # check user quest history stored in achievements or in quests.progress? We'll check if user has active or completed flag
+                # Simpler: if user has completed this quest (store in quests.completed list)
+                pass
+            available.append((qid, qdef))
+        if available:
+            lines.append("\nQuests available from this NPC:")
+            for qid, qdef in available:
+                lines.append(f"• **{qdef['title']}** — id: `{qid}` — use `{ctx.clean_prefix}acceptquest {qid}` to accept")
+        else:
+            lines.append("\nNo quests available right now.")
+        await ctx.send("\n".join(lines))
 
-async def setup(bot):
-    await bot.add_cog(Fishing(bot))
+    @commands.command()
+    async def acceptquest(self, ctx, quest_id: str):
+        """Accept a quest by id."""
+        quest = self.quests.get(quest_id)
+        if not quest:
+            return await ctx.send("❌ Unknown quest id. Use `talknpc <npc>` to see quests.")
+        user_conf = self.config.user(ctx.author)
+        qstate = await user_conf.quests()
+        if qstate.get("active"):
+            return await ctx.send("❌ You already have an active quest. Finish or abandon it first (`abandonquest`).")
+        # initialize quest state
+        qstate = {"active": quest_id, "step": 0, "progress": {}}
+        await user_conf.quests.set(qstate)
+        await ctx.send(f"✅ Quest accepted: **{quest['title']}**. Use `{ctx.clean_prefix}quest` to view progress.")
+
+    @commands.command()
+    async def quest(self,
