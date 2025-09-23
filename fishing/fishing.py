@@ -1170,7 +1170,8 @@ class Fishing(commands.Cog):
         qstate = await user_conf.quests()
         if qstate.get("active"):
             return await ctx.send("❌ You already have an active quest. Finish or abandon it first (`abandonquest`).")
-        qstate = {"active": quest_id, "step": 0, "progress": {}, "completed": qstate.get("completed", []) if isinstance(qstate, dict) else []}
+        prev_completed = qstate.get("completed", []) if isinstance(qstate, dict) else []
+        qstate = {"active": quest_id, "step": 0, "progress": {}, "completed": prev_completed}
         await user_conf.quests.set(qstate)
         await ctx.send(f"✅ Quest accepted: **{quest['title']}**. Use `{ctx.clean_prefix}quest` to view progress.")
 
@@ -1368,7 +1369,7 @@ class Fishing(commands.Cog):
         await user_conf.quests.set({"completed": completed_list})
         return "Quest complete! " + " ".join(messages)
 
-            @commands.command()
+    @commands.command()
     async def completequest(self, ctx):
         """Attempt to complete and claim rewards for your active quest."""
         user_conf = self.config.user(ctx.author)
@@ -1409,5 +1410,3 @@ class Fishing(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Fishing(bot))
-
-
