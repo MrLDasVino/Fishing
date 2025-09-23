@@ -663,7 +663,7 @@ class Fishing(commands.Cog):
             return False, f"✉️ You find **{coins} {currency}** tucked in a note. New balance: **{new_bal} {currency}**."
             
     async def _event_bubble_burst(self, ctx, user_conf):
-            await self._inc_stat(ctx.author, "casts", 1)
+        await self._inc_stat(ctx.author, "casts", 1)
         if random.random() < 0.25:
             # small fish
             catch = self._random_fish()
