@@ -657,12 +657,13 @@ class Fishing(commands.Cog):
             await user_conf.bait.set(current + bait)
             await self._inc_stat(ctx.author, "casts", 1)
             return False, f"✉️ A friendly note contains **{bait}** bait. Use it to attract better fish."
-        coins = random.randint(5, 20)
-        new_bal, currency = await self._deposit(ctx.author, coins, ctx)
-        await self._inc_stat(ctx.author, "casts", 1)
-        return False, f"✉️ You find **{coins} {currency}** tucked in a note. New balance: **{new_bal} {currency}**."
-        async def _event_bubble_burst(self, ctx, user_conf):
-        await self._inc_stat(ctx.author, "casts", 1)
+            coins = random.randint(5, 20)
+            new_bal, currency = await self._deposit(ctx.author, coins, ctx)
+            await self._inc_stat(ctx.author, "casts", 1)
+            return False, f"✉️ You find **{coins} {currency}** tucked in a note. New balance: **{new_bal} {currency}**."
+            
+    async def _event_bubble_burst(self, ctx, user_conf):
+            await self._inc_stat(ctx.author, "casts", 1)
         if random.random() < 0.25:
             # small fish
             catch = self._random_fish()
