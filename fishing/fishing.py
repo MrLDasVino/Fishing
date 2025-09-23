@@ -16,62 +16,64 @@ class Fishing(commands.Cog):
         }
         self.config.register_user(**default_user)
 
-        # Expanded fish definitions
+        # Expanded fish definitions (many entries)
         # weight controls spawn probability; price is currency value
-        # rarity is for display only; biome is flavour text
+        # rarity and biome are flavour fields
         self.fish_definitions = {
             "Tiny Minnow": {"weight": 200, "price": 2, "emoji": "><>", "rarity": "Common", "biome": "Pond"},
             "Mosquito Fish": {"weight": 180, "price": 3, "emoji": "🐟", "rarity": "Common", "biome": "Marsh"},
             "Bluegill": {"weight": 160, "price": 5, "emoji": "🐠", "rarity": "Common", "biome": "Pond"},
+            "Sardine": {"weight": 150, "price": 4, "emoji": "🐟", "rarity": "Common", "biome": "Coastal"},
             "Silverside": {"weight": 150, "price": 6, "emoji": "🐟", "rarity": "Common", "biome": "Coastal"},
             "Shiner": {"weight": 140, "price": 6, "emoji": "🔆", "rarity": "Common", "biome": "River"},
             "Perch": {"weight": 120, "price": 8, "emoji": "🐡", "rarity": "Uncommon", "biome": "Lake"},
+            "Mudskipper": {"weight": 115, "price": 7, "emoji": "🐸", "rarity": "Common", "biome": "Mangrove"},
             "Koi": {"weight": 110, "price": 12, "emoji": "🎏", "rarity": "Uncommon", "biome": "Garden Pond"},
             "Glass Eel": {"weight": 100, "price": 10, "emoji": "🔮", "rarity": "Uncommon", "biome": "Estuary"},
             "Gudgeon": {"weight": 95, "price": 9, "emoji": "🐟", "rarity": "Common", "biome": "Stream"},
             "Carp": {"weight": 90, "price": 11, "emoji": "🐠", "rarity": "Uncommon", "biome": "Lake"},
+            "Herring": {"weight": 85, "price": 7, "emoji": "🐠", "rarity": "Common", "biome": "Coastal"},
             "Trout": {"weight": 80, "price": 14, "emoji": "🎣", "rarity": "Uncommon", "biome": "Stream"},
             "Rainbow Trout": {"weight": 75, "price": 18, "emoji": "🌈", "rarity": "Rare", "biome": "River"},
             "Salmon": {"weight": 70, "price": 20, "emoji": "🐟", "rarity": "Rare", "biome": "River"},
             "Char": {"weight": 65, "price": 18, "emoji": "❄️", "rarity": "Rare", "biome": "Cold Lake"},
-            "Pike": {"weight": 60, "price": 22, "emoji": "🦈", "rarity": "Rare", "biome": "Freshwater"},
+            "Mackerel": {"weight": 60, "price": 16, "emoji": "🐟", "rarity": "Common", "biome": "Coastal"},
+            "Pike": {"weight": 58, "price": 22, "emoji": "🦈", "rarity": "Rare", "biome": "Freshwater"},
+            "Rockfish": {"weight": 56, "price": 20, "emoji": "🪨", "rarity": "Uncommon", "biome": "Reef"},
             "Largemouth Bass": {"weight": 50, "price": 26, "emoji": "🎣", "rarity": "Rare", "biome": "Lake"},
-            "Smallmouth Bass": {"weight": 48, "price": 24, "emoji": "🐟", "rarity": "Rare", "biome": "River"},
-            "Catfish": {"weight": 45, "price": 28, "emoji": "🐱‍🏍", "rarity": "Rare", "biome": "River"},
-            "Sturgeon": {"weight": 35, "price": 45, "emoji": "🐡", "rarity": "Epic", "biome": "River"},
-            "Eel": {"weight": 40, "price": 30, "emoji": "🪱", "rarity": "Rare", "biome": "Estuary"},
-            "Flounder": {"weight": 38, "price": 30, "emoji": "🪸", "rarity": "Rare", "biome": "Coastal"},
-            "Halibut": {"weight": 30, "price": 36, "emoji": "🐟", "rarity": "Epic", "biome": "Cold Ocean"},
-            "Mackerel": {"weight": 55, "price": 16, "emoji": "🐟", "rarity": "Common", "biome": "Coastal"},
-            "Herring": {"weight": 85, "price": 7, "emoji": "🐠", "rarity": "Common", "biome": "Coastal"},
-            "Sardine": {"weight": 130, "price": 4, "emoji": "🐟", "rarity": "Common", "biome": "Coastal"},
-            "Tuna": {"weight": 20, "price": 75, "emoji": "🐋", "rarity": "Legendary", "biome": "Open Ocean"},
-            "Mahi Mahi": {"weight": 18, "price": 60, "emoji": "🐬", "rarity": "Epic", "biome": "Tropical Ocean"},
-            "Swordfish": {"weight": 10, "price": 120, "emoji": "🗡️", "rarity": "Legendary", "biome": "Open Ocean"},
-            "Marlin": {"weight": 8, "price": 150, "emoji": "🏹", "rarity": "Legendary", "biome": "Deep Ocean"},
-            "Blue Marlin": {"weight": 6, "price": 180, "emoji": "🔱", "rarity": "Mythic", "biome": "Deep Ocean"},
-            "Giant Grouper": {"weight": 12, "price": 95, "emoji": "🐋", "rarity": "Legendary", "biome": "Reef"},
-            "Snapper": {"weight": 42, "price": 32, "emoji": "🐠", "rarity": "Rare", "biome": "Reef"},
+            "Rock Bass": {"weight": 48, "price": 12, "emoji": "🐡", "rarity": "Uncommon", "biome": "River"},
+            "Smallmouth Bass": {"weight": 46, "price": 24, "emoji": "🐟", "rarity": "Rare", "biome": "River"},
+            "Catfish": {"weight": 44, "price": 28, "emoji": "🐱‍🏍", "rarity": "Rare", "biome": "River"},
+            "Sea Urchin": {"weight": 40, "price": 18, "emoji": "🟣", "rarity": "Uncommon", "biome": "Rocky Shore"},
+            "Seahorse": {"weight": 38, "price": 25, "emoji": "🐴", "rarity": "Rare", "biome": "Seagrass"},
+            "Flounder": {"weight": 36, "price": 30, "emoji": "🪸", "rarity": "Rare", "biome": "Coastal"},
+            "Sturgeon": {"weight": 34, "price": 45, "emoji": "🐡", "rarity": "Epic", "biome": "River"},
+            "Cuttlefish": {"weight": 32, "price": 34, "emoji": "🦑", "rarity": "Rare", "biome": "Coastal"},
+            "Yellowtail": {"weight": 30, "price": 38, "emoji": "🟡", "rarity": "Rare", "biome": "Coastal"},
             "Amberjack": {"weight": 28, "price": 48, "emoji": "🪝", "rarity": "Epic", "biome": "Offshore"},
-            "Yellowtail": {"weight": 32, "price": 38, "emoji": "🟡", "rarity": "Rare", "biome": "Coastal"},
-            "Rockfish": {"weight": 46, "price": 20, "emoji": "🪨", "rarity": "Uncommon", "biome": "Reef"},
-            "Lionfish": {"weight": 22, "price": 55, "emoji": "🦁", "rarity": "Epic", "biome": "Reef"},
-            "Pufferfish": {"weight": 16, "price": 48, "emoji": "🎈", "rarity": "Epic", "biome": "Reef"},
-            "Electric Ray": {"weight": 14, "price": 80, "emoji": "⚡", "rarity": "Legendary", "biome": "Ocean Floor"},
-            "Hammerhead": {"weight": 5, "price": 140, "emoji": "🔨", "rarity": "Mythic", "biome": "Open Ocean"},
-            "Great White": {"weight": 2, "price": 0, "emoji": "🦈", "rarity": "Boss", "biome": "Deep Ocean"},
-            "Dragonfish": {"weight": 1, "price": 300, "emoji": "🐉", "rarity": "Mythic", "biome": "Abyssal"},
-            "Anglerfish": {"weight": 3, "price": 200, "emoji": "🎣", "rarity": "Mythic", "biome": "Abyssal"},
-            "Ghost Carp": {"weight": 6, "price": 90, "emoji": "👻", "rarity": "Legendary", "biome": "Murky Lake"},
             "Harlequin Shrimp": {"weight": 26, "price": 44, "emoji": "🦐", "rarity": "Epic", "biome": "Reef"},
-            "Mudskipper": {"weight": 115, "price": 7, "emoji": "🐸", "rarity": "Common", "biome": "Mangrove"},
+            "Snapper": {"weight": 24, "price": 32, "emoji": "🐠", "rarity": "Rare", "biome": "Reef"},
+            "Octopus": {"weight": 22, "price": 70, "emoji": "🐙", "rarity": "Epic", "biome": "Reef"},
+            "Pufferfish": {"weight": 20, "price": 48, "emoji": "🎈", "rarity": "Epic", "biome": "Reef"},
+            "Mahi Mahi": {"weight": 18, "price": 60, "emoji": "🐬", "rarity": "Epic", "biome": "Tropical Ocean"},
+            "Lionfish": {"weight": 16, "price": 55, "emoji": "🦁", "rarity": "Epic", "biome": "Reef"},
+            "Electric Ray": {"weight": 14, "price": 80, "emoji": "⚡", "rarity": "Legendary", "biome": "Ocean Floor"},
+            "Ghost Carp": {"weight": 12, "price": 90, "emoji": "👻", "rarity": "Legendary", "biome": "Murky Lake"},
+            "Giant Grouper": {"weight": 12, "price": 95, "emoji": "🐋", "rarity": "Legendary", "biome": "Reef"},
+            "Halibut": {"weight": 10, "price": 36, "emoji": "🐟", "rarity": "Epic", "biome": "Cold Ocean"},
+            "Swordfish": {"weight": 9, "price": 120, "emoji": "🗡️", "rarity": "Legendary", "biome": "Open Ocean"},
+            "Tuna": {"weight": 8, "price": 75, "emoji": "🐋", "rarity": "Legendary", "biome": "Open Ocean"},
+            "Anglerfish": {"weight": 6, "price": 200, "emoji": "🎣", "rarity": "Mythic", "biome": "Abyssal"},
+            "Dragonfish": {"weight": 5, "price": 300, "emoji": "🐉", "rarity": "Mythic", "biome": "Abyssal"},
+            "Blue Marlin": {"weight": 5, "price": 180, "emoji": "🔱", "rarity": "Mythic", "biome": "Deep Ocean"},
+            "Marlin": {"weight": 4, "price": 150, "emoji": "🏹", "rarity": "Legendary", "biome": "Deep Ocean"},
+            "Hammerhead": {"weight": 3, "price": 140, "emoji": "🔨", "rarity": "Mythic", "biome": "Open Ocean"},
+            "Great White": {"weight": 2, "price": 0, "emoji": "🦈", "rarity": "Boss", "biome": "Deep Ocean"},
             "Butterfish": {"weight": 88, "price": 9, "emoji": "🧈", "rarity": "Common", "biome": "Coastal"},
-            "Octopus": {"weight": 24, "price": 70, "emoji": "🐙", "rarity": "Epic", "biome": "Reef"},
-            "Cuttlefish": {"weight": 34, "price": 34, "emoji": "🦑", "rarity": "Rare", "biome": "Coastal"},
-            "Sea Urchin": {"weight": 60, "price": 18, "emoji": "🟣", "rarity": "Uncommon", "biome": "Rocky Shore"},
-            "Seahorse": {"weight": 40, "price": 25, "emoji": "🐴", "rarity": "Rare", "biome": "Seagrass"},
+            "Sculpin": {"weight": 70, "price": 13, "emoji": "🪱", "rarity": "Uncommon", "biome": "Rocky Shore"},
+            "Scorpionfish": {"weight": 26, "price": 42, "emoji": "☠️", "rarity": "Epic", "biome": "Reef"},
+            "Moray Eel": {"weight": 18, "price": 50, "emoji": "🦎", "rarity": "Epic", "biome": "Reef"},
         }
-
 
         # Derive fish_prices automatically
         self.fish_prices = {name: info["price"] for name, info in self.fish_definitions.items()}
@@ -176,20 +178,58 @@ class Fishing(commands.Cog):
             return await ctx.send("⛈️ A sudden storm! Your line snaps back with nothing to show.")
 
     @commands.command()
-    async def fishlist(self, ctx):
-        """Show available fish with price and rarity."""
+    async def fishlist(self, ctx, *, filter_by: str = None):
+        """Show available fish with price and rarity. Optionally filter by rarity or biome, e.g. 'rare' or 'reef'."""
         lines = []
-        # Sort by rarity then price descending as an example
-        rarity_order = {"Common": 0, "Uncommon": 1, "Rare": 2, "Epic": 3, "Legendary": 4, "Mythic": 5}
+        # Normalized rarities and biome keywords for filtering
+        rarity_order = {"Common": 0, "Uncommon": 1, "Rare": 2, "Epic": 3, "Legendary": 4, "Mythic": 5, "Boss": 6}
+
+        items = list(self.fish_definitions.items())
+
+        # Optional filter: by rarity or biome substring (case-insensitive)
+        if filter_by:
+            key = filter_by.strip().lower()
+            filtered = []
+            for name, info in items:
+                if info.get("rarity", "").lower() == key:
+                    filtered.append((name, info))
+                    continue
+                if key in (info.get("biome", "").lower()):
+                    filtered.append((name, info))
+                    continue
+                if key in name.lower():
+                    filtered.append((name, info))
+            items = filtered
+
         items = sorted(
-            self.fish_definitions.items(),
-            key=lambda kv: (rarity_order.get(kv[1]["rarity"], 99), -kv[1]["price"])
+            items,
+            key=lambda kv: (rarity_order.get(kv[1].get("rarity", ""), 99), -kv[1].get("price", 0))
         )
+
         for name, info in items:
-            lines.append(f"{info['emoji']} **{name}** — {info['rarity']} — Price: **{info['price']}**")
-        # Send in chunks if long
-        chunk = "\n".join(lines)
-        await ctx.send(f"**Available Fish**\n\n{chunk}")
+            emoji = info.get("emoji", "")
+            rarity = info.get("rarity", "Unknown")
+            price = info.get("price", 0)
+            biome = info.get("biome", "")
+            lines.append(f"{emoji} **{name}** — {rarity} — Price: **{price}** — {biome}")
+
+        if not lines:
+            return await ctx.send("No fish match that filter.")
+
+        header = "**Available Fish**\n\n"
+        chunk_size = 1900  # safe limit under 2000
+        current = header
+        for line in lines:
+            # +1 for newline
+            if len(current) + len(line) + 1 > chunk_size:
+                await ctx.send(current)
+                current = ""
+            if current:
+                current += "\n" + line
+            else:
+                current = line
+        if current:
+            await ctx.send(current)
 
     @commands.command()
     async def fishstats(self, ctx):
