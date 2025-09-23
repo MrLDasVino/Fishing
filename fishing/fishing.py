@@ -7,7 +7,7 @@ from redbot.core import commands, bank, Config
 
 
 class Fishing(commands.Cog):
-    """Fishing minigame with lots of fish, many events, achievements, and rod upgrades."""
+    """Fishing minigame with lots of fish, many events, achievements, rod upgrades, and fish fusion/crafting."""
 
     def __init__(self, bot):
         self.bot = bot
@@ -28,7 +28,7 @@ class Fishing(commands.Cog):
                 "consecutive_catches": 0,
                 "bait_collected_total": 0,
             },
-            "items": [],         # non-fish items like "Rod Fragment", "Rod Core", "Treasure Map"
+            "items": [],         # non-fish items like "Rod Fragment", "Rod Core", "Treasure Map", "Chum"
             "rod_level": 0,      # 0 = basic
         }
         self.config.register_user(**default_user)
@@ -137,6 +137,33 @@ class Fishing(commands.Cog):
         # reduce chance for break/hook_snag by multiplying their base weight
         self.rod_level_break_reduction = {0: 1.0, 1: 0.8, 2: 0.6, 3: 0.4}
 
+        # ---------- Crafting recipes ----------
+        # "recipe_id": {"name": display, "requirements": {...}, "result": {...}, "description": str}
+        # Requirements support:
+        #  - specific fish names keyed as "fish:<name>" => count
+        #  - rarity keyed as "rarity:<rarity>" => count (any fish of that rarity)
+        #  - "any_fish" => count (any fish)
+        self.crafting_recipes = {
+            "chum": {
+                "name": "Chum",
+                "requirements": {"any_fish": 3},
+                "result": {"item": "Chum"},
+                "description": "Combine any 3 fish to craft Chum (consumable). Using Chum gives +3 luck.",
+            },
+            "trophy": {
+                "name": "Trophy",
+                "requirements": {"any_fish": 5},
+                "result": {"coins": 100},
+                "description": "Combine any 5 fish to craft a Trophy and immediately receive 100 coins.",
+            },
+            "fragments_from_epic": {
+                "name": "Epic Refinement",
+                "requirements": {"rarity:Epic": 2},
+                "result": {"items": {"Rod Fragment": 2}},
+                "description": "Refine two Epic fish into 2 Rod Fragments (removes the fish).",
+            },
+        }
+
         # ---------- Event registry ----------
         # key -> (handler coroutine, base weight)
         self.event_handlers = {
@@ -190,6 +217,7 @@ class Fishing(commands.Cog):
         earned.append(ach_id)
         await user_conf.achievements.set(earned)
         name, desc, _ = self.achievements[ach_id]
+        # small rewards for some achievements
         reward = 0
         if ach_id in ("first_fish", "first_cast"):
             reward = 5
@@ -759,7 +787,7 @@ class Fishing(commands.Cog):
     # ---------- fishstats, achievements, repairrod, sell ----------
     @commands.command()
     async def fishstats(self, ctx):
-        """View how many fish you’ve caught and your bank balance."""
+        """View how many fish you’ve caught, your items, and your bank balance."""
         data = await self.config.user(ctx.author).all()
         caught = data["caught"]
         if not caught:
@@ -879,6 +907,159 @@ class Fishing(commands.Cog):
         if msgs:
             message += "\n\n" + "\n".join(msgs)
         await ctx.send(message)
+
+    # ---------- Crafting (fish fusion) ----------
+    @commands.command()
+    async def craftlist(self, ctx):
+        """List available crafting recipes."""
+        lines = ["**Crafting Recipes**"]
+        for rid, info in self.crafting_recipes.items():
+            lines.append(f"• **{info['name']}** (`{rid}`) — {info['description']}")
+        msg = "\n".join(lines)
+        if len(msg) <= 1900:
+            return await ctx.send(msg)
+        for i in range(0, len(msg), 1900):
+            await ctx.send(msg[i:i+1900])
+
+    def _count_inventory_by_rarity(self, inventory: List[str]) -> Dict[str, int]:
+        counts = {}
+        for f in inventory:
+            if f in self.fish_definitions:
+                rar = self.fish_definitions[f].get("rarity", "Unknown")
+                counts[rar] = counts.get(rar, 0) + 1
+            else:
+                counts[f] = counts.get(f, 0) + 1
+        return counts
+
+    @commands.command()
+    async def craft(self, ctx, recipe_id: str):
+        """Craft an item using a recipe id. Use `craftlist` to see available recipes."""
+        recipe_id = recipe_id.lower()
+        if recipe_id not in self.crafting_recipes:
+            return await ctx.send("❌ Unknown recipe. Use `craftlist` to view available recipes.")
+        recipe = self.crafting_recipes[recipe_id]
+        reqs = recipe["requirements"]
+        user_conf = self.config.user(ctx.author)
+        inventory = await user_conf.caught()
+        inv_counts = {}
+        for f in inventory:
+            inv_counts[f] = inv_counts.get(f, 0) + 1
+        rarity_counts = self._count_inventory_by_rarity(inventory)
+
+        # Helper: attempt to consume required fish and return removed list and remaining inventory
+        removed_fish = []
+
+        # Check specific requirements
+        # - any_fish
+        remaining_inv = list(inventory)  # copy to mutate
+        ok = True
+        for key, needed in reqs.items():
+            if key == "any_fish":
+                if len(remaining_inv) < needed:
+                    ok = False
+                    break
+                # remove arbitrary fish (lowest value first to be fair)
+                remaining_inv.sort(key=lambda n: self.fish_definitions.get(n, {}).get("price", 0))
+                for _ in range(needed):
+                    removed_fish.append(remaining_inv.pop(0))
+            elif key.startswith("rarity:"):
+                rarity = key.split(":", 1)[1]
+                have = sum(1 for f in remaining_inv if f in self.fish_definitions and self.fish_definitions[f].get("rarity") == rarity)
+                if have < needed:
+                    ok = False
+                    break
+                # remove matching rarity fish
+                to_remove = needed
+                new_rem = []
+                for f in remaining_inv:
+                    if to_remove > 0 and f in self.fish_definitions and self.fish_definitions[f].get("rarity") == rarity:
+                        removed_fish.append(f)
+                        to_remove -= 1
+                        continue
+                    new_rem.append(f)
+                remaining_inv = new_rem
+            elif key.startswith("fish:"):
+                fname = key.split(":", 1)[1]
+                have = remaining_inv.count(fname)
+                if have < needed:
+                    ok = False
+                    break
+                # remove that many
+                removed = 0
+                new_rem = []
+                for f in remaining_inv:
+                    if f == fname and removed < needed:
+                        removed_fish.append(f)
+                        removed += 1
+                        continue
+                    new_rem.append(f)
+                remaining_inv = new_rem
+            else:
+                # unknown requirement type
+                ok = False
+                break
+
+        if not ok:
+            return await ctx.send("❌ You don't have the necessary fish/items to craft that recipe.")
+
+        # All checks passed: apply recipe effect
+        # Persist remaining inventory
+        await user_conf.caught.set(remaining_inv)
+
+        result = recipe["result"]
+        messages = []
+        # coin reward
+        if "coins" in result:
+            amt = int(result["coins"])
+            new_bal, currency = await self._deposit(ctx.author, amt, ctx)
+            messages.append(f"🏆 Craft successful: **{recipe['name']}** — you received **{amt} {currency}**! New balance: **{new_bal} {currency}**.")
+        # add items
+        if "item" in result:
+            items = await user_conf.items()
+            items.append(result["item"])
+            await user_conf.items.set(items)
+            messages.append(f"🔧 Craft successful: **{recipe['name']}** — you received **{result['item']}**.")
+        if "items" in result:
+            items = await user_conf.items()
+            for iname, count in result["items"].items():
+                for _ in range(count):
+                    items.append(iname)
+            await user_conf.items.set(items)
+            added = ", ".join(f"{c}× {n}" for n, c in result["items"].items())
+            messages.append(f"🔧 Craft successful: **{recipe['name']}** — you received {added}.")
+
+        # final message: show removed fish summary and results
+        removed_summary = {}
+        for r in removed_fish:
+            removed_summary[r] = removed_summary.get(r, 0) + 1
+        removed_lines = ", ".join(f"{v}× {k}" for k, v in removed_summary.items()) if removed_summary else "None"
+        messages.insert(0, f"🛠️ You used: {removed_lines}")
+        await ctx.send("\n".join(messages))
+
+    @commands.command()
+    async def useitem(self, ctx, *, item_name: str):
+        """Use a consumable item from your items list (e.g., Chum)."""
+        user_conf = self.config.user(ctx.author)
+        items = await user_conf.items()
+        match = None
+        for it in items:
+            if it.lower() == item_name.lower():
+                match = it
+                break
+        if not match:
+            return await ctx.send(f"❌ You don't have **{item_name}** in your items.")
+
+        # Handle known consumables
+        if match == "Chum":
+            # consume and give luck
+            items.remove(match)
+            await user_conf.items.set(items)
+            # increase luck by 3 (stackable)
+            current = await user_conf.luck()
+            await user_conf.luck.set(current + 3)
+            return await ctx.send("🪼 You used **Chum**. Your luck increased by **3** for the next casts.")
+        # default: non-consumable or unknown
+        return await ctx.send(f"❌ **{match}** cannot be used directly.")
 
     # ---------- Rod view and upgrade commands ----------
     @commands.command()
