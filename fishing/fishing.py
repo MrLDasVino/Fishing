@@ -1070,6 +1070,76 @@ class Fishing(commands.Cog):
             await self._maybe_update_unique_and_highest(ctx.author, "Abyssal Wisp")
             return False, "🔱 A rift glimpse draws forth an **Abyssal Wisp**!"
         return False, "🔱 You glimpse a rift far below; nothing pulled up this time."
+        
+    async def _paginate_embeds(self, ctx, embeds: List[discord.Embed], timeout: float = 120.0):
+        """Show embeds with reaction pagination controlled by the invoking user."""
+        if not embeds:
+            return await ctx.send("Nothing to show.")
+        message = await ctx.send(embed=embeds[0])
+        if len(embeds) == 1:
+            return message
+        controls = ["⏮️", "⬅️", "⏹️", "➡️", "⏭️"]
+        for r in controls:
+            try:
+                await message.add_reaction(r)
+            except Exception:
+                break
+        current = 0
+
+        def check(reaction, user):
+            return (
+                reaction.message.id == message.id
+                and user.id == ctx.author.id
+                and str(reaction.emoji) in controls
+            )
+
+        while True:
+            try:
+                reaction, user = await ctx.bot.wait_for("reaction_add", timeout=timeout, check=check)
+            except asyncio.TimeoutError:
+                try:
+                    await message.clear_reactions()
+                except Exception:
+                    pass
+                break
+
+            emoji = str(reaction.emoji)
+            try:
+                await message.remove_reaction(reaction.emoji, user)
+            except Exception:
+                pass
+
+            if emoji == "⏹️":
+                try:
+                    await message.clear_reactions()
+                except Exception:
+                    pass
+                break
+            elif emoji == "⬅️":
+                current = (current - 1) % len(embeds)
+                try:
+                    await message.edit(embed=embeds[current])
+                except Exception:
+                    pass
+            elif emoji == "➡️":
+                current = (current + 1) % len(embeds)
+                try:
+                    await message.edit(embed=embeds[current])
+                except Exception:
+                    pass
+            elif emoji == "⏮️":
+                current = 0
+                try:
+                    await message.edit(embed=embeds[current])
+                except Exception:
+                    pass
+            elif emoji == "⏭️":
+                current = len(embeds) - 1
+                try:
+                    await message.edit(embed=embeds[current])
+                except Exception:
+                    pass
+        return message
 
     # ---------- Core fish command ----------
     @commands.cooldown(1, 30, commands.BucketType.user)
@@ -1271,74 +1341,84 @@ class Fishing(commands.Cog):
     # ---------- fishstats, achievements, repairrod, sell ----------
     @commands.command()
     async def fishstats(self, ctx):
-        """View how many fish you’ve caught, your items, and your bank balance."""
+        """View how many fish you’ve caught, your items, and your bank balance (embed)."""
         data = await self.config.user(ctx.author).all()
         caught = data["caught"]
         if not caught:
-            return await ctx.send(
-                f"You haven't caught anything yet. Use `{ctx.clean_prefix}fish` to start fishing!"
-            )
-
+            return await ctx.send(f"You haven't caught anything yet. Use `{ctx.clean_prefix}fish` to start fishing!")
         counts = {}
         for fish in caught:
             counts[fish] = counts.get(fish, 0) + 1
-        breakdown = "\n".join(
-            f"• {self.fish_definitions.get(fish, {}).get('emoji','')} {fish}: {count}"
-            for fish, count in counts.items()
-        )
+        emb = discord.Embed(title=f"{ctx.author.display_name}'s Fishing Stats", colour=discord.Colour.blue())
         bal = await bank.get_balance(ctx.author)
         currency = await bank.get_currency_name(ctx.guild)
+        emb.add_field(name="Balance", value=f"**{bal}** {currency}", inline=False)
+        # fish breakdown
+        breakdown = "\n".join(f"• {self.fish_definitions.get(fish, {}).get('emoji','')} {fish}: {count}" for fish, count in counts.items())
+        emb.add_field(name="Caught", value=breakdown or "None", inline=False)
         items = await self.config.user(ctx.author).items()
-        itemline = ""
         if items:
             inv_counts = {}
             for it in items:
                 inv_counts[it] = inv_counts.get(it, 0) + 1
-            itemline = "\n\nItems:\n" + "\n".join(f"• {iname}: {count}" for iname, count in inv_counts.items())
-        await ctx.send(
-            f"**{ctx.author.display_name}'s Fishing Stats**\n\n"
-            f"Balance: **{bal}** {currency}\n"
-            f"{breakdown}{itemline}"
-        )
+            itemline = "\n".join(f"• {iname}: {count}" for iname, count in inv_counts.items())
+            emb.add_field(name="Items", value=itemline, inline=False)
+        await ctx.send(embed=emb)
+
 
     @commands.command()
     async def achievements(self, ctx):
-        """Show your earned achievements and progress on a few tracked goals."""
+        """Show your earned achievements and progress in an embed (paged if long)."""
         user_conf = self.config.user(ctx.author)
         earned = await user_conf.achievements()
         stats = await user_conf.stats()
         caught = await user_conf.caught()
         lines = []
         if earned:
-            lines.append("**Earned Achievements**")
             for aid in earned:
                 name, desc, _ = self.achievements.get(aid, (aid, "", ""))
-                lines.append(f"🏆 **{name}** — {desc}")
+                lines.append((f"🏆 {name}", desc))
         else:
-            lines.append("You haven't earned any achievements yet.")
-        lines.append("\n**Progress**")
-        lines.append(f"• Total casts: {stats.get('casts',0)}")
-        lines.append(f"• Fish caught: {stats.get('fish_caught',0)}")
-        unique = len(set(x for x in caught if x and not x.lower().startswith("treasure")))
-        lines.append(f"• Unique species: {unique}")
-        lines.append(f"• Sell total: {stats.get('sell_total',0)}")
-        msg = "\n".join(lines)
-        if len(msg) <= 1900:
-            return await ctx.send(msg)
-        for i in range(0, len(msg), 1900):
-            await ctx.send(msg[i:i+1900])
+            lines.append(("No achievements yet", "You haven't earned any achievements yet."))
+
+        # progress fields
+        progress_fields = [
+            ("Total casts", str(stats.get("casts", 0))),
+            ("Fish caught", str(stats.get("fish_caught", 0))),
+            ("Unique species", str(len(set(x for x in caught if x and not x.lower().startswith("treasure"))))),
+            ("Sell total", str(stats.get("sell_total", 0))),
+        ]
+
+        embeds: List[discord.Embed] = []
+        per_embed = 6
+        for i in range(0, len(lines), per_embed):
+            chunk = lines[i:i+per_embed]
+            emb = discord.Embed(title=f"{ctx.author.display_name}'s Achievements", colour=discord.Colour.gold())
+            for name, desc in chunk:
+                emb.add_field(name=name, value=desc, inline=False)
+            # attach progress to last embed
+            if i + per_embed >= len(lines):
+                for pname, pval in progress_fields:
+                    emb.add_field(name=pname, value=pval, inline=True)
+            emb.set_footer(text=f"Page {i//per_embed+1}/{(len(lines)-1)//per_embed+1}")
+            embeds.append(emb)
+        await self._paginate_embeds(ctx, embeds)
 
     @commands.command()
     async def achievementlist(self, ctx):
-        """Show all achievements and their descriptions."""
-        lines = ["**All Achievements**"]
-        for aid, (name, desc, cat) in self.achievements.items():
-            lines.append(f"• **{name}** ({aid}) — {desc} [{cat}]")
-        msg = "\n".join(lines)
-        if len(msg) <= 1900:
-            return await ctx.send(msg)
-        for i in range(0, len(msg), 1900):
-            await ctx.send(msg[i:i+1900])
+        """Show all achievements and their descriptions in an embed (paged)."""
+        items = list(self.achievements.items())
+        embeds: List[discord.Embed] = []
+        per_page = 8
+        for i in range(0, len(items), per_page):
+            chunk = items[i:i+per_page]
+            emb = discord.Embed(title="All Achievements", colour=discord.Colour.dark_gold())
+            for aid, (name, desc, cat) in chunk:
+                emb.add_field(name=f"{name} [{cat}]", value=f"{desc} — id: `{aid}`", inline=False)
+            emb.set_footer(text=f"Page {i//per_page+1}/{(len(items)-1)//per_page+1}")
+            embeds.append(emb)
+        await self._paginate_embeds(ctx, embeds)
+
 
     @commands.command()
     async def repairrod(self, ctx):
@@ -1393,25 +1473,21 @@ class Fishing(commands.Cog):
     # ---------- Crafting (fish fusion) ----------
     @commands.command()
     async def craftlist(self, ctx):
-        """List available crafting recipes."""
-        lines = ["**Crafting Recipes**"]
-        for rid, info in self.crafting_recipes.items():
-            lines.append(f"• **{info['name']}** (`{rid}`) — {info['description']}")
-        msg = "\n".join(lines)
-        if len(msg) <= 1900:
-            return await ctx.send(msg)
-        for i in range(0, len(msg), 1900):
-            await ctx.send(msg[i:i+1900])
+        """List available crafting recipes in embeds (paged)."""
+        items = list(self.crafting_recipes.items())
+        embeds: List[discord.Embed] = []
+        per_page = 6
+        for i in range(0, len(items), per_page):
+            chunk = items[i:i+per_page]
+            emb = discord.Embed(title="Crafting Recipes", colour=discord.Colour.teal())
+            for rid, info in chunk:
+                reqs = ", ".join(f"{k}:{v}" for k, v in info.get("requirements", {}).items()) or "None"
+                result = info.get("result", {})
+                emb.add_field(name=f"{info.get('name')} (`{rid}`)", value=f"{info.get('description')}\n**Requires:** {reqs}\n**Result:** {result}", inline=False)
+            emb.set_footer(text=f"Page {i//per_page+1}/{(len(items)-1)//per_page+1}")
+            embeds.append(emb)
+        await self._paginate_embeds(ctx, embeds)
 
-    def _count_inventory_by_rarity(self, inventory: List[str]) -> Dict[str, int]:
-        counts = {}
-        for f in inventory:
-            if f in self.fish_definitions:
-                rar = self.fish_definitions[f].get("rarity", "Unknown")
-                counts[rar] = counts.get(rar, 0) + 1
-            else:
-                counts[f] = counts.get(f, 0) + 1
-        return counts
 
     @commands.command()
     async def craft(self, ctx, recipe_id: str):
@@ -1524,25 +1600,26 @@ class Fishing(commands.Cog):
     # ---------- Rod view and upgrade ----------
     @commands.command()
     async def rod(self, ctx):
-        """Show your rod level and fragments/cores."""
+        """Show your rod level, fragments, cores and next upgrade requirements (embed)."""
         user_conf = self.config.user(ctx.author)
         lvl = await user_conf.rod_level()
         items = await user_conf.items()
         fragments = items.count("Rod Fragment")
         cores = items.count("Rod Core")
         next_req = self.rod_upgrade_requirements.get(lvl + 1)
+        emb = discord.Embed(title=f"{ctx.author.display_name}'s Rod", colour=discord.Colour.orange())
+        emb.add_field(name="Rod Level", value=str(lvl), inline=True)
+        emb.add_field(name="Fragments", value=str(fragments), inline=True)
+        emb.add_field(name="Cores", value=str(cores), inline=True)
         if next_req:
             req_text = f"{next_req['fragments']} fragments"
             if next_req.get("coins", 0):
                 req_text += f" and {next_req['coins']} coins"
         else:
             req_text = "Max level reached"
-        await ctx.send(
-            f"🎣 Rod Level: **{lvl}**\n"
-            f"• Rod Fragments: **{fragments}**\n"
-            f"• Rod Cores: **{cores}**\n"
-            f"Next upgrade requires: {req_text}"
-        )
+        emb.add_field(name="Next Upgrade", value=req_text, inline=False)
+        await ctx.send(embed=emb)
+
 
     @commands.command()
     async def upgraderod(self, ctx):
@@ -1592,11 +1669,19 @@ class Fishing(commands.Cog):
     # ---------- NPC and Quest Commands ----------
     @commands.command()
     async def npcs(self, ctx):
-        """List known NPCs in the world."""
-        lines = ["**Known NPCs**"]
-        for key, info in self.npcs.items():
-            lines.append(f"• **{info['display']}** — Command: `{ctx.clean_prefix}talknpc {key}`")
-        await ctx.send("\n".join(lines))
+        """List known NPCs in the world (paged embed)."""
+        embeds: List[discord.Embed] = []
+        items_per = 6
+        entries = list(self.npcs.items())
+        for i in range(0, len(entries), items_per):
+            chunk = entries[i:i+items_per]
+            emb = discord.Embed(title="Known NPCs", colour=discord.Colour.green())
+            for key, info in chunk:
+                emb.add_field(name=info.get("display", key), value=f"{info.get('greeting','')}\nQuests: {', '.join(info.get('quests',[])) or 'None'}\nCommand: `{ctx.clean_prefix}talknpc {key}`", inline=False)
+            emb.set_footer(text=f"NPCs {i//items_per+1}/{(len(entries)-1)//items_per+1}")
+            embeds.append(emb)
+        await self._paginate_embeds(ctx, embeds)
+
 
     @commands.command()
     async def talknpc(self, ctx, npc_key: str):
