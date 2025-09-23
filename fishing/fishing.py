@@ -1368,7 +1368,7 @@ class Fishing(commands.Cog):
         await user_conf.quests.set({"completed": completed_list})
         return "Quest complete! " + " ".join(messages)
 
-        @commands.command()
+            @commands.command()
     async def completequest(self, ctx):
         """Attempt to complete and claim rewards for your active quest."""
         user_conf = self.config.user(ctx.author)
@@ -1409,4 +1409,5 @@ class Fishing(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Fishing(bot))
+
 
