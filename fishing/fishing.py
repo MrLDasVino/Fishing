@@ -1368,4 +1368,45 @@ class Fishing(commands.Cog):
         await user_conf.quests.set({"completed": completed_list})
         return "Quest complete! " + " ".join(messages)
 
+        @commands.command()
+    async def completequest(self, ctx):
+        """Attempt to complete and claim rewards for your active quest."""
+        user_conf = self.config.user(ctx.author)
+        qstate = await user_conf.quests()
+        active = qstate.get("active")
+        if not active:
+            return await ctx.send("You have no active quest.")
+        msg = await self._complete_quest_for_user(ctx.author, ctx)
+        await ctx.send(msg)
+
     @commands.command()
+    async def visitnpc(self, ctx, npc_key: str):
+        """Visit an NPC to advance quest steps that require visiting."""
+        npc = self.npcs.get(npc_key.lower())
+        if not npc:
+            return await ctx.send("Unknown NPC key. Use `npcs` to list them.")
+        user_conf = self.config.user(ctx.author)
+        qstate = await user_conf.quests()
+        active = qstate.get("active")
+        if not active:
+            return await ctx.send(f"You visit {npc['display']}. {npc.get('greeting','')}")
+        qdef = self.quests.get(active)
+        if not qdef:
+            return await ctx.send(f"You visit {npc['display']}. {npc.get('greeting','')}")
+        step_idx = qstate.get("step", 0)
+        if step_idx >= len(qdef["steps"]):
+            return await ctx.send(f"You visit {npc['display']}. It seems you've completed the steps; use `completequest`.")
+        step = qdef["steps"][step_idx]
+        if step["type"] == "visit_npc" and step.get("npc") == npc_key.lower():
+            qstate["step"] = step_idx + 1
+            await user_conf.quests.set(qstate)
+            return await ctx.send(f"You spoke with {npc['display']}. Quest advanced.")
+        return await ctx.send(f"You speak with {npc['display']}. {npc.get('greeting','')}")
+
+    async def cog_unload(self):
+        pass
+
+
+async def setup(bot):
+    await bot.add_cog(Fishing(bot))
+
