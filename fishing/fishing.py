@@ -1503,6 +1503,7 @@ class Fishing(commands.Cog):
     async def fishstats(self, ctx):
         """View how many fish you’ve caught, your items, and your bank balance (embed)."""
         data = await self.config.user(ctx.author).all()
+        image_url = "https://files.catbox.moe/w2zsia.png"
         bait = data["bait"]
         caught = data["caught"]
         if not caught:
@@ -1513,6 +1514,7 @@ class Fishing(commands.Cog):
         emb = discord.Embed(title=f"{ctx.author.display_name}'s Fishing Stats", colour=discord.Colour.blue())
         bal = await bank.get_balance(ctx.author)
         currency = await bank.get_currency_name(ctx.guild)
+        emb.set_thumbnail(url=image_url)
         emb.add_field(name="Balance", value=f"**{bal}** {currency}", inline=False)
         # fish breakdown
         breakdown = "\n".join(f"• {self.fish_definitions.get(fish, {}).get('emoji','')} {fish}: {count}" for fish, count in counts.items())
@@ -1533,6 +1535,7 @@ class Fishing(commands.Cog):
         """Show your earned achievements and progress in an embed (paged if long)."""
         user_conf = self.config.user(ctx.author)
         earned = await user_conf.achievements()
+        image_url = "https://files.catbox.moe/fldzkv.png"        
         stats = await user_conf.stats()
         caught = await user_conf.caught()
         lines = []
@@ -1562,6 +1565,7 @@ class Fishing(commands.Cog):
             if i + per_embed >= len(lines):
                 for pname, pval in progress_fields:
                     emb.add_field(name=pname, value=pval, inline=True)
+                    emb.set_thumbnail(url=image_url)
             emb.set_footer(text=f"Page {i//per_embed+1}/{(len(lines)-1)//per_embed+1}")
             embeds.append(emb)
         await self._paginate_embeds(ctx, embeds)
@@ -1570,11 +1574,13 @@ class Fishing(commands.Cog):
     async def achievementlist(self, ctx):
         """Show all achievements and their descriptions in an embed (paged)."""
         items = list(self.achievements.items())
+        image_url = "https://files.catbox.moe/6ay32m.png"
         embeds: List[discord.Embed] = []
         per_page = 8
         for i in range(0, len(items), per_page):
             chunk = items[i:i+per_page]
             emb = discord.Embed(title="All Achievements", colour=discord.Colour.dark_gold())
+            emb.set_image(url=image_url)
             for aid, (name, desc, cat) in chunk:
                 emb.add_field(name=f"{name} [{cat}]", value=f"{desc} — id: `{aid}`", inline=False)
             emb.set_footer(text=f"Page {i//per_page+1}/{(len(items)-1)//per_page+1}")
@@ -1636,12 +1642,14 @@ class Fishing(commands.Cog):
     @commands.command()
     async def craftlist(self, ctx):
         """List available crafting recipes in embeds (paged)."""
+        image_url = "https://files.catbox.moe/dt1sh1.png"
         items = list(self.crafting_recipes.items())
         embeds: List[discord.Embed] = []
         per_page = 6
         for i in range(0, len(items), per_page):
             chunk = items[i:i+per_page]
             emb = discord.Embed(title="Crafting Recipes", colour=discord.Colour.teal())
+            emb.set_thumbnail(url=image_url)
             for rid, info in chunk:
                 reqs = ", ".join(f"{k}:{v}" for k, v in info.get("requirements", {}).items()) or "None"
                 result = info.get("result", {})
@@ -1858,6 +1866,7 @@ class Fishing(commands.Cog):
         for i in range(0, len(entries), items_per):
             chunk = entries[i:i+items_per]
             emb = discord.Embed(title="Known NPCs", colour=discord.Colour.green())
+            emb.set_image(url="https://files.catbox.moe/jgohga.png")
             for key, info in chunk:
                 emb.add_field(name=info.get("display", key), value=f"{info.get('greeting','')}\nQuests: {', '.join(info.get('quests',[])) or 'None'}\nCommand: `{ctx.clean_prefix}talknpc {key}`", inline=False)
             emb.set_footer(text=f"NPCs {i//items_per+1}/{(len(entries)-1)//items_per+1}")
