@@ -282,8 +282,11 @@ class Fishing(commands.Cog):
             "trophy": {
                 "name": "Trophy",
                 "requirements": {"any_fish": 5},
-                "result": {"coins": 100},
-                "description": "Combine any 5 fish to craft a Trophy and immediately receive 100 coins.",
+                "result": {
+                    "coins": 100,       # still gives 100 coins
+                    "item": "Trophy"    # now also grants a Trophy item
+                },
+                "description": "Combine any 5 fish to craft a Trophy, receive 100 coins and a Trophy item.",
             },
             "fragments_from_epic": {
                 "name": "Epic Refinement",
@@ -2056,6 +2059,13 @@ class Fishing(commands.Cog):
         await user_conf.items.set(items)
 
         # handle each new recipe output
+        if match == "Trophy":
+            new_bal, currency = await self._deposit(ctx.author, 100, ctx)
+            return await ctx.send(
+                f"🏆 You used a **Trophy** and received **100 {currency}**! "
+                f"New balance: **{new_bal} {currency}**."
+            )
+            
         if match == "Stew Bowl":
             # +2 luck for next 5 casts
             cur = await user_conf.luck()
