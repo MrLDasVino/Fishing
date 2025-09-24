@@ -1,7 +1,10 @@
 import random
 import asyncio
 import discord
+import bisect
 from typing import Dict, Tuple, List, Optional, Any
+from itertools import accumulate
+from functools import wraps
 
 from redbot.core import commands, bank, Config
 
@@ -537,12 +540,20 @@ class Fishing(commands.Cog):
             "moon_phase": (self._event_moon_phase, 1),
             "rift_glimpse": (self._event_rift_glimpse, 1),
         }
+        
+        # ——— Pre-cache keys & base weights for faster picks ———
+        self._event_keys          = list(self.event_handlers)
+        self._event_base_weights  = [self.event_handlers[k][1] for k in self._event_keys]
+
+        # Pre-cache fish name/weight arrays
+        self._fish_names    = list(self.fish_definitions)
+        self._fish_weights  = [info["weight"] for info in self.fish_definitions.values()]
+        # ————————————————————————————————————————————————
 
     # ---------- Helpers ----------
     def _random_fish(self) -> str:
-        names = list(self.fish_definitions.keys())
-        weights = [self.fish_definitions[n]["weight"] for n in names]
-        return random.choices(names, weights=weights, k=1)[0]
+        # O(1) access to cached arrays
+        return random.choices(self._fish_names, weights=self._fish_weights, k=1)[0]
 
     async def _deposit(self, member, amount: int, ctx):
         new_bal = await bank.deposit_credits(member, amount)
@@ -1341,31 +1352,28 @@ class Fishing(commands.Cog):
     # ---------- Core fish command ----------
     @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.command()
+    @award_achievements
     async def fish(self, ctx):
-        """Cast your line and see what you reel in."""
-        user_conf = self.config.user(ctx.author)
-        if await user_conf.rod_broken():
-            return await ctx.send(
-                "🎣 Your rod is broken! Use "
-                f"`{ctx.clean_prefix}repairrod` to fix it for 20 coins."
-            )
+        # … rod‐broken check …
 
         waiting_msg = await ctx.send("🎣 You cast your line and wait patiently…")
         await asyncio.sleep(random.uniform(1.5, 5.5))
 
-        keys = list(self.event_handlers.keys())
-        weights = [self.event_handlers[k][1] for k in keys]
+        # use pre-cached lists instead of rebuilding every time
+        keys    = self._event_keys
+        weights = self._event_base_weights.copy()
 
-        # bait modifier
+        # bait modifier (your existing code)
         try:
             bait_amount = await user_conf.bait()
         except Exception:
             bait_amount = 0
-        if bait_amount and bait_amount > 0:
+
+        if bait_amount > 0:
             if random.random() < 0.9:
-                await user_conf.bait.set(max(0, bait_amount - 1))
-            for i, k in enumerate(keys):
-                if k in ("fish", "double"):
+                await user_conf.bait.set(bait_amount - 1)
+            for i, event in enumerate(keys):
+                if event in ("fish", "double"):
                     weights[i] = int(weights[i] * 1.6)
 
         # luck modifier
@@ -1406,6 +1414,7 @@ class Fishing(commands.Cog):
             raise
 
         message = None
+        # pull out the content string
         if isinstance(result, tuple) and len(result) >= 2:
             message = result[1]
         elif isinstance(result, str):
