@@ -1142,10 +1142,20 @@ class Fishing(commands.Cog):
         value = random.randint(50, 150)
         new_bal, currency = await self._deposit(ctx.author, value, ctx)
         await self._inc_stat(ctx.author, "casts", 1)
+        
+        # give the player a Pearl item
+        items = await user_conf.items()
+        items.append("Pearl")
+        await user_conf.items.set(items)
+        
         msg_ach = None
         if not await self._has_achievement(ctx.author, "pearl_finder"):
             msg_ach = await self._award_achievement(ctx, ctx.author, "pearl_finder")
-        base = f"💎 You found a lustrous pearl worth **{value} {currency}**. Your new balance is **{new_bal} {currency}**."
+        
+        base = (
+            f"💎 You found a lustrous pearl worth **{value} {currency}**, "
+            f"and received a **Pearl** item. Your new balance is **{new_bal} {currency}**."
+        )
         if msg_ach:
             return False, base + "\n\n" + msg_ach
         return False, base
