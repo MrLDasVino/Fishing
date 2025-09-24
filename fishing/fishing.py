@@ -2012,50 +2012,89 @@ class Fishing(commands.Cog):
         await user_conf.quests.set(qstate)
         await ctx.send(f"✅ Quest accepted: **{quest['title']}**. Use `{ctx.clean_prefix}quest` to view progress.")
 
+ QUEST_BANNER_URL = "https://files.catbox.moe/x5iczt.png"  # ← your quest command banner
+
     @commands.command()
     async def quest(self, ctx):
-        """Show your current quest and progress."""
+        """Show your current quest and progress (embed + static image)."""
         user_conf = self.config.user(ctx.author)
-        qstate = await user_conf.quests()
-        active = qstate.get("active")
+        qstate    = await user_conf.quests()
+        active    = qstate.get("active")
         if not active:
-            return await ctx.send("You have no active quest. Use `talknpc <npc>` to find quests or `acceptquest <id>` to accept one.")
-        qdef = self.quests.get(active)
+            return await ctx.send(
+                "You have no active quest. Use `talknpc <npc>` to find quests or "
+                "`acceptquest <id>` to accept one."
+            )
+
+        qdef       = self.quests.get(active)
         if not qdef:
             await user_conf.quests.set({})
-            return await ctx.send("Your active quest was invalid and has been cleared. Please pick a new quest.")
-        step_idx = qstate.get("step", 0)
-        lines = [f"**{qdef['title']}**", f"Step {min(step_idx+1, len(qdef['steps']))}/{len(qdef['steps'])}:"]
-        if step_idx < len(qdef["steps"]):
+            return await ctx.send(
+                "Your active quest was invalid and has been cleared. Please pick a new quest."
+            )
+
+        # progress bookkeeping
+        step_idx    = qstate.get("step", 0)
+        total_steps = len(qdef["steps"])
+        current     = min(step_idx + 1, total_steps)
+
+        # build embed
+        emb = discord.Embed(
+            title=f"🗺️ {qdef['title']}",
+            description=f"Step **{current}/{total_steps}**",
+            colour=discord.Colour.purple()
+        )
+        emb.set_image(url=QUEST_BANNER_URL)
+
+        # current step details
+        if step_idx < total_steps:
             step = qdef["steps"][step_idx]
-            lines.append(f"• {step.get('desc', 'No description')}")
+            emb.add_field(
+                name="Objective",
+                value=step.get("desc", "No description provided."),
+                inline=False
+            )
+
+            # only add a “Progress” field for collect/deliver/sell steps
+            prog = None
             if step["type"] == "collect_fish":
-                needed = step.get("count", 1)
-                name = step.get("name")
+                needed = step["count"]
+                name   = step.get("name")
                 rarity = step.get("rarity")
-                inv = await user_conf.caught()
-                have = 0
-                if name:
-                    have = inv.count(name)
-                else:
-                    for f in inv:
-                        if f in self.fish_definitions and self.fish_definitions[f].get("rarity") == rarity:
-                            have += 1
-                lines.append(f"Progress: **{have}/{needed}**")
+                inv    = await user_conf.caught()
+                have = (
+                    inv.count(name)
+                    if name
+                    else sum(1 for f in inv
+                             if f in self.fish_definitions
+                             and self.fish_definitions[f]["rarity"] == rarity)
+                )
+                prog = f"{have}/{needed}"
             elif step["type"] == "deliver_item":
-                needed = step.get("count", 1)
-                item = step.get("item")
-                items = await user_conf.items()
-                have = items.count(item)
-                lines.append(f"Progress: **{have}/{needed} {item}**")
+                needed = step["count"]
+                item   = step["item"]
+                inv_it = await user_conf.items()
+                have   = inv_it.count(item)
+                prog   = f"{have}/{needed} × {item}"
             elif step["type"] == "sell_value":
-                needed = step.get("amount", 0)
-                stats = await user_conf.stats()
-                sold = stats.get("sell_total", 0)
-                lines.append(f"Progress (sell total): **{sold}/{needed}**")
+                needed = step["amount"]
+                stats  = await user_conf.stats()
+                have   = stats.get("sell_total", 0)
+                curr   = await bank.get_currency_name(ctx.guild)
+                prog   = f"{have}/{needed} {curr}"
+
+            if prog:
+                emb.add_field(name="Progress", value=prog, inline=True)
+
         else:
-            lines.append("All steps completed. Use `completequest` to claim your rewards.")
-        await ctx.send("\n".join(lines))
+            emb.add_field(
+                name="✅ All steps complete!",
+                value="Use `completequest` to claim your rewards.",
+                inline=False
+            )
+
+        await ctx.send(embed=emb)
+
 
     @commands.command()
     async def abandonquest(self, ctx):
