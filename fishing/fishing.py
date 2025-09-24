@@ -227,41 +227,49 @@ class Fishing(commands.Cog):
                 "display": "Maris the Merchant",
                 "greeting": "Maris smiles and polishes a brass scale. 'Looking for work or wares?'",
                 "quests": ["maris_fragment_hunt", "merchant_supply", "reef_expedition", "legend_hunt"],
+                "image": "https://files.catbox.moe/muc0lg.png",
             },
             "oldfinn": {
                 "display": "Old Finn",
                 "greeting": "'Hm, a keen eye for fish? I remember the river in my day…'",
                 "quests": ["finn_first_catch", "boss_sightings", "river_cleanse"],
+                "image": "https://files.catbox.moe/pxc6vz.png",
             },
             "lira": {
                 "display": "Lira the Tidewatcher",
                 "greeting": "'The tides speak to those who listen.'",
                 "quests": ["tide_pool_mini", "midnight_hunt", "tide_change_event"],
+                "image": "https://files.catbox.moe/mv7rsg.png",
             },
             "garron": {
                 "display": "Garron the Salvor",
                 "greeting": "'I barter salvage and stories. Bring me trinkets.'",
                 "quests": ["drifter_hunt", "drifting_crate_run", "reef_expedition"],
+                "image": "https://files.catbox.moe/0rfed5.png",
             },
             "selene": {
                 "display": "Selene the Moonseer",
                 "greeting": "'The moon favors careful anglers.'",
                 "quests": ["moon_phase_patrol", "midnight_hunt", "aurora_call"],
+                "image": "https://files.catbox.moe/3ehdme.png",
             },
             "berta": {
                 "display": "Berta the Baitsmith",
                 "greeting": "'Need bait? Or a quick job to earn some?'",
                 "quests": ["easy_bait_run", "angler_apprentice", "seasonal_bounty"],
+                "image": "https://files.catbox.moe/j6jlvc.png",
             },
             "thorin": {
                 "display": "Thorin the Tactician",
                 "greeting": "'I can set up a challenge if you're brave.'",
                 "quests": ["epic_refinement", "legend_hunt", "mythic_probe"],
+                "image": "https://files.catbox.moe/gey7m6.png",
             },
             "nym": {
                 "display": "Nym of the Marsh",
                 "greeting": "'The marsh keeps its secrets; trade me what you find.'",
                 "quests": ["mire_tasks", "mossback_call", "river_cleanse"],
+                "image": "https://files.catbox.moe/a78qlb.png",
             },
         }
         self.quests = {
@@ -1832,7 +1840,6 @@ class Fishing(commands.Cog):
 
     @commands.command()
     async def talknpc(self, ctx, npc_key: str):
-        """Talk to an NPC to get greeting or start quests. Outputs an embed for clarity."""
         npc = self.npcs.get(npc_key.lower())
         if not npc:
             return await ctx.send("❌ Unknown NPC. Use `npcs` to see available NPCs.")
@@ -1841,11 +1848,17 @@ class Fishing(commands.Cog):
         user_qstate = await user_conf.quests()
         user_completed = user_qstate.get("completed", []) if isinstance(user_qstate, dict) else []
 
-        # Build embed
         emb = discord.Embed(title=npc.get("display", npc_key), colour=discord.Colour.teal())
         greeting = npc.get("greeting", "")
         if greeting:
             emb.description = greeting
+
+        img = npc.get("image")
+        if isinstance(img, str) and img.startswith("http"):
+            try:
+                emb.set_thumbnail(url=img)
+            except Exception:
+                pass
 
         # List quests available (filter out non-repeatable completed ones)
         quest_list = []
