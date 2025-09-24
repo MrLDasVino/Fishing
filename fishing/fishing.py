@@ -2220,6 +2220,39 @@ class Fishing(commands.Cog):
             await user_conf.quests.set(qstate)
             return await ctx.send(f"You spoke with {npc['display']}. Quest advanced.")
         return await ctx.send(f"You speak with {npc['display']}. {npc.get('greeting','')}")
+        
+    @commands.command()
+    async def fishleaderboard(self, ctx, top: int = 10):
+        """
+        Show the top anglers on this server by total fish caught.
+        """
+        # gather (member, count) for everyone who has cast at least once
+        entries = []
+        for member in ctx.guild.members:
+            stats = await self.config.user(member).stats()
+            count = stats.get("fish_caught", 0)
+            if count > 0:
+                entries.append((member.display_name, count))
+
+        if not entries:
+            return await ctx.send("No one has caught any fish yet on this server.")
+
+        # sort highest → lowest and take the top N
+        entries.sort(key=lambda x: x[1], reverse=True)
+        entries = entries[:top]
+
+        # build embed
+        emb = discord.Embed(
+            title="🐟 Fishing Leaderboard",
+            description="\n".join(f"**{i+1}.** {name}: {count} fish"
+                                 for i, (name, count) in enumerate(entries)),
+            colour=discord.Colour.blue()
+        )
+        # thumbnail for flavor—swap this URL for your own graphic
+        emb.set_thumbnail(url="https://files.catbox.moe/awbf4w.png")
+
+        await ctx.send(embed=emb)
+    
 
     async def cog_unload(self):
         pass
