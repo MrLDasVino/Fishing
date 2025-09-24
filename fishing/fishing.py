@@ -8,6 +8,25 @@ from functools import wraps
 
 from redbot.core import commands, bank, Config
 
+# ——— ACHIEVEMENT DECORATOR ———
+def award_achievements(func):
+    @wraps(func)
+    async def wrapper(self, ctx, *args, **kwargs):
+        # run the wrapped command
+        result = await func(self, ctx, *args, **kwargs)
+
+        # then check & announce any new achievements
+        try:
+            msgs = await self._check_and_award(ctx, ctx.author)
+            if msgs:
+                await ctx.send("\n".join(msgs))
+        except Exception:
+            pass
+
+        return result
+    return wrapper
+# ——————————————————————————
+
 
 class Fishing(commands.Cog):
     """Fishing minigame with fish, events, achievements, rod upgrades, crafting, NPC traders and questlines."""
