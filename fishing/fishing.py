@@ -2356,7 +2356,7 @@ class Fishing(commands.Cog):
         )
 
         # banner image at bottom
-        emb.set_image(url=QUEST_BANNER_URL)
+        emb.set_image(url="https://files.catbox.moe/8eh42q.png")
 
         # NPC avatar as thumbnail
         if npc_img:
