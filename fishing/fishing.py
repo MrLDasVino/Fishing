@@ -129,7 +129,7 @@ class Fishing(commands.Cog):
         # Derived prices
         self.fish_prices = {name: info["price"] for name, info in self.fish_definitions.items()}
 
-        # Achievements
+        # Achievements                
         self.achievements: Dict[str, Tuple[str, str, str]] = {
             "first_cast": ("First Cast", "Cast your line for the first time.", "general"),
             "first_fish": ("First Fish", "Catch your first fish.", "catch"),
@@ -147,7 +147,37 @@ class Fishing(commands.Cog):
             "double_catch": ("Lucky Pair", "Get a double catch.", "event"),
             "bait_collector": ("Bait Hoarder", "Collect 20 bait in total.", "resource"),
             "rod_repaired": ("Back in Action", "Repair your rod for the first time.", "general"),
+            "first_chum": ("First Chum", "Craft your first Chum.", "craft"),
+            "trophy_maker": ("Trophy Maker", "Craft your first Trophy.", "craft"),
+            "fragment_collector": ("Fragment Collector", "Collect 10 Rod Fragments.", "resource"),
+            "core_seeker": ("Core Seeker", "Obtain your first Rod Core.", "resource"),
+            "rod_master_1": ("Rod Novice", "Upgrade your rod to level 1.", "rod"),
+            "rod_master_2": ("Rod Expert", "Upgrade your rod to level 2.", "rod"),
+            "rod_master_3": ("Rod Legend", "Upgrade your rod to level 3.", "rod"),
+            "double_trouble": ("Double Trouble", "Trigger 5 double catches.", "event"),
+            "net_haul": ("Net Hauler", "Get an event that yields 10+ fish total.", "event"),
+            "treasure_collect": ("Treasure Collector", "Find 5 treasure chests.", "event"),
+            "pearl_hoarder": ("Pearl Hoarder", "Find 3 pearls.", "event"),
+            "map_explorer": ("Map Explorer", "Collect 3 Treasure Maps.", "event"),
+            "sea_legend": ("Sea Legend", "Catch any Boss fish.", "boss"),
+            "abyssal_finder": ("Abyssal Finder", "Catch an Abyssal or Mythic fish.", "rarity"),
+            "mythic_hunter": ("Mythic Hunter", "Catch 3 Mythic fish total.", "rarity"),
+            "legend_chaser": ("Legend Chaser", "Catch 5 Legendary fish total.", "rarity"),
+            "spectral_hunter": ("Ghost Bounty", "Catch a Spectral Herring or similar spectral fish.", "special"),
+            "festival_fan": ("Festival Fan", "Benefit from the Festival event 3 times.", "event"),
+            "npc_friend": ("Friend of the Town", "Complete 5 quests from any NPC.", "quest"),
+            "quest_master": ("Quest Master", "Complete 25 quests total.", "quest"),
+            "merchant_of_mean": ("Merchant of Mean", "Sell 500 total value of fish.", "economy"),
+            "crafting_ace": ("Crafting Ace", "Craft every recipe at least once.", "craft"),
+            "oceanographer": ("Oceanographer", "Catch at least one fish from every biome.", "collection"),
+            "collector_100": ("Collector", "Have 100 fish in your collection (duplicates count).", "collection"),
+            "seasoned_angler": ("Seasoned Angler", "Cast 1000 times.", "general"),
+            "bait_hoarder_plus": ("Bait Baron", "Collect 100 bait total.", "resource"),
+            "salvage_expert": ("Salvage Expert", "Find 20 salvage events.", "event"),
+            "hotspot_hunter": ("Hotspot Hunter", "Use a hotspot or map and catch a rare fish.", "special"),
+            "cosmic_watcher": ("Cosmic Watcher", "Trigger a meteor_shower or moon_phase event.", "event"),
         }
+
 
         # Rarity ranks
         self.rarity_rank = {
@@ -480,18 +510,70 @@ class Fishing(commands.Cog):
         earned.append(ach_id)
         await user_conf.achievements.set(earned)
         name, desc, _ = self.achievements[ach_id]
+                # Expanded small rewards and optional item grants
         reward = 0
+        add_items: Dict[str, int] = {}
+
+        # legacy small rewards
         if ach_id in ("first_fish", "first_cast"):
             reward = 5
-        elif ach_id == "mythic_catch":
+
+        # existing larger rewards
+        if ach_id == "mythic_catch":
             reward = 100
-        elif ach_id == "treasure_hunter":
+        if ach_id == "treasure_hunter":
             reward = 25
+
+        # new achievement rewards (tweak values as desired)
+        if ach_id == "first_chum":
+            reward = 10
+        if ach_id == "trophy_maker":
+            reward = 25
+        if ach_id == "fragment_collector":
+            reward = 50
+        if ach_id == "core_seeker":
+            reward = 150
+        if ach_id == "rod_master_1":
+            reward = 20
+        if ach_id == "rod_master_2":
+            reward = 60
+        if ach_id == "rod_master_3":
+            reward = 180
+        if ach_id == "npc_friend":
+            add_items = {"Chum": 1}
+        if ach_id == "quest_master":
+            reward = 300
+        if ach_id == "oceanographer":
+            reward = 200
+        if ach_id == "collector_100":
+            reward = 150
+        if ach_id == "seasoned_angler":
+            reward = 100
+
+        # apply coin reward
         if reward > 0:
             new_bal = await bank.deposit_credits(user, reward)
             currency = await bank.get_currency_name(ctx.guild)
+            if add_items:
+                items_cfg = await user_conf.items()
+                for iname, cnt in add_items.items():
+                    for _ in range(cnt):
+                        items_cfg.append(iname)
+                await user_conf.items.set(items_cfg)
+                added = ", ".join(f"{c}× {n}" for n, c in add_items.items())
+                return f"🏆 Achievement unlocked: **{name}** — {desc}\nYou received **{reward} {currency}** and {added}! New balance: **{new_bal} {currency}**."
             return f"🏆 Achievement unlocked: **{name}** — {desc}\nYou received **{reward} {currency}**! New balance: **{new_bal} {currency}**."
-        return f"🏆 Achievement unlocked: **{name}** — {desc}"
+
+        # apply item-only rewards
+        if add_items:
+            items_cfg = await user_conf.items()
+            for iname, cnt in add_items.items():
+                for _ in range(cnt):
+                    items_cfg.append(iname)
+            await user_conf.items.set(items_cfg)
+            added = ", ".join(f"{c}× {n}" for n, c in add_items.items())
+            return f"🏆 Achievement unlocked: **{name}** — {desc}\nYou received {added}."
+
 
     async def _check_and_award(self, ctx, user) -> List[str]:
         user_conf = self.config.user(user)
@@ -561,7 +643,20 @@ class Fishing(commands.Cog):
         rarity = self.fish_definitions.get(fish_name, {}).get("rarity", "")
         if rarity == "Mythic" and not await self._has_achievement(user, "mythic_catch"):
             await self._award_achievement(self.bot.get_guild(0) or None, user, "mythic_catch")
-
+        try:
+            await self._check_oceanographer(user, None)
+        except Exception:
+            pass            
+    async def _check_oceanographer(self, user, ctx=None):
+        """Award oceanographer if user has caught at least one fish from every biome."""
+        try:
+            data = await self.config.user(user).caught()
+            caught_biomes = {self.fish_definitions[f]["biome"] for f in set(data) if f in self.fish_definitions}
+            all_biomes = {info.get("biome") for info in self.fish_definitions.values()}
+            if all_biomes and caught_biomes >= all_biomes and not await self._has_achievement(user, "oceanographer"):
+                await self._award_achievement(ctx or None, user, "oceanographer")
+        except Exception:
+            
     # ---------- Event handlers ----------
     async def _event_nothing(self, ctx, user_conf):
         stats = await user_conf.stats()
@@ -651,6 +746,13 @@ class Fishing(commands.Cog):
             items = await user_conf.items()
             items.append("Rod Fragment")
             await user_conf.items.set(items)
+        try:
+            if not await self._has_achievement(ctx.author, "fragment_collector"):
+                items_now = await user_conf.items()
+                if items_now.count("Rod Fragment") >= 10:
+                    await self._award_achievement(ctx, ctx.author, "fragment_collector")
+        except Exception:
+            pass
             fragmsg = " You also find a **Rod Fragment** among the loot!"
         else:
             fragmsg = ""
@@ -687,6 +789,13 @@ class Fishing(commands.Cog):
             items = await user_conf.items()
             items.append("Rod Fragment")
             await user_conf.items.set(items)
+        try:
+            if not await self._has_achievement(ctx.author, "fragment_collector"):
+                items_now = await user_conf.items()
+                if items_now.count("Rod Fragment") >= 10:
+                    await self._award_achievement(ctx, ctx.author, "fragment_collector")
+        except Exception:
+            pass            
             found = " You also find a **Rod Fragment** tangled in the net."
         else:
             found = ""
@@ -821,11 +930,23 @@ class Fishing(commands.Cog):
             items = await user_conf.items()
             items.append("Rod Core")
             await user_conf.items.set(items)
+        try:
+            if not await self._has_achievement(ctx.author, "core_seeker"):
+                await self._award_achievement(ctx, ctx.author, "core_seeker")
+        except Exception:
+            pass            
             return False, f"🛠️ You salvage rare parts, get **{coins} {currency}** and a **Rod Core**!"
         if r < 0.10:
             items = await user_conf.items()
             items.append("Rod Fragment")
             await user_conf.items.set(items)
+        try:
+            if not await self._has_achievement(ctx.author, "fragment_collector"):
+                items_now = await user_conf.items()
+                if items_now.count("Rod Fragment") >= 10:
+                    await self._award_achievement(ctx, ctx.author, "fragment_collector")
+        except Exception:
+            pass            
             return False, f"🛠️ You salvage pieces, get **{coins} {currency}** and a **Rod Fragment**!"
         if random.random() < 0.15:
             data = await user_conf.caught()
@@ -1002,6 +1123,13 @@ class Fishing(commands.Cog):
         if random.random() < 0.10:
             items.append("Rod Fragment")
             await user_conf.items.set(items)
+        try:
+            if not await self._has_achievement(ctx.author, "fragment_collector"):
+                items_now = await user_conf.items()
+                if items_now.count("Rod Fragment") >= 10:
+                    await self._award_achievement(ctx, ctx.author, "fragment_collector")
+        except Exception:
+            pass            
             return False, f"📦 You pull a drifting crate with **{coins} {currency}** and a **Rod Fragment**!"
         return False, f"📦 You open a drifting crate and find **{coins} {currency}**."
 
@@ -1042,6 +1170,13 @@ class Fishing(commands.Cog):
             items = await user_conf.items()
             items.append("Rod Fragment")
             await user_conf.items.set(items)
+        try:
+            if not await self._has_achievement(ctx.author, "fragment_collector"):
+                items_now = await user_conf.items()
+                if items_now.count("Rod Fragment") >= 10:
+                    await self._award_achievement(ctx, ctx.author, "fragment_collector")
+        except Exception:
+            pass            
             return False, f"🧽 A sponge cache yields **{bait_found}** bait and a **Rod Fragment**!"
         return False, f"🧽 A sponge cache yields **{bait_found}** bait."
 
@@ -1574,6 +1709,13 @@ class Fishing(commands.Cog):
             removed_summary[r] = removed_summary.get(r, 0) + 1
         removed_lines = ", ".join(f"{v}× {k}" for k, v in removed_summary.items()) if removed_summary else "None"
         messages.insert(0, f"🛠️ You used: {removed_lines}")
+        try:
+            if recipe_id == "chum" and not await self._has_achievement(ctx.author, "first_chum"):
+                await self._award_achievement(ctx, ctx.author, "first_chum")
+            if recipe_id == "trophy" and not await self._has_achievement(ctx.author, "trophy_maker"):
+                await self._award_achievement(ctx, ctx.author, "trophy_maker")
+        except Exception:
+            pass        
         await ctx.send("\n".join(messages))
 
     @commands.command()
@@ -1917,6 +2059,16 @@ class Fishing(commands.Cog):
             if active not in completed_list:
                 completed_list.append(active)
         await user_conf.quests.set({"completed": completed_list})
+        try:
+            stats = await user_conf.stats()
+            stats["quests_completed_total"] = stats.get("quests_completed_total", 0) + 1
+            await user_conf.stats.set(stats)
+            if stats["quests_completed_total"] >= 5 and not await self._has_achievement(user, "npc_friend"):
+                await self._award_achievement(ctx or None, user, "npc_friend")
+            if stats["quests_completed_total"] >= 25 and not await self._has_achievement(user, "quest_master"):
+                await self._award_achievement(ctx or None, user, "quest_master")
+        except Exception:
+            pass        
         return "Quest complete! " + " ".join(messages)
 
     @commands.command()
