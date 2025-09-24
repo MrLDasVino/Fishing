@@ -2341,12 +2341,12 @@ class Fishing(commands.Cog):
                 f"❌ Unknown quest ID `{quest_id}`. Use `talknpc <npc>` to see available quests."
             )
 
-        # which NPC offered this? (optional, for thumbnail)
-        # if you called directly you can skip this lookup or pass in npc_key
-        npc_key = qdef.get("steps", [{}])[0].get("npc")
+        # figure out who offers this quest by reverse‐looking up in self.npcs
         npc_img = None
-        if npc_key and npc_key in self.npcs:
-            npc_img = self.npcs[npc_key].get("image")
+        for key, info in self.npcs.items():
+            if quest_id in info.get("quests", []):
+                npc_img = info.get("image")
+                break
 
         # build preview embed
         emb = discord.Embed(
