@@ -1832,30 +1832,45 @@ class Fishing(commands.Cog):
 
     @commands.command()
     async def talknpc(self, ctx, npc_key: str):
-        """Talk to an NPC to get greeting or start quests."""
+        """Talk to an NPC to get greeting or start quests. Outputs an embed for clarity."""
         npc = self.npcs.get(npc_key.lower())
         if not npc:
             return await ctx.send("❌ Unknown NPC. Use `npcs` to see available NPCs.")
+
         user_conf = self.config.user(ctx.author)
-        qstate = await user_conf.quests()
-        lines = [f"**{npc['display']}**", npc.get("greeting", "")]
-        available = []
+        user_qstate = await user_conf.quests()
+        user_completed = user_qstate.get("completed", []) if isinstance(user_qstate, dict) else []
+
+        # Build embed
+        emb = discord.Embed(title=npc.get("display", npc_key), colour=discord.Colour.teal())
+        greeting = npc.get("greeting", "")
+        if greeting:
+            emb.description = greeting
+
+        # List quests available (filter out non-repeatable completed ones)
+        quest_list = []
         for qid in npc.get("quests", []):
             qdef = self.quests.get(qid)
             if not qdef:
                 continue
-            prev = await self.config.user(ctx.author).quests()
-            completed = prev.get("completed", [])
-            if not qdef.get("repeatable", False) and qid in completed:
-                continue
-            available.append((qid, qdef))
-        if available:
-            lines.append("\nQuests available from this NPC:")
-            for qid, qdef in available:
-                lines.append(f"• **{qdef['title']}** — id: `{qid}` — use `{ctx.clean_prefix}acceptquest {qid}` to accept")
+            if not qdef.get("repeatable", False) and qid in user_completed:
+                # mark as completed and unavailable
+                quest_list.append((qdef.get("title", qid) + " (completed)", qid, False))
+            else:
+                quest_list.append((qdef.get("title", qid), qid, True))
+
+        if quest_list:
+            for title, qid, available in quest_list:
+                status = "Available" if available else "Unavailable"
+                emb.add_field(name=title, value=f"ID: `{qid}` — {status}\nUse `{ctx.clean_prefix}acceptquest {qid}` to accept", inline=False)
         else:
-            lines.append("\nNo quests available right now.")
-        await ctx.send("\n".join(lines))
+            emb.add_field(name="Quests", value="No quests available right now.", inline=False)
+
+        # Footer with quick usage hint
+        emb.set_footer(text=f"Use {ctx.clean_prefix}acceptquest <id> to accept. Use {ctx.clean_prefix}npcs to list NPCs.")
+
+        await ctx.send(embed=emb)
+
 
     @commands.command()
     async def acceptquest(self, ctx, quest_id: str):
