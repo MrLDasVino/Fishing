@@ -297,49 +297,49 @@ class Fishing(commands.Cog):
             "maris": {
                 "display": "Maris the Merchant",
                 "greeting": "Maris smiles and polishes a brass scale. 'Looking for work or wares?'",
-                "quests": ["maris_fragment_hunt", "merchant_supply", "reef_expedition", "legend_hunt"],
+                "quests": ["maris_fragment_hunt", "merchant_supply", "reef_expedition", "legend_hunt", "artifact_recovery"],
                 "image": "https://files.catbox.moe/muc0lg.png",
             },
             "oldfinn": {
                 "display": "Old Finn",
                 "greeting": "'Hm, a keen eye for fish? I remember the river in my day…'",
-                "quests": ["finn_first_catch", "boss_sightings", "river_cleanse"],
+                "quests": ["finn_first_catch", "boss_sightings", "river_cleanse", "river_runner", "high_stakes_sale"],
                 "image": "https://files.catbox.moe/pxc6vz.png",
             },
             "lira": {
                 "display": "Lira the Tidewatcher",
                 "greeting": "'The tides speak to those who listen.'",
-                "quests": ["tide_pool_mini", "midnight_hunt", "tide_change_event"],
+                "quests": ["tide_pool_mini", "midnight_hunt", "tide_change_event", "coastal_call", "treasure_finder"],
                 "image": "https://files.catbox.moe/mv7rsg.png",
             },
             "garron": {
                 "display": "Garron the Salvor",
                 "greeting": "'I barter salvage and stories. Bring me trinkets.'",
-                "quests": ["drifter_hunt", "drifting_crate_run", "reef_expedition"],
+                "quests": ["drifter_hunt", "drifting_crate_run", "reef_expedition", "salvage_strike"],
                 "image": "https://files.catbox.moe/0rfed5.png",
             },
             "selene": {
                 "display": "Selene the Moonseer",
                 "greeting": "'The moon favors careful anglers.'",
-                "quests": ["moon_phase_patrol", "midnight_hunt", "aurora_call"],
+                "quests": ["moon_phase_patrol", "midnight_hunt", "aurora_call", "abyssal_ambush", "boss_battle"],
                 "image": "https://files.catbox.moe/3ehdme.png",
             },
             "berta": {
                 "display": "Berta the Baitsmith",
                 "greeting": "'Need bait? Or a quick job to earn some?'",
-                "quests": ["easy_bait_run", "angler_apprentice", "seasonal_bounty"],
+                "quests": ["easy_bait_run", "angler_apprentice", "seasonal_bounty", "beginners_luck", "pond_patrol"],
                 "image": "https://files.catbox.moe/j6jlvc.png",
             },
             "thorin": {
                 "display": "Thorin the Tactician",
                 "greeting": "'I can set up a challenge if you're brave.'",
-                "quests": ["epic_refinement", "legend_hunt", "mythic_probe"],
+                "quests": ["epic_refinement", "legend_hunt", "mythic_probe", "epic_extraction"],
                 "image": "https://files.catbox.moe/gey7m6.png",
             },
             "nym": {
                 "display": "Nym of the Marsh",
                 "greeting": "'The marsh keeps its secrets; trade me what you find.'",
-                "quests": ["mire_tasks", "mossback_call", "river_cleanse"],
+                "quests": ["mire_tasks", "mossback_call", "river_cleanse", "legendary_capture"],
                 "image": "https://files.catbox.moe/a78qlb.png",
             },
         }
@@ -514,6 +514,126 @@ class Fishing(commands.Cog):
                 ],
                 "rewards": {"coins": 90, "items": {"Rod Fragment": 1}},
                 "repeatable": False,
+                
+            "beginners_luck": {
+            "title": "Beginner's Luck",
+            "difficulty": "Easy",
+            "steps": [
+                {"type": "collect_fish", "rarity": "Common", "count": 2,
+                 "desc": "Catch 2 Common fish anywhere."}
+            ],
+            "rewards": {"coins": 20},
+            "repeatable": True,
+            },
+            "pond_patrol": {
+                "title": "Pond Patrol",
+                "difficulty": "Easy",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Common", "count": 3,
+                     "desc": "Catch 3 Common fish in a garden pond."}
+                ],
+                "rewards": {"coins": 30, "items": {"Chum": 1}},
+                "repeatable": True,
+            },
+            "river_runner": {
+                "title": "River Runner",
+                "difficulty": "Easy",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Uncommon", "count": 2,
+                     "desc": "Catch 2 Uncommon fish in a river."}
+                ],
+                "rewards": {"coins": 40},
+                "repeatable": True,
+            },
+            "high_stakes_sale": {
+                "title": "High-Stakes Sale",
+                "difficulty": "Medium",
+                "steps": [
+                    {"type": "sell_value", "amount": 200,
+                     "desc": "Sell fish totalling 200 coins."}
+                ],
+                "rewards": {"coins": 80},
+                "repeatable": True,
+            },
+            "coastal_call": {
+                "title": "Coastal Call",
+                "difficulty": "Medium",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Rare", "count": 1,
+                     "desc": "Land 1 Rare fish along the coast."}
+                ],
+                "rewards": {"coins": 100, "items": {"Treasure Map": 1}},
+                "repeatable": True,
+            },
+            "salvage_strike": {
+                "title": "Salvage Strike",
+                "difficulty": "Medium",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Common", "count": 1,
+                     "desc": "Find any salvage event reward (e.g. a Rod Fragment)."}
+                ],
+                "rewards": {"coins": 60, "items": {"Rod Fragment": 1}},
+                "repeatable": True,
+            },
+            "treasure_finder": {
+                "title": "Treasure Finder",
+                "difficulty": "Medium",
+                "steps": [
+                    {"type": "deliver_item", "item": "Treasure Map", "count": 1,
+                     "desc": "Turn in a Treasure Map."}
+                ],
+                "rewards": {"coins": 120, "items": {"Rod Core": 1}},
+                "repeatable": False,
+            },
+            "artifact_recovery": {
+                "title": "Artifact Recovery",
+                "difficulty": "Hard",
+                "steps": [
+                    {"type": "deliver_item", "item": "Coral Trinket", "count": 2,
+                     "desc": "Deliver 2 Coral Trinkets."}
+                ],
+                "rewards": {"coins": 250, "items": {"Rod Core": 2}},
+                "repeatable": False,
+            },
+            "epic_extraction": {
+                "title": "Epic Extraction",
+                "difficulty": "Hard",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Epic", "count": 2,
+                     "desc": "Catch 2 Epic fish."}
+                ],
+                "rewards": {"coins": 300, "items": {"Rod Fragment": 3}},
+                "repeatable": False,
+            },
+            "legendary_capture": {
+                "title": "Legendary Capture",
+                "difficulty": "Hard",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Legendary", "count": 1,
+                     "desc": "Bring in 1 Legendary fish."}
+                ],
+                "rewards": {"coins": 400, "items": {"Rod Core": 1}},
+                "repeatable": False,
+            },
+            "abyssal_ambush": {
+                "title": "Abyssal Ambush",
+                "difficulty": "Very Hard",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Mythic", "count": 1,
+                     "desc": "Hook a Mythic fish in the abyss."}
+                ],
+                "rewards": {"coins": 500, "items": {"Rod Core": 2}},
+                "repeatable": False,
+            },
+            "boss_battle": {
+                "title": "Boss Battle",
+                "difficulty": "Elite",
+                "steps": [
+                    {"type": "collect_fish", "rarity": "Boss", "count": 1,
+                     "desc": "Defeat and catch a Boss fish."}
+                ],
+                "rewards": {"coins": 800, "items": {"Map": 2}},
+                "repeatable": False,    
             },
         }
 
