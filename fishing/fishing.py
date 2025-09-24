@@ -511,28 +511,33 @@ class Fishing(commands.Cog):
     async def _award_achievement(self, ctx, user, ach_id: str) -> Optional[str]:
         if ach_id not in self.achievements:
             return None
+        
+        # 1) Mark it earned
         user_conf = self.config.user(user)
         earned = await user_conf.achievements()
         if ach_id in earned:
             return None
         earned.append(ach_id)
         await user_conf.achievements.set(earned)
+        
+        # 2) Figure out name/description
         name, desc, _ = self.achievements[ach_id]
-                # Expanded small rewards and optional item grants
+        
+        # 3) Compute rewards
         reward = 0
         add_items: Dict[str, int] = {}
-
+        
         # legacy small rewards
-        if ach_id in ("first_fish", "first_cast"):
+        if ach_id in ("first_cast", "first_fish"):
             reward = 5
-
+        
         # existing larger rewards
         if ach_id == "mythic_catch":
             reward = 100
         if ach_id == "treasure_hunter":
             reward = 25
-
-        # new achievement rewards (tweak values as desired)
+        
+        # new achievement rewards
         if ach_id == "first_chum":
             reward = 10
         if ach_id == "trophy_maker":
@@ -557,22 +562,17 @@ class Fishing(commands.Cog):
             reward = 150
         if ach_id == "seasoned_angler":
             reward = 100
-
-        # apply coin reward
+        
+        # 4) Build announcement text
+        currency = await bank.get_currency_name(ctx.guild) if ctx and ctx.guild else "credits"
+        parts: List[str] = [f"🏆 Achievement unlocked: **{name}** — {desc}"]
+        
+        # 5) Deposit coins if any
         if reward > 0:
             new_bal = await bank.deposit_credits(user, reward)
-            currency = await bank.get_currency_name(ctx.guild)
-            if add_items:
-                items_cfg = await user_conf.items()
-                for iname, cnt in add_items.items():
-                    for _ in range(cnt):
-                        items_cfg.append(iname)
-                await user_conf.items.set(items_cfg)
-                added = ", ".join(f"{c}× {n}" for n, c in add_items.items())
-                return f"🏆 Achievement unlocked: **{name}** — {desc}\nYou received **{reward} {currency}** and {added}! New balance: **{new_bal} {currency}**."
-            return f"🏆 Achievement unlocked: **{name}** — {desc}\nYou received **{reward} {currency}**! New balance: **{new_bal} {currency}**."
-
-        # apply item-only rewards
+            parts.append(f"You received **{reward} {currency}**! New balance: **{new_bal} {currency}**.")
+        
+        # 6) Grant any item-only rewards
         if add_items:
             items_cfg = await user_conf.items()
             for iname, cnt in add_items.items():
@@ -580,7 +580,19 @@ class Fishing(commands.Cog):
                     items_cfg.append(iname)
             await user_conf.items.set(items_cfg)
             added = ", ".join(f"{c}× {n}" for n, c in add_items.items())
-            return f"🏆 Achievement unlocked: **{name}** — {desc}\nYou received {added}."
+            parts.append(f"You also received {added}.")
+        
+        text = "\n".join(parts)
+        
+        # 7) Send it right away
+        try:
+            await ctx.send(text)
+        except Exception:
+            pass
+        
+        # 8) Return it in case handlers want to append further notes
+        return text
+
 
 
     async def _check_and_award(self, ctx, user) -> List[str]:
