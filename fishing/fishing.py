@@ -2330,18 +2330,106 @@ class Fishing(commands.Cog):
 
     @commands.command()
     async def acceptquest(self, ctx, quest_id: str):
-        """Accept a quest by id."""
-        quest = self.quests.get(quest_id)
-        if not quest:
-            return await ctx.send("❌ Unknown quest id. Use `talknpc <npc>` to see quests.")
-        user_conf = self.config.user(ctx.author)
-        qstate = await user_conf.quests()
-        if qstate.get("active"):
-            return await ctx.send("❌ You already have an active quest. Finish or abandon it first (`abandonquest`).")
-        prev_completed = qstate.get("completed", []) if isinstance(qstate, dict) else []
-        qstate = {"active": quest_id, "step": 0, "progress": {}, "completed": prev_completed}
-        await user_conf.quests.set(qstate)
-        await ctx.send(f"✅ Quest accepted: **{quest['title']}**. Use `{ctx.clean_prefix}quest` to view progress.")
+        """
+        Preview then accept a quest by ID.
+        You have 60s to react ✅ to accept or ❌ to cancel.
+        """
+        # 1) Lookup quest
+        qdef = self.quests.get(quest_id)
+        if not qdef:
+            return await ctx.send(
+                f"❌ Unknown quest ID `{quest_id}`. Use `talknpc <npc>` to see available quests."
+            )
+
+        # 2) Build preview embed
+        emb = discord.Embed(
+            title=f"Quest Preview: {qdef['title']}",
+            colour=discord.Colour.dark_blue(),
+            description="React ✅ to accept or ❌ to cancel."
+        )
+
+        # Steps
+        for idx, step in enumerate(qdef["steps"], start=1):
+            t = step["type"]
+            if t == "collect_fish":
+                req = (
+                    f"{step['count']}× {step.get('name')}"
+                    if "name" in step
+                    else f"{step['count']}× {step['rarity']} fish"
+                )
+            elif t == "deliver_item":
+                req = f"{step['count']}× {step['item']}"
+            elif t == "sell_value":
+                req = f"Sell {step['amount']} coins worth"
+            elif t == "visit_npc":
+                npc_name = self.npcs.get(step["npc"], {}).get("display", step["npc"])
+                req = f"Visit {npc_name}"
+            else:
+                req = step.get("desc", t)
+            emb.add_field(
+                name=f"Step {idx}: {req}",
+                value=step.get("desc", ""),
+                inline=False
+            )
+
+        # Rewards
+        rew = qdef.get("rewards", {})
+        parts = []
+        if "coins" in rew:
+            parts.append(f"{rew['coins']} coins")
+        if "items" in rew:
+            parts += [f"{cnt}× {iname}" for iname, cnt in rew["items"].items()]
+        if parts:
+            emb.add_field(name="Rewards", value=", ".join(parts), inline=False)
+
+        # Repeatable?
+        emb.set_footer(text=f"Repeatable: {'Yes' if qdef.get('repeatable') else 'No'}")
+
+        # 3) Send embed and add reactions
+        preview = await ctx.send(embed=emb)
+        for emoji in ("✅", "❌"):
+            try:
+                await preview.add_reaction(emoji)
+            except:
+                pass
+
+        # 4) Wait for your reaction
+        def check(reaction, user):
+            return (
+                user == ctx.author
+                and reaction.message.id == preview.id
+                and str(reaction.emoji) in ("✅", "❌")
+            )
+
+        try:
+            reaction, user = await ctx.bot.wait_for(
+                "reaction_add", timeout=60.0, check=check
+            )
+        except asyncio.TimeoutError:
+            return await ctx.send("⌛ Quest acceptance timed out, please try again.")
+
+        # 5) Handle ✅ vs ❌
+        if str(reaction.emoji) == "✅":
+            # same logic you had before for actually marking it accepted
+            user_conf = self.config.user(ctx.author)
+            qstate    = await user_conf.quests()
+            if qstate.get("active"):
+                return await ctx.send(
+                    "❌ You already have an active quest. Finish or abandon it first (`abandonquest`)."
+                )
+            prev_completed = qstate.get("completed", []) if isinstance(qstate, dict) else []
+            new_state = {
+                "active": quest_id,
+                "step": 0,
+                "progress": {},
+                "completed": prev_completed,
+            }
+            await user_conf.quests.set(new_state)
+            return await ctx.send(f"✅ Quest accepted: **{qdef['title']}**. Use `quest` to view progress.")
+        else:
+            # ❌ cancelled
+            return await ctx.send("❌ Quest acceptance cancelled.")
+
    
 
     @commands.command()
