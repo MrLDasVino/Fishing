@@ -1460,6 +1460,7 @@ class Fishing(commands.Cog):
         def make_embed(page_idx: int):
             page_items = pages[page_idx]
             embed = discord.Embed(title="Available Fish", colour=discord.Colour.blue())
+            embed.set_thumbnail(url="https://files.catbox.moe/yl5ytl.png")
             if filter_by:
                 embed.description = f"Filter: **{filter_by}**"
             for name, info in page_items:
