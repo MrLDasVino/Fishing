@@ -645,6 +645,25 @@ class Fishing(commands.Cog):
             if m:
                 messages.append(m)
 
+        # Mythic‐catch: did they ever catch a Mythic?
+        if any(self.fish_definitions.get(f,{}).get("rarity") == "Mythic" for f in caught) \
+           and "mythic_catch" not in earned:
+            m = await self._award_achievement(ctx, user, "mythic_catch")
+            if m:
+                messages.append(m)
+
+        # Oceanographer: caught every biome?
+        try:
+            caught_biomes = {self.fish_definitions[f]["biome"]
+                             for f in set(caught) if f in self.fish_definitions}
+            all_biomes = {info["biome"] for info in self.fish_definitions.values()}
+            if all_biomes and caught_biomes >= all_biomes and "oceanographer" not in earned:
+                m = await self._award_achievement(ctx, user, "oceanographer")
+                if m:
+                    messages.append(m)
+        except Exception:
+            pass                
+
         if stats.get("fish_caught", 0) >= 1 and "first_fish" not in earned:
             m = await self._award_achievement(ctx, user, "first_fish")
             if m:
@@ -698,19 +717,8 @@ class Fishing(commands.Cog):
         stats["highest_value_catch"] = max(stats.get("highest_value_catch", 0), price)
         stats["consecutive_catches"] = stats.get("consecutive_catches", 0) + 1
         await conf.stats.set(stats)
-        rarity = self.fish_definitions.get(fish_name, {}).get("rarity", "")
 
            
-    async def _check_oceanographer(self, user, ctx=None):
-        """Award oceanographer if user has caught at least one fish from every biome."""
-        try:
-            data = await self.config.user(user).caught()
-            caught_biomes = {self.fish_definitions[f]["biome"] for f in set(data) if f in self.fish_definitions}
-            all_biomes = {info.get("biome") for info in self.fish_definitions.values()}
-            if all_biomes and caught_biomes >= all_biomes and not await self._has_achievement(user, "oceanographer"):
-                await self._award_achievement(ctx or None, user, "oceanographer")
-        except Exception:
-            pass
     # ---------- Event handlers ----------
     async def _event_nothing(self, ctx, user_conf):
         stats = await user_conf.stats()
