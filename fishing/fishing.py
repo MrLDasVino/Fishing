@@ -2047,9 +2047,13 @@ class Fishing(commands.Cog):
         messages.insert(0, f"🛠️ You used: {removed_lines}")
         try:
             if recipe_id == "chum" and not await self._has_achievement(ctx.author, "first_chum"):
-                await self._award_achievement(ctx, ctx.author, "first_chum")
+            msg = await self._award_achievement(ctx, ctx.author, "first_chum")
+            if msg:
+                messages.append(msg)
             if recipe_id == "trophy" and not await self._has_achievement(ctx.author, "trophy_maker"):
-                await self._award_achievement(ctx, ctx.author, "trophy_maker")
+            msg = await self._award_achievement(ctx, ctx.author, "trophy_maker")
+            if msg:
+                messages.append(msg)
         except Exception:
             pass        
         await ctx.send("\n".join(messages))
