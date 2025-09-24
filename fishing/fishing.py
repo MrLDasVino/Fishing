@@ -1373,6 +1373,8 @@ class Fishing(commands.Cog):
     @commands.command()
     @award_achievements
     async def fish(self, ctx):
+    
+        user_conf = self.config.user(ctx.author)
         # … rod‐broken check …
 
         waiting_msg = await ctx.send("🎣 You cast your line and wait patiently…")
