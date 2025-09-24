@@ -1410,7 +1410,15 @@ class Fishing(commands.Cog):
             message = result[1]
         elif isinstance(result, str):
             message = result
-
+        else:
+            message = None
+             
+        if message is not None:
+            ach_msgs = await self._check_and_award(ctx, ctx.author)
+            if ach_msgs:
+                # append any newly unlocked achievements
+                message = message + "\n\n" + "\n".join(ach_msgs)             
+             
         try:
             if message:
                 if len(message) > 1900:
