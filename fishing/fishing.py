@@ -514,7 +514,7 @@ class Fishing(commands.Cog):
                 ],
                 "rewards": {"coins": 90, "items": {"Rod Fragment": 1}},
                 "repeatable": False,
-                
+            },    
             "beginners_luck": {
             "title": "Beginner's Luck",
             "difficulty": "Easy",
