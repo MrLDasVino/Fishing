@@ -1503,6 +1503,7 @@ class Fishing(commands.Cog):
     async def fishstats(self, ctx):
         """View how many fish you’ve caught, your items, and your bank balance (embed)."""
         data = await self.config.user(ctx.author).all()
+        bait = data["bait"]
         caught = data["caught"]
         if not caught:
             return await ctx.send(f"You haven't caught anything yet. Use `{ctx.clean_prefix}fish` to start fishing!")
@@ -1516,6 +1517,7 @@ class Fishing(commands.Cog):
         # fish breakdown
         breakdown = "\n".join(f"• {self.fish_definitions.get(fish, {}).get('emoji','')} {fish}: {count}" for fish, count in counts.items())
         emb.add_field(name="Caught", value=breakdown or "None", inline=False)
+        emb.add_field(name="Bait", value=str(bait), inline=True)
         items = await self.config.user(ctx.author).items()
         if items:
             inv_counts = {}
