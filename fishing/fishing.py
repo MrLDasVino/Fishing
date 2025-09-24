@@ -2012,7 +2012,7 @@ class Fishing(commands.Cog):
         await user_conf.quests.set(qstate)
         await ctx.send(f"✅ Quest accepted: **{quest['title']}**. Use `{ctx.clean_prefix}quest` to view progress.")
 
- QUEST_BANNER_URL = "https://files.catbox.moe/x5iczt.png"  # ← your quest command banner
+    QUEST_BANNER_URL = "https://files.catbox.moe/x5iczt.png"  # ← your quest command banner
 
     @commands.command()
     async def quest(self, ctx):
