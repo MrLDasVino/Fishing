@@ -8,6 +8,10 @@ from functools import wraps
 
 from redbot.core import commands, bank, Config
 
+QUEST_BANNER_URL = "https://files.catbox.moe/x5iczt.png"
+
+
+
 # ——— ACHIEVEMENT DECORATOR ———
 def award_achievements(func):
     @wraps(func)
@@ -2011,8 +2015,7 @@ class Fishing(commands.Cog):
         qstate = {"active": quest_id, "step": 0, "progress": {}, "completed": prev_completed}
         await user_conf.quests.set(qstate)
         await ctx.send(f"✅ Quest accepted: **{quest['title']}**. Use `{ctx.clean_prefix}quest` to view progress.")
-
-    QUEST_BANNER_URL = "https://files.catbox.moe/x5iczt.png"  # ← your quest command banner
+   
 
     @commands.command()
     async def quest(self, ctx):
