@@ -2331,104 +2331,105 @@ class Fishing(commands.Cog):
     @commands.command()
     async def acceptquest(self, ctx, quest_id: str):
         """
-        Preview then accept a quest by ID.
-        You have 60s to react ✅ to accept or ❌ to cancel.
+        Preview then accept a quest by ID with an embed banner + NPC thumbnail.
+        React ✅ to accept or ❌ to cancel.
         """
-        # 1) Lookup quest
+        # lookup
         qdef = self.quests.get(quest_id)
         if not qdef:
             return await ctx.send(
                 f"❌ Unknown quest ID `{quest_id}`. Use `talknpc <npc>` to see available quests."
             )
 
-        # 2) Build preview embed
+        # which NPC offered this? (optional, for thumbnail)
+        # if you called directly you can skip this lookup or pass in npc_key
+        npc_key = qdef.get("steps", [{}])[0].get("npc")
+        npc_img = None
+        if npc_key and npc_key in self.npcs:
+            npc_img = self.npcs[npc_key].get("image")
+
+        # build preview embed
         emb = discord.Embed(
-            title=f"Quest Preview: {qdef['title']}",
+            title=f"🗺️ Quest Preview: {qdef['title']}",
+            description="React ✅ to accept or ❌ to cancel.",
             colour=discord.Colour.dark_blue(),
-            description="React ✅ to accept or ❌ to cancel."
         )
 
-        # Steps
+        # banner image at bottom
+        emb.set_image(url=QUEST_BANNER_URL)
+
+        # NPC avatar as thumbnail
+        if npc_img:
+            emb.set_thumbnail(url=npc_img)
+
+        # list each step
         for idx, step in enumerate(qdef["steps"], start=1):
-            t = step["type"]
-            if t == "collect_fish":
-                req = (
-                    f"{step['count']}× {step.get('name')}"
-                    if "name" in step
-                    else f"{step['count']}× {step['rarity']} fish"
-                )
-            elif t == "deliver_item":
+            stype = step["type"]
+            if stype == "collect_fish":
+                req = (f"{step['count']}× {step['name']}"
+                       if "name" in step
+                       else f"{step['count']}× {step['rarity']} fish")
+            elif stype == "deliver_item":
                 req = f"{step['count']}× {step['item']}"
-            elif t == "sell_value":
+            elif stype == "sell_value":
                 req = f"Sell {step['amount']} coins worth"
-            elif t == "visit_npc":
-                npc_name = self.npcs.get(step["npc"], {}).get("display", step["npc"])
-                req = f"Visit {npc_name}"
+            elif stype == "visit_npc":
+                display = self.npcs.get(step["npc"], {}).get("display", step["npc"])
+                req = f"Visit {display}"
             else:
-                req = step.get("desc", t)
+                req = step.get("desc", stype)
             emb.add_field(
                 name=f"Step {idx}: {req}",
                 value=step.get("desc", ""),
-                inline=False
+                inline=False,
             )
 
-        # Rewards
+        # rewards summary
         rew = qdef.get("rewards", {})
         parts = []
         if "coins" in rew:
             parts.append(f"{rew['coins']} coins")
         if "items" in rew:
-            parts += [f"{cnt}× {iname}" for iname, cnt in rew["items"].items()]
+            parts += [f"{cnt}× {name}" for name, cnt in rew["items"].items()]
         if parts:
             emb.add_field(name="Rewards", value=", ".join(parts), inline=False)
 
-        # Repeatable?
         emb.set_footer(text=f"Repeatable: {'Yes' if qdef.get('repeatable') else 'No'}")
 
-        # 3) Send embed and add reactions
+        # send & react
         preview = await ctx.send(embed=emb)
         for emoji in ("✅", "❌"):
-            try:
-                await preview.add_reaction(emoji)
-            except:
-                pass
+            await preview.add_reaction(emoji)
 
-        # 4) Wait for your reaction
-        def check(reaction, user):
+        def check(r, u):
             return (
-                user == ctx.author
-                and reaction.message.id == preview.id
-                and str(reaction.emoji) in ("✅", "❌")
+                u == ctx.author
+                and r.message.id == preview.id
+                and str(r.emoji) in ("✅", "❌")
             )
 
         try:
-            reaction, user = await ctx.bot.wait_for(
-                "reaction_add", timeout=60.0, check=check
-            )
+            reaction, user = await ctx.bot.wait_for("reaction_add", timeout=60, check=check)
         except asyncio.TimeoutError:
-            return await ctx.send("⌛ Quest acceptance timed out, please try again.")
+            return await ctx.send("⌛ Quest acceptance timed out.")
 
-        # 5) Handle ✅ vs ❌
         if str(reaction.emoji) == "✅":
-            # same logic you had before for actually marking it accepted
+            # accept logic
             user_conf = self.config.user(ctx.author)
             qstate    = await user_conf.quests()
             if qstate.get("active"):
-                return await ctx.send(
-                    "❌ You already have an active quest. Finish or abandon it first (`abandonquest`)."
-                )
-            prev_completed = qstate.get("completed", []) if isinstance(qstate, dict) else []
-            new_state = {
-                "active": quest_id,
-                "step": 0,
-                "progress": {},
-                "completed": prev_completed,
-            }
-            await user_conf.quests.set(new_state)
-            return await ctx.send(f"✅ Quest accepted: **{qdef['title']}**. Use `quest` to view progress.")
+                return await ctx.send("❌ Finish or abandon your current quest first.")
+            prev = qstate.get("completed", [])
+            await user_conf.quests.set({
+                "active":    quest_id,
+                "step":      0,
+                "progress":  {},
+                "completed": prev,
+            })
+            await ctx.send(f"✅ Quest accepted: **{qdef['title']}**. Use `quest` to track progress.")
         else:
-            # ❌ cancelled
-            return await ctx.send("❌ Quest acceptance cancelled.")
+            await ctx.send("❌ Quest acceptance cancelled.")
+
 
    
 
