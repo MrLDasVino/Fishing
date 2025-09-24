@@ -9,6 +9,7 @@ from functools import wraps
 from redbot.core import commands, bank, Config
 
 QUEST_BANNER_URL = "https://files.catbox.moe/x5iczt.png"
+ROD_IMAGE_URL = "https://files.catbox.moe/0h4ja9.png"
 
 
 
@@ -1990,17 +1991,28 @@ class Fishing(commands.Cog):
     # ---------- Rod view and upgrade ----------
     @commands.command()
     async def rod(self, ctx):
-        """Show your rod level, fragments, cores and next upgrade requirements (embed)."""
+        """Show your rod level, fragments, cores and next upgrade requirements (embed + image)."""
         user_conf = self.config.user(ctx.author)
-        lvl = await user_conf.rod_level()
-        items = await user_conf.items()
+        lvl       = await user_conf.rod_level()
+        items     = await user_conf.items()
         fragments = items.count("Rod Fragment")
-        cores = items.count("Rod Core")
-        next_req = self.rod_upgrade_requirements.get(lvl + 1)
-        emb = discord.Embed(title=f"{ctx.author.display_name}'s Rod", colour=discord.Colour.orange())
-        emb.add_field(name="Rod Level", value=str(lvl), inline=True)
-        emb.add_field(name="Fragments", value=str(fragments), inline=True)
-        emb.add_field(name="Cores", value=str(cores), inline=True)
+        cores     = items.count("Rod Core")
+        next_req  = self.rod_upgrade_requirements.get(lvl + 1)
+
+        # Build the embed
+        emb = discord.Embed(
+            title=f"{ctx.author.display_name}'s Rod",
+            colour=discord.Colour.orange()
+        )
+        # Big banner under the title
+        emb.set_image(url=ROD_IMAGE_URL)
+
+        # Stats fields
+        emb.add_field(name="Rod Level",          value=str(lvl),           inline=True)
+        emb.add_field(name="Fragments Collected",value=str(fragments),    inline=True)
+        emb.add_field(name="Cores Collected",    value=str(cores),         inline=True)
+
+        # Next upgrade requirements
         if next_req:
             req_text = f"{next_req['fragments']} fragments"
             if next_req.get("coins", 0):
@@ -2008,7 +2020,9 @@ class Fishing(commands.Cog):
         else:
             req_text = "Max level reached"
         emb.add_field(name="Next Upgrade", value=req_text, inline=False)
+
         await ctx.send(embed=emb)
+
 
 
     @commands.command()
