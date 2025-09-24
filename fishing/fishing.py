@@ -1842,21 +1842,44 @@ class Fishing(commands.Cog):
     # ---------- Crafting (fish fusion) ----------
     @commands.command()
     async def craftlist(self, ctx):
-        """List available crafting recipes in embeds (paged)."""
+        """List available crafting recipes in embeds (paged), showing the full command to use."""
         image_url = "https://files.catbox.moe/dt1sh1.png"
         items = list(self.crafting_recipes.items())
         embeds: List[discord.Embed] = []
         per_page = 6
+
         for i in range(0, len(items), per_page):
             chunk = items[i:i+per_page]
-            emb = discord.Embed(title="Crafting Recipes", colour=discord.Colour.teal())
+            emb = discord.Embed(
+                title="Crafting Recipes",
+                colour=discord.Colour.teal()
+            )
             emb.set_thumbnail(url=image_url)
-            for rid, info in chunk:
-                reqs = ", ".join(f"{k}:{v}" for k, v in info.get("requirements", {}).items()) or "None"
+
+            for recipe_id, info in chunk:
+                # build requirements string
+                reqs = info.get("requirements", {})
+                req_text = ", ".join(f"{k}:{v}" for k, v in reqs.items()) or "None"
+                # build result string
                 result = info.get("result", {})
-                emb.add_field(name=f"{info.get('name')} (`{rid}`)", value=f"{info.get('description')}\n**Requires:** {reqs}\n**Result:** {result}", inline=False)
-            emb.set_footer(text=f"Page {i//per_page+1}/{(len(items)-1)//per_page+1}")
+                # field title shows the human name and exact command
+                field_name = (
+                    f"{info.get('name')} — Usage: "
+                    f"`{ctx.clean_prefix}craft {recipe_id}`"
+                )
+                # field value shows description, requirements and result
+                field_value = (
+                    f"{info.get('description')}\n"
+                    f"**Requires:** {req_text}\n"
+                    f"**Result:** {result}"
+                )
+                emb.add_field(name=field_name, value=field_value, inline=False)
+
+            emb.set_footer(
+                text=f"Page {i//per_page+1}/{(len(items)-1)//per_page+1}"
+            )
             embeds.append(emb)
+
         await self._paginate_embeds(ctx, embeds)
 
 
