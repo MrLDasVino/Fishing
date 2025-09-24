@@ -641,12 +641,17 @@ class Fishing(commands.Cog):
         stats["consecutive_catches"] = stats.get("consecutive_catches", 0) + 1
         await conf.stats.set(stats)
         rarity = self.fish_definitions.get(fish_name, {}).get("rarity", "")
+        # Award mythic achievement if applicable
+        rarity = self.fish_definitions.get(fish_name, {}).get("rarity", "")
         if rarity == "Mythic" and not await self._has_achievement(user, "mythic_catch"):
             await self._award_achievement(self.bot.get_guild(0) or None, user, "mythic_catch")
+
+        # check oceanographer progress
         try:
             await self._check_oceanographer(user, None)
         except Exception:
-            pass            
+            pass
+           
     async def _check_oceanographer(self, user, ctx=None):
         """Award oceanographer if user has caught at least one fish from every biome."""
         try:
