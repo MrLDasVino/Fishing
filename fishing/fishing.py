@@ -291,6 +291,70 @@ class Fishing(commands.Cog):
                 "result": {"items": {"Rod Fragment": 2}},
                 "description": "Refine two Epic fish into 2 Rod Fragments (removes the fish).",
             },
+            "fish_stew": {
+                "name": "Hearty Fish Stew",
+                "requirements": {"any_fish": 2, "rarity:Uncommon": 1},
+                "result": {"item": "Stew Bowl"},
+                "description": "Cook 2 fish (1 Uncommon) into a Stew Bowl. Eating it gives +2 luck on your next 5 casts.",
+            },
+            "elemental_lure": {
+                "name": "Stormcaller Lure",
+                "requirements": {"rarity:Rare": 1, "item:Storm Scale": 1},
+                "result": {"item": "Stormcaller Lure"},
+                "description": "Use this lure to double your chance of Rare+ fish on the next cast.",
+            },
+            "trophy_plaque": {
+                "name": "Angler’s Plaque",
+                "requirements": {"item:Trophy": 1, "rarity:Legendary": 1},
+                "result": {"item": "Plaque"},
+                "description": "Combine Trophy + Legendary fish into a decorative Plaque you can display or sell.",
+            },
+            "fish_oil": {
+                "name": "Fish Oil Flask",
+                "requirements": {"fish:Mackerel": 1, "fish:Tuna": 1},
+                "result": {"coins": 50},
+                "description": "Extract oil from Mackerel + Tuna for 50 coins. A key alchemy ingredient!",
+            },
+            "nutrient_pack": {
+                "name": "Nutrient Pack",
+                "requirements": {"rarity:Common": 1, "rarity:Uncommon": 1, "rarity:Rare": 1},
+                "result": {"item": "Nutrient Pack"},
+                "description": "Use to gain +1 bait each hour for the next 6 hours.",
+            },
+            "coil_upgrade": {
+                "name": "Durability Coil",
+                "requirements": {"item:Rod Core": 2, "rarity:Mythic": 1},
+                "result": {"item": "Rod Coil"},
+                "description": "Attach to your rod to halve break chance for 100 casts.",
+            },
+            "mystic_tonic": {
+                "name": "Mystic Angler’s Tonic",
+                "requirements": {"rarity:Mythic": 1, "rarity:Boss": 1},
+                "result": {"coins": 200, "item": "Tonic Bottle"},
+                "description": "Resets your streak and grants a 200-coin bonus when drunk.",
+            },
+            "festival_pack": {
+                "name": "Festival Pack",
+                "requirements": {"item:Treasure Map": 1, "item:Coral Trinket": 1, "item:Pearl": 1},
+                "result": {"item": "Festival Pack"},
+                "description": "Use to guarantee a Festival event on your next cast.",
+            },
+            "biome_journal": {
+                "name": "Biome Explorer’s Journal",
+                "requirements": {
+                    "fish:Pond": 1,
+                    "fish:River": 1,
+                    "fish:Open Ocean": 1
+                },
+                "result": {"coins": 100},
+                "description": "Grants +10% chance of biome-specific rares for 10 casts.",
+            },
+            "mystery_box": {
+                "name": "Mystery Box",
+                "requirements": {"any_fish": 5},
+                "result": {"item": "Mystery Box"},
+                "description": "Open for a random reward: Rod Core / 100–300 coins / Treasure Map.",
+            },
         }
 
         # NPCs and questlines
@@ -1979,37 +2043,123 @@ class Fishing(commands.Cog):
 
     @commands.command()
     async def useitem(self, ctx, *, item_name: str):
-        """Use a consumable item from your items list (e.g., Chum)."""
+        """Use a consumable item from your items list (e.g., Chum, Stew Bowl, Mystery Box)."""
         user_conf = self.config.user(ctx.author)
         items = await user_conf.items()
-        match = None
-        for it in items:
-            if it.lower() == item_name.lower():
-                match = it
-                break
+        # find exact item
+        match = next((it for it in items if it.lower() == item_name.lower()), None)
         if not match:
-            return await ctx.send(f"❌ You don't have **{item_name}** in your items.")
+            return await ctx.send(f"❌ You don’t have **{item_name}** in your items.")
+        
+        # remove it once
+        items.remove(match)
+        await user_conf.items.set(items)
 
+        # handle each new recipe output
+        if match == "Stew Bowl":
+            # +2 luck for next 5 casts
+            cur = await user_conf.luck()
+            await user_conf.luck.set(cur + 2)
+            return await ctx.send(
+                "🥣 You eat the **Hearty Fish Stew**. Your luck increases by **2** for the next casts!"
+            )
+
+        if match == "Stormcaller Lure":
+            cur = await user_conf.luck()
+            await user_conf.luck.set(cur + 3)
+            return await ctx.send(
+                "🌀 You attach the **Stormcaller Lure**. Next cast chance of Rare+ fish is doubled!"
+            )
+
+        if match == "Plaque":
+            # sellable trophy plaque
+            new_bal, currency = await self._deposit(ctx.author, 200, ctx)
+            return await ctx.send(
+                f"🏆 You display the **Angler’s Plaque** and gain **200 {currency}**! "
+                f"New balance: **{new_bal} {currency}**."
+            )
+
+        if match == "Fish Oil Flask":
+            # instant coins
+            new_bal, currency = await self._deposit(ctx.author, 50, ctx)
+            return await ctx.send(
+                f"🛢️ You extract the **Fish Oil Flask** for **50 {currency}**. "
+                f"New balance: **{new_bal} {currency}**."
+            )
+
+        if match == "Nutrient Pack":
+            # gain 3 bait immediately
+            cur = await user_conf.bait()
+            await user_conf.bait.set(cur + 3)
+            return await ctx.send(
+                f"🌱 You use the **Nutrient Pack**. You gain **3** bait (now {cur+3})."
+            )
+
+        if match == "Rod Coil":
+            # temporary rod durability buff
+            await ctx.send(
+                "⚙️ You install the **Durability Coil**. Your rod break chance is halved for your next 100 casts!"
+            )
+            # optionally you could track a counter in config to expire this buff after 100 casts
+
+        if match == "Tonic Bottle":
+            # reset streak + coin bonus
+            stats = await user_conf.stats()
+            stats["consecutive_catches"] = 0
+            await user_conf.stats.set(stats)
+            new_bal, currency = await self._deposit(ctx.author, 200, ctx)
+            return await ctx.send(
+                f"🧪 You drink the **Mystic Angler’s Tonic**. Your catch streak resets and you gain **200 {currency}**!"
+            )
+
+        if match == "Festival Pack":
+            cur = await user_conf.luck()
+            await user_conf.luck.set(cur + 5)
+            return await ctx.send(
+                "🎊 You open the **Festival Pack**! Next cast triggers a Festival event for bonus rewards."
+            )
+
+        if match == "Biome Explorer’s Journal":
+            new_bal, currency = await self._deposit(ctx.author, 100, ctx)
+            return await ctx.send(
+                f"📖 You study the **Biome Explorer’s Journal**. Rare biome fish chance +10% for 10 casts, "
+                f"and you gain **100 {currency}**! New balance: **{new_bal} {currency}**."
+            )
+
+        if match == "Mystery Box":
+            # randomize one of three rewards
+            choice = random.choice(["Rod Core", "coins", "Treasure Map"])
+            if choice == "Rod Core":
+                items = await user_conf.items()
+                items.append("Rod Core")
+                await user_conf.items.set(items)
+                return await ctx.send("📦 Mystery Box! You found a **Rod Core** inside!")
+            elif choice == "Treasure Map":
+                items = await user_conf.items()
+                items.append("Treasure Map")
+                await user_conf.items.set(items)
+                return await ctx.send("📦 Mystery Box! You found a **Treasure Map** inside!")
+            else:
+                amt = random.randint(100, 300)
+                new_bal, currency = await self._deposit(ctx.author, amt, ctx)
+                return await ctx.send(f"📦 Mystery Box! You got **{amt} {currency}**!")
+
+        # fallback for older items
         if match == "Chum":
-            items.remove(match)
-            await user_conf.items.set(items)
-            current = await user_conf.luck()
-            await user_conf.luck.set(current + 3)
+            cur = await user_conf.luck()
+            await user_conf.luck.set(cur + 3)
             return await ctx.send("🪼 You used **Chum**. Your luck increased by **3** for the next casts.")
-        elif match == "Treasure Map":
-            # consume the map
-            items.remove(match)
-            await user_conf.items.set(items)
 
-            # roll your treasure—here: 20–100 coins
-            import random
+        if match == "Treasure Map":
             coins = random.randint(20, 100)
             new_bal, currency = await self._deposit(ctx.author, coins, ctx)
             return await ctx.send(
-                f"🗺️ You follow the Treasure Map's clues and dig up a chest containing **{coins} {currency}**! "
-                f"Your new balance is **{new_bal} {currency}**."
-            )            
+                f"🗺️ You follow the map and dig up **{coins} {currency}**! New balance: **{new_bal} {currency}**."
+            )
+
+        # anything else isn’t usable
         return await ctx.send(f"❌ **{match}** cannot be used directly.")
+
 
     # ---------- Rod view and upgrade ----------
     @commands.command()
