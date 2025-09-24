@@ -892,9 +892,9 @@ class Fishing(commands.Cog):
         return False, base
 
     async def _event_map(self, ctx, user_conf):
-        data = await user_conf.caught()
-        data.append("Treasure Map")
-        await user_conf.caught.set(data)
+        items = await user_conf.items()
+        items.append("Treasure Map")
+        await user_conf.items.set(items)
         await self._inc_stat(ctx.author, "casts", 1)
         if not await self._has_achievement(ctx.author, "map_collector"):
             msg = await self._award_achievement(ctx, ctx.author, "map_collector")
@@ -1764,6 +1764,19 @@ class Fishing(commands.Cog):
             current = await user_conf.luck()
             await user_conf.luck.set(current + 3)
             return await ctx.send("🪼 You used **Chum**. Your luck increased by **3** for the next casts.")
+        elif match == "Treasure Map":
+            # consume the map
+            items.remove(match)
+            await user_conf.items.set(items)
+
+            # roll your treasure—here: 20–100 coins
+            import random
+            coins = random.randint(20, 100)
+            new_bal, currency = await self._deposit(ctx.author, coins, ctx)
+            return await ctx.send(
+                f"🗺️ You follow the Treasure Map's clues and dig up a chest containing **{coins} {currency}**! "
+                f"Your new balance is **{new_bal} {currency}**."
+            )            
         return await ctx.send(f"❌ **{match}** cannot be used directly.")
 
     # ---------- Rod view and upgrade ----------
