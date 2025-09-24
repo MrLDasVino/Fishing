@@ -661,7 +661,7 @@ class Fishing(commands.Cog):
             if all_biomes and caught_biomes >= all_biomes and not await self._has_achievement(user, "oceanographer"):
                 await self._award_achievement(ctx or None, user, "oceanographer")
         except Exception:
-            
+            pass
     # ---------- Event handlers ----------
     async def _event_nothing(self, ctx, user_conf):
         stats = await user_conf.stats()
