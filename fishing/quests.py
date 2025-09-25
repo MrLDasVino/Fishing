@@ -2,33 +2,41 @@
 
 import asyncio
 from redbot.core import commands
-from .data import npcs, quests
+from .data import npcs as NPC_DEFS, quests as QUEST_DEFS
 from .helpers import deposit, paginate
 
 class Quests(commands.Cog):
     def __init__(self, config):
         self.config = config
+        self.npcs   = NPC_DEFS
+        self.quests = QUEST_DEFS
 
     @commands.command()
     async def npcs(self, ctx):
-        """List all NPCs."""
+        """List known NPCs in the world (paged embed)."""
+        entries = list(self.npcs.items())   # was using some other source
         embeds = []
-        entries = list(npcs.items())
         per_page = 6
+
         for i in range(0, len(entries), per_page):
-            chunk = entries[i:i+per_page]
+            chunk = entries[i : i + per_page]
             emb = discord.Embed(title="Known NPCs", colour=discord.Colour.green())
             emb.set_image(url="https://files.catbox.moe/jgohga.png")
             for key, info in chunk:
                 emb.add_field(
                     name=info["display"],
-                    value=(f"{info['greeting']}\n"
-                           f"Quests: {', '.join(info['quests']) or 'None'}\n"
-                           f"Command: `!talknpc {key}`"),
+                    value=(
+                        f"{info['greeting']}\n"
+                        f"Quests: {', '.join(info['quests']) or 'None'}\n"
+                        f"Command: `!talknpc {key}`"
+                    ),
                     inline=False,
                 )
-            emb.set_footer(text=f"NPCs {i//per_page+1}/{(len(entries)-1)//per_page+1}")
+            emb.set_footer(
+                text=f"NPCs {i//per_page+1}/{(len(entries)-1)//per_page+1}"
+            )
             embeds.append(emb)
+
         await paginate(ctx, embeds)
 
     @commands.command()
