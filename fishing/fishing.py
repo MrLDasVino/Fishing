@@ -3447,36 +3447,77 @@ class Fishing(commands.Cog):
     async def completequest(self, ctx):
         """Attempt to complete and claim rewards for your active quest."""
         user_conf = self.config.user(ctx.author)
-        qstate = await user_conf.quests()
-        active = qstate.get("active")
+        qstate    = await user_conf.quests()
+        active    = qstate.get("active")
         if not active:
-            return await ctx.send("You have no active quest.")
-        msg = await self._complete_quest_for_user(ctx.author, ctx)
-        await ctx.send(msg)
+            return await ctx.send("❌ You have no active quest.")
+
+        # try to complete the quest
+        result = await self._complete_quest_for_user(ctx.author, ctx)
+
+        # helper returns "Quest complete! …" on success
+        if result.startswith("Quest complete!"):
+            qdef = self.quests.get(active, {})
+            # build embed
+            embed = discord.Embed(
+                title=f"🏁 Quest Completed: {qdef.get('title','Unknown')}",
+                description="Congratulations! Here’s what you earned:",
+                colour=discord.Colour.purple()
+            )
+            # banner
+            embed.set_image(url=https://files.catbox.moe/npxvr7.png)
+
+            # strip the "Quest complete! " prefix and put the rest into a field
+            rewards_text = result[len("Quest complete! "):]
+            embed.add_field(name="Rewards", value=rewards_text, inline=False)
+
+            await ctx.send(embed=embed)
+        else:
+            # something went wrong (e.g. steps not done)
+            await ctx.send(result)
 
     @commands.command()
     async def visitnpc(self, ctx, npc_key: str):
-        """Visit an NPC to advance quest steps that require visiting."""
+        """Visit an NPC to advance a quest step or just chat. Shows a banner embed."""
         npc = self.npcs.get(npc_key.lower())
         if not npc:
-            return await ctx.send("Unknown NPC key. Use `npcs` to list them.")
+            return await ctx.send("❌ Unknown NPC. Use `npcs` to list them.")
+
+        # Prepare the embed
+        embed = discord.Embed(
+            title=npc.get("display", npc_key),
+            description=npc.get("greeting", ""),
+            colour=discord.Colour.green()
+        )
+        # Use their image as banner
+        image_url = npc.get("image")
+        if image_url:
+            embed.set_image(url=image_url)
+
+        # Quest‐advancement logic
         user_conf = self.config.user(ctx.author)
-        qstate = await user_conf.quests()
-        active = qstate.get("active")
-        if not active:
-            return await ctx.send(f"You visit {npc['display']}. {npc.get('greeting','')}")
-        qdef = self.quests.get(active)
-        if not qdef:
-            return await ctx.send(f"You visit {npc['display']}. {npc.get('greeting','')}")
-        step_idx = qstate.get("step", 0)
-        if step_idx >= len(qdef["steps"]):
-            return await ctx.send(f"You visit {npc['display']}. It seems you've completed the steps; use `completequest`.")
-        step = qdef["steps"][step_idx]
-        if step["type"] == "visit_npc" and step.get("npc") == npc_key.lower():
-            qstate["step"] = step_idx + 1
-            await user_conf.quests.set(qstate)
-            return await ctx.send(f"You spoke with {npc['display']}. Quest advanced.")
-        return await ctx.send(f"You speak with {npc['display']}. {npc.get('greeting','')}")
+        qstate    = await user_conf.quests()
+        active    = qstate.get("active")
+        advanced  = False
+
+        if active:
+            qdef = self.quests.get(active)
+            step_idx = qstate.get("step", 0)
+            if qdef and step_idx < len(qdef["steps"]):
+                step = qdef["steps"][step_idx]
+                if step["type"] == "visit_npc" and step.get("npc") == npc_key.lower():
+                    qstate["step"] = step_idx + 1
+                    await user_conf.quests.set(qstate)
+                    advanced = True
+                    embed.add_field(
+                        name="Quest Updated",
+                        value=f"Step {step_idx+1}/{len(qdef['steps'])} complete: “{step.get('desc','')}”",
+                        inline=False
+                    )
+
+        # If no active quest or nothing to advance, just show the greeting
+        await ctx.send(embed=embed)
+
         
     @commands.command()
     async def fishleaderboard(self, ctx, top: int = 10):
