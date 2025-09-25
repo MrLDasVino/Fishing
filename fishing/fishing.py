@@ -2175,6 +2175,23 @@ class Fishing(commands.Cog):
                         continue
                     new_rem.append(f)
                 remaining_inv = new_rem
+            elif key.startswith("item:"):
+                item_name = key.split(":", 1)[1]
+                # pull inventory once
+                items_list = await user_conf.items()
+                have = items_list.count(item_name)
+                if have < needed:
+                    ok = False
+                    break
+                # consume exactly `needed` copies
+                new_items = []
+                removed = 0
+                for it in items_list:
+                    if it == item_name and removed < needed:
+                        removed += 1
+                        continue
+                    new_items.append(it)
+                await user_conf.items.set(new_items)                
             else:
                 ok = False
                 break
