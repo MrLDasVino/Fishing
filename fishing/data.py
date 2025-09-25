@@ -404,7 +404,8 @@ npcs = {
             "cosmic_probe",       # e.g. trigger meteor_shower or moon_phase
             "starwhale_sighting"  # e.g. net a Star Whale
         ],
-        "image": "https://files.catbox.moe/ysmx5h.png",    
+        "image": "https://files.catbox.moe/ysmx5h.png",
+    },
 }
 
 # Copy your quests dict here:
