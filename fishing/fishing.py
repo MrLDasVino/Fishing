@@ -2915,7 +2915,53 @@ class Fishing(commands.Cog):
         emb.set_thumbnail(url="https://files.catbox.moe/awbf4w.png")
 
         await ctx.send(embed=emb)
-    
+        
+    @commands.command()
+    async def givefish(self, ctx, recipient: discord.Member, amount: int, *, name: str):
+        """
+        Give away your fish or items to another user.
+        Usage: !givefish @Bob 2 Salmon
+               !givefish @Bob 1 "Treasure Map"
+        """
+        giver_conf = self.config.user(ctx.author)
+        rec_conf   = self.config.user(recipient)
+
+        # Normalize lookup
+        # Try fish first, then items
+        is_fish = name in self.fish_definitions
+        if is_fish:
+            src_list = await giver_conf.caught()
+        else:
+            src_list = await giver_conf.items()
+
+        have = src_list.count(name)
+        if have < amount:
+            return await ctx.send(
+                f"❌ You only have {have}× **{name}** to give, but tried to give {amount}."
+            )
+
+        # remove from giver
+        for _ in range(amount):
+            src_list.remove(name)
+        if is_fish:
+            await giver_conf.caught.set(src_list)
+        else:
+            await giver_conf.items.set(src_list)
+
+        # add to recipient
+        if is_fish:
+            dst_list = await rec_conf.caught()
+            dst_list.extend([name] * amount)
+            await rec_conf.caught.set(dst_list)
+        else:
+            dst_list = await rec_conf.items()
+            dst_list.extend([name] * amount)
+            await rec_conf.items.set(dst_list)
+
+        await ctx.send(
+            f"🤝 {ctx.author.mention} gave {amount}× **{name}** to {recipient.mention}!"
+        )
+
 
     async def cog_unload(self):
         pass
