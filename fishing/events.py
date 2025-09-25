@@ -2,8 +2,12 @@
 
 import random
 from .helpers import deposit, choose_random
-from .data import fish_definitions
-from .data    import rod_level_fish_multiplier, rod_level_break_reduction
+from .data import (
+    fish_definitions,
+    quests,
+    rod_level_fish_multiplier,
+    rod_level_break_reduction,
+)
 
 class EventManager:
     def __init__(self, config, fish_names: list, fish_weights: list):
@@ -74,12 +78,8 @@ class EventManager:
         self.base_w  = [self.handlers[k][1] for k in self.keys]
 
     async def pick_and_run(self, ctx, user_conf):
-        """
-        1) Clone base weights
-        2) apply bait / luck / rod modifiers (copy your code)
-        3) random.choices → pick a key
-        4) call its handler, return its result
-        """
+    
+        rod_lvl = await user_conf.rod_level()
         fish_mult  = rod_level_fish_multiplier.get(rod_lvl, 1.0)
         break_mult = rod_level_break_reduction.get(rod_lvl, 1.0)
         weights = self.base_w.copy()
