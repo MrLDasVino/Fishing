@@ -769,6 +769,214 @@ class Fishing(commands.Cog):
                 "rewards": {"coins": 800, "items": {"Map": 2}},
                 "repeatable": False,    
             },
+            "volcanic_venture": {
+                "title": "Volcanic Venture",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "rarity": "Epic",
+                        "count": 2,
+                        "desc": "Catch 2 Epic fish in a Volcanic Spring."
+                    }
+                ],
+                "rewards": {"coins": 150, "items": {"Rod Fragment": 1}},
+                "repeatable": False,
+            },
+            "ember_hunt": {
+                "title": "Ember Hunt",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "name": "Fire Goby",
+                        "count": 3,
+                        "desc": "Catch 3 Fire Goby from the smoldering pools."
+                    }
+                ],
+                "rewards": {"coins": 50, "items": {"Chum": 1}},
+                "repeatable": True,
+            },
+            "inferno_artifact": {
+                "title": "Inferno Artifact",
+                "steps": [
+                    {
+                        "type": "deliver_item",
+                        "item": "Lava Pearl",
+                        "count": 1,
+                        "desc": "Deliver a Lava Pearl to Vulko."
+                    }
+                ],
+                "rewards": {"coins": 200, "items": {"Rod Core": 1}},
+                "repeatable": False,
+            },
+            "lava_challenge": {
+                "title": "Lava Challenge",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "name": "Magma Eel",
+                        "count": 1,
+                        "desc": "Hook a Magma Eel from a sudden lava spout."
+                    }
+                ],
+                "rewards": {"coins": 300, "items": {"Storm Scale": 1}},
+                "repeatable": False,
+            },    
+            "fossil_hunt": {
+                "title": "Fossil Hunt",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "rarity": "Uncommon",
+                        "count": 3,
+                        "desc": "Catch 3 Uncommon fish in the Prehistoric biome."
+                    }
+                ],
+                "rewards": {"coins": 60, "items": {"Chum": 1}},
+                "repeatable": True,
+            },
+            "dunkle_search": {
+                "title": "Dunkle Search",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "name": "Dunkleosteus",
+                        "count": 1,
+                        "desc": "Catch one Dunkleosteus."
+                    }
+                ],
+                "rewards": {"coins": 150, "items": {"Rod Fragment": 1}},
+                "repeatable": False,
+            },
+            "leviathan_probe": {
+                "title": "Leviathan Probe",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "name": "Mire Leviathan",
+                        "count": 1,
+                        "desc": "Secure proof of a Mire Leviathan catch."
+                    }
+                ],
+                "rewards": {"coins": 400, "items": {"Map": 1}},
+                "repeatable": False,
+            },
+            "placoderm_delve": {
+                "title": "Placoderm Delve",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "name": "Placoderm",
+                        "count": 1,
+                        "desc": "Catch one Placoderm."
+                    }
+                ],
+                "rewards": {"coins": 120},
+                "repeatable": True,
+            },   
+            "haunted_whispers": {
+                "title": "Haunted Whispers",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "name": "Spectral Herring",
+                        "count": 1,
+                        "desc": "Catch one Spectral Herring."
+                    }
+                ],
+                "rewards": {"coins": 80, "items": {"Pearl": 1}},
+                "repeatable": True,
+            },
+            "spectral_tide": {
+                "title": "Spectral Tide",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "name": "Wraith Herring",
+                        "count": 2,
+                        "desc": "Net two Wraith Herring from the Haunted Shoals."
+                    }
+                ],
+                "rewards": {"coins": 100, "items": {"Rod Fragment": 1}},
+                "repeatable": False,
+            },
+            "phantom_treasure": {
+                "title": "Phantom Treasure",
+                "steps": [
+                    {
+                        "type": "deliver_item",
+                        "item": "Phantom Pearl",
+                        "count": 1,
+                        "desc": "Turn in a Phantom Pearl."
+                    }
+                ],
+                "rewards": {"coins": 200, "items": {"Storm Scale": 1}},
+                "repeatable": False,
+            },
+            "wraith_bounty": {
+                "title": "Wraith Bounty",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "name": "Ghost Carp",
+                        "count": 1,
+                        "desc": "Bring in one Ghost Carp."
+                    }
+                ],
+                "rewards": {"coins": 120, "items": {"Chum": 1}},
+                "repeatable": True,
+            },
+            "asteroid_hunt": {
+                "title": "Asteroid Hunt",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "name": "Asteroid Salmon",
+                        "count": 2,
+                        "desc": "Catch two Asteroid Salmon."
+                    }
+                ],
+                "rewards": {"coins": 100, "items": {"Map": 1}},
+                "repeatable": True,
+            },
+            "nebula_expedition": {
+                "title": "Nebula Expedition",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "name": "Nebula Eel",
+                        "count": 1,
+                        "desc": "Land one Nebula Eel."
+                    }
+                ],
+                "rewards": {"coins": 180, "items": {"Rod Fragment": 1}},
+                "repeatable": False,
+            },
+            "cosmic_probe": {
+                "title": "Cosmic Probe",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "rarity": "Mythic",
+                        "count": 1,
+                        "desc": "Catch a Mythic fish under cosmic skies."
+                    }
+                ],
+                "rewards": {"coins": 200, "items": {"Coral Trinket": 1}},
+                "repeatable": False,
+            },
+            "starwhale_sighting": {
+                "title": "Starwhale Sighting",
+                "steps": [
+                    {
+                        "type": "collect_fish",
+                        "name": "Star Whale",
+                        "count": 1,
+                        "desc": "Net a Star Whale."
+                    }
+                ],
+                "rewards": {"coins": 300, "items": {"Tonic Bottle": 1}},
+                "repeatable": False,
+            }, 
         }
 
         # Event registry
