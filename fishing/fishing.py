@@ -1956,9 +1956,8 @@ class Fishing(commands.Cog):
     # ---------- fishstats, achievements, repairrod, sell ----------
     @commands.command()
     async def fishstats(self, ctx):
-        """View how many fish you’ve caught, your items, and your bank balance (embed)."""
+        """View how many fish you’ve caught, your items, and your bank balance (embed, paged)."""
         data = await self.config.user(ctx.author).all()
-        image_url = "https://files.catbox.moe/w2zsia.png"
         bait = data["bait"]
         caught = data["caught"]
         if not caught:
@@ -1966,44 +1965,64 @@ class Fishing(commands.Cog):
                 f"You haven't caught anything yet. Use `{ctx.clean_prefix}fish` to start fishing!"
             )
 
-        # tally up each species
+        # 1) tally up each species into lines
         counts: Dict[str, int] = {}
-        for fish in caught:
-            counts[fish] = counts.get(fish, 0) + 1
+        for f in caught:
+            counts[f] = counts.get(f, 0) + 1
 
-        # build the embed
-        emb = discord.Embed(
-            title=f"{ctx.author.display_name}'s Fishing Stats",
-            colour=discord.Colour.blue()
-        )
-        bal = await bank.get_balance(ctx.author)
-        currency = await bank.get_currency_name(ctx.guild)
-        emb.set_thumbnail(url=image_url)
-        emb.add_field(name="Balance", value=f"**{bal}** {currency}", inline=False)
-
-        # new breakdown: include emoji, name, rarity, biome, count
         lines: List[str] = []
-        for fish, count in counts.items():
+        for fish, cnt in counts.items():
             info = self.fish_definitions.get(fish, {})
             emoji = info.get("emoji", "")
             rarity = info.get("rarity", "Unknown")
             biome = info.get("biome", "Unknown")
-            lines.append(f"• {emoji} {fish} ({rarity}, {biome}): {count}")
-        breakdown = "\n".join(lines)
+            lines.append(f"• {emoji} {fish} ({rarity}, {biome}): {cnt}")
 
-        emb.add_field(name="Caught", value=breakdown or "None", inline=False)
-        emb.add_field(name="Bait", value=str(bait), inline=True)
+        # 2) split lines into pages
+        per_page = 8
+        pages = [lines[i : i + per_page] for i in range(0, len(lines), per_page)]
 
-        # items as before
-        items = await self.config.user(ctx.author).items()
-        if items:
-            inv_counts: Dict[str, int] = {}
-            for it in items:
-                inv_counts[it] = inv_counts.get(it, 0) + 1
-            item_lines = "\n".join(f"• {iname}: {cnt}" for iname, cnt in inv_counts.items())
-            emb.add_field(name="Items", value=item_lines, inline=False)
+        # 3) build an embed for each page
+        embeds: List[discord.Embed] = []
+        image_url = "https://files.catbox.moe/w2zsia.png"
+        bal = await bank.get_balance(ctx.author)
+        currency = await bank.get_currency_name(ctx.guild)
 
-        await ctx.send(embed=emb)
+        for idx, page_lines in enumerate(pages):
+            emb = discord.Embed(
+                title=f"{ctx.author.display_name}'s Fishing Stats",
+                colour=discord.Colour.blue(),
+            )
+            emb.set_thumbnail(url=image_url)
+
+            # always show balance & bait
+            emb.add_field(name="Balance", value=f"**{bal}** {currency}", inline=False)
+            emb.add_field(name="Bait", value=str(bait), inline=True)
+
+            # caught chunk
+            emb.add_field(
+                name="Caught",
+                value="\n".join(page_lines),
+                inline=False,
+            )
+
+            # only on the last page, show items
+            if idx == len(pages) - 1:
+                items = data["items"]
+                if items:
+                    inv_counts: Dict[str, int] = {}
+                    for it in items:
+                        inv_counts[it] = inv_counts.get(it, 0) + 1
+                    item_lines = "\n".join(f"• {iname}: {cnt}"
+                                           for iname, cnt in inv_counts.items())
+                    emb.add_field(name="Items", value=item_lines, inline=False)
+
+            emb.set_footer(text=f"Page {idx+1}/{len(pages)}")
+            embeds.append(emb)
+
+        # 4) hand off to your paginator
+        await self._paginate_embeds(ctx, embeds)
+
 
 
 
