@@ -89,7 +89,9 @@ class EventManager:
         self.base_w  = [self.handlers[k][1] for k in self.keys]
 
     async def pick_and_run(self, ctx, user_conf):
-    print("DEBUG base_w exists? →", hasattr(self, "base_w"), getattr(self, "base_w", None))
+        print("DEBUG base_w exists? →",
+              hasattr(self, "base_w"),
+              getattr(self, "base_w", None))
 
         weights = self.base_w.copy()
         rod_lvl = await user_conf.rod_level()
