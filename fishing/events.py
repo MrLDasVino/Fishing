@@ -15,18 +15,7 @@ class EventManager:
         self.fish_names   = fish_names
         self.fish_weights = fish_weights
         
-    async def _inc_stat(self, user, key, amount=1):
-        """
-        Increment a numeric stat in user_conf.stats
-        """
-        # load the full stats dict
-        stats = await self.config.user(user).stats()
-        # bump the requested stat
-        stats[key] = stats.get(key, 0) + amount
-        # write it back
-        await self.config.user(user).stats.set(stats)        
-
-        # build registry
+                # build registry
         self.handlers = {
             "nothing":         (self._event_nothing,          35),
             "fish":            (self._event_fish,             28),
@@ -87,6 +76,20 @@ class EventManager:
         }
         self.keys    = list(self.handlers)
         self.base_w  = [self.handlers[k][1] for k in self.keys]
+        
+       
+        
+    async def _inc_stat(self, user, key, amount=1):
+        """
+        Increment a numeric stat in user_conf.stats
+        """
+        # load the full stats dict
+        stats = await self.config.user(user).stats()
+        # bump the requested stat
+        stats[key] = stats.get(key, 0) + amount
+        # write it back
+        await self.config.user(user).stats.set(stats)        
+
 
     async def pick_and_run(self, ctx, user_conf):
         print("DEBUG base_w exists? →",
