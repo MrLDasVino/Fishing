@@ -14,7 +14,7 @@ from .events        import EventManager
 from .crafting      import Crafting
 from .quests        import Quests
 from .rod           import Rod
-from .commands      import FishingCommands
+from .command_handlers import FishingCommands
 
 
 class FishingCog(commands.Cog):
