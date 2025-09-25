@@ -1166,7 +1166,15 @@ class Fishing(commands.Cog):
             await self._inc_stat(ctx.author, "casts", 1)
             return False, "⛈️ A sudden storm! Your line snaps back and your rod breaks."
         await self._inc_stat(ctx.author, "casts", 1)
-        return False, "⛈️ A sudden storm! Your line snaps back with nothing to show."
+        # 10% chance to salvage a Storm Scale from the storm
+        scale_msg = ""
+        if random.random() < 0.10:
+            items = await user_conf.items()
+            items.append("Storm Scale")
+            await user_conf.items.set(items)
+            scale_msg = " Amid the thunder you retrieve a **Storm Scale**!"
+
+        return False, f"⛈️ A sudden storm! Your line snaps back with nothing to show.{scale_msg}"
 
     async def _event_net(self, ctx, user_conf):
         net_fish_count = random.randint(1, 5)
@@ -1579,15 +1587,35 @@ class Fishing(commands.Cog):
     async def _event_thunder_clap(self, ctx, user_conf):
         await self._inc_stat(ctx.author, "casts", 1)
         # reduce luck briefly but maybe rare storm fish
+        # 8% chance to hook the rare Stormwing Tuna
         if random.random() < 0.08:
             data = await user_conf.caught()
             data.append("Stormwing Tuna")
             await user_conf.caught.set(data)
             await self._maybe_update_unique_and_highest(ctx.author, "Stormwing Tuna")
-            return False, "⚡ A thunderclap unleashes a **Stormwing Tuna**!"
-        # small luck penalty
+
+            # 10% chance to salvage a Storm Scale alongside it
+            scale_msg = ""
+            if random.random() < 0.10:
+                items = await user_conf.items()
+                items.append("Storm Scale")
+                await user_conf.items.set(items)
+                scale_msg = " You also salvage a **Storm Scale**!"
+
+            return False, f"⚡ A thunderclap unleashes a **Stormwing Tuna**!{scale_msg}"
+
+        # small luck penalty on a normal clap
         await user_conf.luck.set(max(0, (await user_conf.luck()) - 1))
-        return False, "⚡ A thunderclap startles the water; luck reduced slightly."
+
+        # still a 10% chance to get a Storm Scale even if no tuna
+        scale_msg = ""
+        if random.random() < 0.10:
+            items = await user_conf.items()
+            items.append("Storm Scale")
+            await user_conf.items.set(items)
+            scale_msg = " You salvage a small **Storm Scale** from the thunder."
+
+        return False, f"⚡ A thunderclap startles the water; luck reduced slightly.{scale_msg}"
 
     async def _event_sponge_cache(self, ctx, user_conf):
         await self._inc_stat(ctx.author, "casts", 1)
