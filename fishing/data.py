@@ -909,7 +909,7 @@ quests = {
         ],
         "rewards": {"coins": 300, "items": {"Tonic Bottle": 1}},
         "repeatable": False,
-        
+    },    
 }
 
 # ——— ROD UPGRADE SETTINGS ———
