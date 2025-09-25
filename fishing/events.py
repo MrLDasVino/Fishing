@@ -115,7 +115,7 @@ class EventManager:
 
     # ——— event handlers: copy your original methods below ———
 
-    async def _nothing(self, ctx, user_conf):
+    async def _event_nothing(self, ctx, user_conf):
         stats = await user_conf.stats()
         stats["consecutive_catches"] = 0
         await user_conf.stats.set(stats)
