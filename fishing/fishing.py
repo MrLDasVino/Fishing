@@ -72,6 +72,28 @@ class Fishing(commands.Cog):
             "quests": {},        # per-user quest state: {"active": quest_id or None, "step": int, "progress": {...}, "completed": [...]}
         }
         self.config.register_user(**default_user)
+        
+        # ─── Flavor texts for casting ───
+        self.cast_flavor = [
+            "🎣 You cast your line and wait patiently…",
+            "🌊 You send your hook into the rolling waves…",
+            "🌅 You fling the bait out as the sun dips low…",
+            "🌙 Moonlight shimmers on the water’s surface as you cast…",
+            "☀️ The midday glare bounces off your lure…",
+            "🌧 A soft drizzle falls as you set your line…",
+            "❄️ A cold breeze ripples the surface while you wait…",
+            "🌀 You twirl your rod and let the line drift away…",
+            "🌾 You kneel at the water’s edge and launch your hook…",
+            "💨 A sudden gust carries your lure over calm depths…",
+            "🎼 You whistle a tune as the bobber drifts away…",
+            "🔥 The scent of fish fills the air as you cast…",
+            "🌈 A faint rainbow arches overhead as your line plops in…",
+            "🪨 You settle a pebble to anchor your line in rocky shallows…",
+            "🧜 A distant echo of a siren’s song accompanies your cast…",
+            "📜 Old tales of the river swirl in your mind as you wait…",
+            "🎉 You hum in excitement as your bait settles below…",
+            "🕯 Twilight’s glow guides your hook into the depths…",
+        ]        
 
         # ---------- Fish definitions ----------
         self.fish_definitions = {
@@ -2278,7 +2300,9 @@ class Fishing(commands.Cog):
         if await user_conf.rod_broken():
             return await ctx.send("🔧 Your rod is broken. Repair it with `repairrod` first.")
 
-        waiting_msg = await ctx.send("🎣 You cast your line and wait patiently…")
+        # pick a random intro
+        intro = random.choice(self.cast_flavor)
+        waiting_msg = await ctx.send(intro)
         await asyncio.sleep(random.uniform(1.5, 5.5))
 
         # use pre-cached lists instead of rebuilding every time
