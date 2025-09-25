@@ -1012,6 +1012,21 @@ class Fishing(commands.Cog):
         if stats.get("crafts_done", 0) >= total_recipes and "crafting_ace" not in earned:
             m = await self._award_achievement(ctx, user, "crafting_ace")
             if m: messages.append(m)
+            
+        # Epic Streak: 3 consecutive epic-or-better
+        if stats["consecutive_catches"] >= 3 and "epic_streak_3" not in earned:
+            m = await self._award_achievement(ctx, user, "epic_streak_3")
+            if m: messages.append(m)
+        
+        # Merchant of Mean: sell 500 total value
+        if stats["sell_total"] >= 500 and "merchant_of_mean" not in earned:
+            m = await self._award_achievement(ctx, user, "merchant_of_mean")
+            if m: messages.append(m)
+        
+        # Bait Baron: collect 100 bait
+        if stats["bait_collected_total"] >= 100 and "bait_hoarder_plus" not in earned:
+            m = await self._award_achievement(ctx, user, "bait_hoarder_plus")
+            if m: messages.append(m)    
 
         return messages
 
@@ -1173,6 +1188,12 @@ class Fishing(commands.Cog):
         data.extend(caught)
         await user_conf.caught.set(data)
         await self._inc_stat(ctx.author, "casts", 1)
+        await self._inc_stat(ctx.author, "net_events", 1)
+        if net_fish_count >= 5 and not await self._has_achievement(ctx.author, "net_haul"):
+            net_msg = await self._award_achievement(ctx, ctx.author, "net_haul")
+            if net_msg:
+                base = f"🕸️ You snagged an old net with {net_fish_count} things tangled inside: {', '.join(caught)}."
+                return False, f"{base}\n\n{net_msg}"
         if random.random() < 0.08:
             items = await user_conf.items()
             items.append("Rod Fragment")
@@ -1433,6 +1454,9 @@ class Fishing(commands.Cog):
 
     async def _event_meteor_shower(self, ctx, user_conf):
         await self._inc_stat(ctx.author, "casts", 1)
+        await self._inc_stat(ctx.author, "cosmic_events", 1)
+        if not await self._has_achievement(ctx.author, "cosmic_watcher"):
+            await self._award_achievement(ctx, ctx.author, "cosmic_watcher")
         if random.random() < 0.10:
             # celestial fish
             data = await user_conf.caught()
@@ -1537,12 +1561,17 @@ class Fishing(commands.Cog):
 
     async def _event_phantom_net(self, ctx, user_conf):
         await self._inc_stat(ctx.author, "casts", 1)
+        await self._inc_stat(ctx.author, "spectral_events", 1)
         if random.random() < 0.08:
             data = await user_conf.caught()
             data.append("Spectral Herring")
             await user_conf.caught.set(data)
             await self._maybe_update_unique_and_highest(ctx.author, "Spectral Herring")
-            return False, "👻 A ghostly net yields a **Spectral Herring**!"
+            spec_msg = None
+            if not await self._has_achievement(ctx.author, "spectral_hunter"):
+                spec_msg = await self._award_achievement(ctx, ctx.author, "spectral_hunter")
+            text = "👻 A ghostly net yields a **Spectral Herring**!"
+            return False, f"{text}\n\n{spec_msg}" if spec_msg else text
         return False, "👻 An old phantom net drops off a tangle of junk."
 
     async def _event_lazy_sun(self, ctx, user_conf):
@@ -1590,6 +1619,9 @@ class Fishing(commands.Cog):
 
     async def _event_moon_phase(self, ctx, user_conf):
         await self._inc_stat(ctx.author, "casts", 1)
+        await self._inc_stat(ctx.author, "cosmic_events", 1)
+        if not await self._has_achievement(ctx.author, "cosmic_watcher"):
+            await self._award_achievement(ctx, ctx.author, "cosmic_watcher")
         if random.random() < 0.05:
             data = await user_conf.caught()
             data.append("Silver Seraph")
@@ -2351,6 +2383,11 @@ class Fishing(commands.Cog):
             items.remove("Rod Core")
             await user_conf.items.set(items)
             await user_conf.rod_level.set(target)
+            ach_id = f"rod_master_{target}"
+            if ach_id in self.achievements and not await self._has_achievement(ctx.author, ach_id):
+                msg = await self._award_achievement(ctx, ctx.author, ach_id)
+                if msg:
+                    await ctx.send(msg)            
             return await ctx.send(f"✨ You used a Rod Core and upgraded your rod to level **{target}**!")
 
         need_frag = req["fragments"]
