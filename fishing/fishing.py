@@ -1372,10 +1372,11 @@ class Fishing(commands.Cog):
             pass            
             return False, f"🛠️ You salvage pieces, get **{coins} {currency}** and a **Rod Fragment**!"
         if random.random() < 0.15:
-            data = await user_conf.caught()
-            data.append("Treasure Map")
-            await user_conf.caught.set(data)
-            return False, f"🛠️ You salvage usable pieces and find **{coins} {currency}** and a Treasure Map!"
+            items = await user_conf.items()
+            items.append("Treasure Map")
+            await user_conf.items.set(items)
+            await self._inc_stat(ctx.author, "map_found", 1)
+            return False, f"🛠️ You salvage usable pieces and find **{coins} {currency}** and a **Treasure Map**!"
         return False, f"🛠️ You salvage metal and get **{coins} {currency}**."
 
     async def _event_message(self, ctx, user_conf):

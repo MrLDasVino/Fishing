@@ -1,6 +1,6 @@
 {
   "name": "fishing",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "short": "A simple fishing minigame",
   "description": "Cast a line, catch fish, treasure chests, even break your rod!",
   "author": ["Elvin"],
