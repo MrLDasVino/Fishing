@@ -105,7 +105,14 @@ class EventManager:
         if weight > stats.get("highest_catch_weight", 0):
             stats["highest_catch_weight"] = weight
 
-        await self.config.user(user).stats.set(stats)        
+        await self.config.user(user).stats.set(stats) 
+
+    def _random_fish(self):
+        """
+        Return a random fish name based on the biome weights.
+        """
+        # fish_names and fish_weights were stored in __init__
+        return choose_random(self.fish_names, self.fish_weights)        
 
 
     async def pick_and_run(self, ctx, user_conf):
