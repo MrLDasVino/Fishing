@@ -1,7 +1,7 @@
 # cogs/fishing/achievements.py
 
 from functools import wraps
-from typing import List
+from typing import List, Optional
 from redbot.core import bank
 from .data import achievements as _ACH  # your metadata
 
