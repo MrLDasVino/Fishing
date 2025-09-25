@@ -55,7 +55,17 @@ class EventManager:
             "moon_phase":      (self._event_moon_phase,  1),
             "rift_glimpse":    (self._event_rift_glimpse,1),
             "luminous_cavern": (self._event_luminous_cavern, 2),
-            "prehistoric_trench": (self._event_prehistoric_trench, 2),            
+            "prehistoric_trench": (self._event_prehistoric_trench, 2),
+            "smoldering_pool":   (self._event_smoldering_pool,  2),
+            "lava_spout":        (self._event_lava_spout,       2),
+            "phantom_tide":      (self._event_phantom_tide,     2),
+            "haunted_whispers":  (self._event_haunted_whispers, 2),
+            "dream_reverie":     (self._event_dream_reverie,    2),
+            "nightmare_bloom":   (self._event_nightmare_bloom,  2),
+            "titan_quake":       (self._event_titan_quake,      2),
+            "deepwyrm_raise":    (self._event_deepwyrm_raise,   2),
+            "cavern_glow":       (self._event_cavern_glow,      2),
+            "ethereal_gust":     (self._event_ethereal_gust,    2),            
         }
         self.keys    = list(self.handlers)
         self.base_w  = [self.handlers[k][1] for k in self.keys]
@@ -796,4 +806,154 @@ class EventManager:
         await self._maybe_update_unique_and_highest(ctx.author, catch)
         await self._advance_quest_on_catch(ctx.author, catch)
         return False, f"{info['emoji']} In the trench you haul up a **{catch}**!"
+
+    async def _event_smoldering_pool(self, ctx, user_conf):
+        """Volcanic Spring: yielding Fire Goby or Magma Eel."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.20:
+            choice = "Magma Eel"
+        else:
+            choice = "Fire Goby"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} Scorching currents yield a **{choice}** ({info['rarity']})!"
+
+    async def _event_lava_spout(self, ctx, user_conf):
+        """Volcanic Spring burst: Ember Carp blast."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        # Always Ember Carp
+        choice = "Ember Carp"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} A sudden lava spout spews a **{choice}**!"
+
+    async def _event_phantom_tide(self, ctx, user_conf):
+        """Haunted Shoals tide: Wraith Herring or Bonefish."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.30:
+            choice = "Wraith Herring"
+        else:
+            choice = "Bonefish"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} Ghostly tide brings in a **{choice}** ({info['rarity']})!"
+
+    async def _event_haunted_whispers(self, ctx, user_conf):
+        """Haunted Shoals whispers: steal or grant Phantom Carp."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.25:
+            inv = await user_conf.items()
+            if inv:
+                lost = inv.pop(random.randrange(len(inv)))
+                await user_conf.items.set(inv)
+                return False, f"👻 Haunting whispers steal your **{lost}**!"
+        # Otherwise give a Phantom Carp
+        choice = "Phantom Carp"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} You hook a **{choice}** from the darkness!"
+
+    async def _event_dream_reverie(self, ctx, user_conf):
+        """Dreaming Deep: chance for Dream Pike or Sleepfin."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.30:
+            choice = "Dream Pike"
+        else:
+            choice = "Sleepfin"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} In a dream current you net a **{choice}**!"
+
+    async def _event_nightmare_bloom(self, ctx, user_conf):
+        """Dreaming Deep bloom: Nightmare Grouper lurks."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        choice = "Nightmare Grouper"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} A nightmare bloom surfaces a **{choice}**!"
+
+    async def _event_titan_quake(self, ctx, user_conf):
+        """Titan's Trench tremor: Titan Crab or Pressure Pike."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.30:
+            choice = "Titan Crab"
+        else:
+            choice = "Pressure Pike"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} A trench quake yields a **{choice}**!"
+
+    async def _event_deepwyrm_raise(self, ctx, user_conf):
+        """Titan's Trench abyss: Leviathan Cod or Deepwyrm."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.25:
+            choice = "Leviathan Cod"
+        else:
+            choice = "Deepwyrm"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} From the depths a **{choice}** emerges!"
+
+    async def _event_cavern_glow(self, ctx, user_conf):
+        """Bioluminal Cavern glow: Neon Sprat or Glowfin Trout."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.40:
+            choice = "Neon Sprat"
+        else:
+            choice = "Glowfin Trout"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} Cavern lights guide you to a **{choice}**!"
+
+    async def _event_ethereal_gust(self, ctx, user_conf):
+        """Ethereal Lagoon breeze: Moonshadow Koi or Celestial Salmon."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.30:
+            choice = "Moonshadow Koi"
+        else:
+            choice = "Celestial Salmon"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} A gentle lagoon breeze lands a **{choice}**!"
+        
         
