@@ -362,6 +362,49 @@ npcs = {
         "quests": ["mire_tasks", "mossback_call", "river_cleanse", "legendary_capture"],
         "image": "https://files.catbox.moe/a78qlb.png",
     },
+    "vulko": {
+        "display": "Vulko the Lava Shaman",
+        "greeting": "'The magma sings to those who dare. Will you listen to its rhythm?'",
+        "quests": [
+            "volcanic_venture",   # e.g. catch Ember Carp or Magma Eel
+            "ember_hunt",         # e.g. collect Fire Goby
+            "inferno_artifact",   # e.g. deliver Lava Pearl
+            "lava_challenge"      # e.g. survive a lava_spout event
+        ],
+        "image": "https://files.catbox.moe/kd6fvu.png",
+    },
+    "paleon": {
+        "display": "Paleon the Fossil Chaser",
+        "greeting": "'These ancient currents whisper of long-lost beasts. Help me unearth their bones.'",
+        "quests": [
+            "fossil_hunt",        # e.g. catch Trilobite or Ammonite
+            "dunkle_search",      # e.g. land a Dunkleosteus
+            "leviathan_probe",    # e.g. hook a Mire Leviathan
+            "placoderm_delve"     # e.g. deliver a Placoderm
+        ],
+        "image": "https://files.catbox.moe/irhj3p.png",
+    },
+    "grimma": {
+        "display": "Grimma the Ghost Whisperer",
+        "greeting": "'Shadows stir beneath haunted shoals. Are you bold enough to answer their call?'",
+        "quests": [
+            "haunted_whispers",   # e.g. trigger haunted_whispers event
+            "spectral_tide",      # e.g. net a Spectral Herring
+            "phantom_treasure",   # e.g. find a Phantom Pearl
+            "wraith_bounty"       # e.g. deliver Ghost Carp
+        ],
+        "image": "https://files.catbox.moe/bphqno.png",
+    },
+    "stellara": {
+        "display": "Stellara the Starfarer",
+        "greeting": "'The void beyond the waves is alive with cosmic wonders. Cast into the stars.'",
+        "quests": [
+            "asteroid_hunt",      # e.g. catch Asteroid Salmon
+            "nebula_expedition",  # e.g. land a Nebula Eel
+            "cosmic_probe",       # e.g. trigger meteor_shower or moon_phase
+            "starwhale_sighting"  # e.g. net a Star Whale
+        ],
+        "image": "https://files.catbox.moe/ysmx5h.png",    
 }
 
 # Copy your quests dict here:
@@ -657,6 +700,215 @@ quests = {
         "rewards": {"coins": 800, "items": {"Map": 2}},
         "repeatable": False,    
     },
+
+    "volcanic_venture": {
+        "title": "Volcanic Venture",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "rarity": "Epic",
+                "count": 2,
+                "desc": "Catch 2 Epic fish in a Volcanic Spring."
+            }
+        ],
+        "rewards": {"coins": 150, "items": {"Rod Fragment": 1}},
+        "repeatable": False,
+    },
+    "ember_hunt": {
+        "title": "Ember Hunt",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "name": "Fire Goby",
+                "count": 3,
+                "desc": "Catch 3 Fire Goby from the smoldering pools."
+            }
+        ],
+        "rewards": {"coins": 50, "items": {"Chum": 1}},
+        "repeatable": True,
+    },
+    "inferno_artifact": {
+        "title": "Inferno Artifact",
+        "steps": [
+            {
+                "type": "deliver_item",
+                "item": "Lava Pearl",
+                "count": 1,
+                "desc": "Deliver a Lava Pearl to Vulko."
+            }
+        ],
+        "rewards": {"coins": 200, "items": {"Rod Core": 1}},
+        "repeatable": False,
+    },
+    "lava_challenge": {
+        "title": "Lava Challenge",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "name": "Magma Eel",
+                "count": 1,
+                "desc": "Hook a Magma Eel from a sudden lava spout."
+            }
+        ],
+        "rewards": {"coins": 300, "items": {"Storm Scale": 1}},
+        "repeatable": False,
+    },    
+    "fossil_hunt": {
+        "title": "Fossil Hunt",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "rarity": "Uncommon",
+                "count": 3,
+                "desc": "Catch 3 Uncommon fish in the Prehistoric biome."
+            }
+        ],
+        "rewards": {"coins": 60, "items": {"Chum": 1}},
+        "repeatable": True,
+    },
+    "dunkle_search": {
+        "title": "Dunkle Search",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "name": "Dunkleosteus",
+                "count": 1,
+                "desc": "Catch one Dunkleosteus."
+            }
+        ],
+        "rewards": {"coins": 150, "items": {"Rod Fragment": 1}},
+        "repeatable": False,
+    },
+    "leviathan_probe": {
+        "title": "Leviathan Probe",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "name": "Mire Leviathan",
+                "count": 1,
+                "desc": "Secure proof of a Mire Leviathan catch."
+            }
+        ],
+        "rewards": {"coins": 400, "items": {"Map": 1}},
+        "repeatable": False,
+    },
+    "placoderm_delve": {
+        "title": "Placoderm Delve",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "name": "Placoderm",
+                "count": 1,
+                "desc": "Catch one Placoderm."
+            }
+        ],
+        "rewards": {"coins": 120},
+        "repeatable": True,
+    },   
+    "haunted_whispers": {
+        "title": "Haunted Whispers",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "name": "Spectral Herring",
+                "count": 1,
+                "desc": "Catch one Spectral Herring."
+            }
+        ],
+        "rewards": {"coins": 80, "items": {"Pearl": 1}},
+        "repeatable": True,
+    },
+    "spectral_tide": {
+        "title": "Spectral Tide",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "name": "Wraith Herring",
+                "count": 2,
+                "desc": "Net two Wraith Herring from the Haunted Shoals."
+            }
+        ],
+        "rewards": {"coins": 100, "items": {"Rod Fragment": 1}},
+        "repeatable": False,
+    },
+    "phantom_treasure": {
+        "title": "Phantom Treasure",
+        "steps": [
+            {
+                "type": "deliver_item",
+                "item": "Phantom Pearl",
+                "count": 1,
+                "desc": "Turn in a Phantom Pearl."
+            }
+        ],
+        "rewards": {"coins": 200, "items": {"Storm Scale": 1}},
+        "repeatable": False,
+    },
+    "wraith_bounty": {
+        "title": "Wraith Bounty",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "name": "Ghost Carp",
+                "count": 1,
+                "desc": "Bring in one Ghost Carp."
+            }
+        ],
+        "rewards": {"coins": 120, "items": {"Chum": 1}},
+        "repeatable": True,
+    },
+    "asteroid_hunt": {
+        "title": "Asteroid Hunt",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "name": "Asteroid Salmon",
+                "count": 2,
+                "desc": "Catch two Asteroid Salmon."
+            }
+        ],
+        "rewards": {"coins": 100, "items": {"Map": 1}},
+        "repeatable": True,
+    },
+    "nebula_expedition": {
+        "title": "Nebula Expedition",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "name": "Nebula Eel",
+                "count": 1,
+                "desc": "Land one Nebula Eel."
+            }
+        ],
+        "rewards": {"coins": 180, "items": {"Rod Fragment": 1}},
+        "repeatable": False,
+    },
+    "cosmic_probe": {
+        "title": "Cosmic Probe",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "rarity": "Mythic",
+                "count": 1,
+                "desc": "Catch a Mythic fish under cosmic skies."
+            }
+        ],
+        "rewards": {"coins": 200, "items": {"Coral Trinket": 1}},
+        "repeatable": False,
+    },
+    "starwhale_sighting": {
+        "title": "Starwhale Sighting",
+        "steps": [
+            {
+                "type": "collect_fish",
+                "name": "Star Whale",
+                "count": 1,
+                "desc": "Net a Star Whale."
+            }
+        ],
+        "rewards": {"coins": 300, "items": {"Tonic Bottle": 1}},
+        "repeatable": False,
+        
 }
 
 # ——— ROD UPGRADE SETTINGS ———

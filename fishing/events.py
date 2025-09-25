@@ -65,7 +65,9 @@ class EventManager:
             "titan_quake":       (self._event_titan_quake,      2),
             "deepwyrm_raise":    (self._event_deepwyrm_raise,   2),
             "cavern_glow":       (self._event_cavern_glow,      2),
-            "ethereal_gust":     (self._event_ethereal_gust,    2),            
+            "ethereal_gust":     (self._event_ethereal_gust,    2),
+            "volcanic_spring": (self._event_volcanic_spring,    2),
+            "haunted_shoal":   (self._event_haunted_shoal,      2),            
         }
         self.keys    = list(self.handlers)
         self.base_w  = [self.handlers[k][1] for k in self.keys]
@@ -955,5 +957,75 @@ class EventManager:
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} A gentle lagoon breeze lands a **{choice}**!"
+        
+    async def _event_volcanic_spring(self, ctx, user_conf):
+        """
+        Volcanic Spring:
+        – 20% chance to uncover a Lava Pearl item
+        – otherwise catch a volcanic fish (Cinderfish or Magma Carp)
+        """
+        # count the cast
+        await self._inc_stat(ctx.author, "casts", 1)
+
+        if random.random() < 0.20:
+            # grant the Lava Pearl item
+            items = await user_conf.items()
+            items.append("Lava Pearl")
+            await user_conf.items.set(items)
+
+            # track as treasure event if you like
+            await self._inc_stat(ctx.author, "treasure_found", 1)
+
+            return False, (
+                "🌋 You brave the molten depths and unearth a **Lava Pearl**! "
+                "Use it or deliver it for special rewards."
+            )
+
+        # else hook one of the volcanic fish
+        choice = random.choice(["Cinderfish", "Magma Carp"])
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+
+        return False, f"{info['emoji']} You caught a **{choice}** ({info['rarity']}) in the lava spring!"
+
+    async def _event_haunted_shoal(self, ctx, user_conf):
+        """
+        Haunted Shoals:
+        – 15% chance to receive a Phantom Pearl item
+        – else catch a ghostly fish (Spectral Herring or Ghost Carp)
+        """
+        await self._inc_stat(ctx.author, "casts", 1)
+
+        if random.random() < 0.15:
+            # grant the Phantom Pearl item
+            items = await user_conf.items()
+            items.append("Phantom Pearl")
+            await user_conf.items.set(items)
+
+            # track as a pearl event
+            await self._inc_stat(ctx.author, "pearl_found", 1)
+
+            return False, (
+                "🌑 A skeletal tide washes in a **Phantom Pearl**! "
+                "Keep it safe or turn it in to Grimma."
+            )
+
+        # else hook a ghost fish
+        choice = random.choice(["Spectral Herring", "Ghost Carp"])
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+
+        return False, f"{info['emoji']} A shadowy form coalesces—you hook a **{choice}**!"
+        
         
         
