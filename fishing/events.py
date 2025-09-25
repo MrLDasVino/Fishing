@@ -12,9 +12,9 @@ class EventManager:
 
         # build registry
         self.handlers = {
-            "nothing":         (self._nothing,          35),
-            "fish":            (self._fish,             28),
-            "double":          (self._double,            5),
+            "nothing":         (self._event_nothing,          35),
+            "fish":            (self._event_fish,             28),
+            "double":          (self._event_double,            5),
             "shark":           (self._event_shark,       3),
             "break":           (self._event_break,       4),
             "treasure":        (self._event_treasure,    4),
