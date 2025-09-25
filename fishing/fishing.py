@@ -1955,24 +1955,20 @@ class Fishing(commands.Cog):
         """
         Bioluminal Sea vibes: catch a Glimmer Eel or find extra bait.
         """
-        # count this cast
         await self._inc_stat(ctx.author, "casts", 1)
 
-        r = random.random()
-        if r < 0.25:
-            # find bait in the glowing water
+        if random.random() < 0.25:
             bait = random.randint(1, 3)
             cur = await user_conf.bait()
             await user_conf.bait.set(cur + bait)
             return False, f"🌌 Luminous Cavern sparkles — you gather **{bait}** bait."
 
-        # otherwise hook a Glimmer Eel
         catch = "Glimmer Eel"
         data = await user_conf.caught()
         data.append(catch)
         await user_conf.caught.set(data)
 
-        self.fish_definitions[catch]
+        info = self.fish_definitions[catch]
         await self._maybe_update_unique_and_highest(ctx.author, catch)
         await self._advance_quest_on_catch(ctx.author, catch)
         return False, f"{info['emoji']} You net a **{catch}** from the glowing depths!"
@@ -1985,22 +1981,15 @@ class Fishing(commands.Cog):
 
         r = random.random()
         if r < 0.10:
-            # Megalodon encounter—rod might break
             await user_conf.rod_broken.set(True)
             return False, "🦈 A colossal silhouette thrashes—your rod shatters as you escape!"
 
-        if r < 0.35:
-            # rare Coelacanth catch
-            catch = "Coelacanth"
-        else:
-            # common Trilobite
-            catch = "Trilobite"
-
+        catch = "Coelacanth" if r < 0.35 else "Trilobite"
         data = await user_conf.caught()
         data.append(catch)
         await user_conf.caught.set(data)
 
-        self.fish_definitions[catch]
+        info = self.fish_definitions[catch]
         await self._maybe_update_unique_and_highest(ctx.author, catch)
         await self._advance_quest_on_catch(ctx.author, catch)
         return False, f"{info['emoji']} In the trench you haul up a **{catch}**!"
@@ -2008,14 +1997,13 @@ class Fishing(commands.Cog):
     async def _event_smoldering_pool(self, ctx, user_conf):
         """Volcanic Spring: yielding Fire Goby or Magma Eel."""
         await self._inc_stat(ctx.author, "casts", 1)
-        if random.random() < 0.20:
-            choice = "Magma Eel"
-        else:
-            choice = "Fire Goby"
+        choice = "Magma Eel" if random.random() < 0.20 else "Fire Goby"
+
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[catch]
+
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} Scorching currents yield a **{choice}** ({info['rarity']})!"
@@ -2023,12 +2011,13 @@ class Fishing(commands.Cog):
     async def _event_lava_spout(self, ctx, user_conf):
         """Volcanic Spring burst: Ember Carp blast."""
         await self._inc_stat(ctx.author, "casts", 1)
-        # Always Ember Carp
+
         choice = "Ember Carp"
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[catch]
+
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} A sudden lava spout spews a **{choice}**!"
@@ -2036,14 +2025,13 @@ class Fishing(commands.Cog):
     async def _event_phantom_tide(self, ctx, user_conf):
         """Haunted Shoals tide: Wraith Herring or Bonefish."""
         await self._inc_stat(ctx.author, "casts", 1)
-        if random.random() < 0.30:
-            choice = "Wraith Herring"
-        else:
-            choice = "Bonefish"
+        choice = "Wraith Herring" if random.random() < 0.30 else "Bonefish"
+
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[catch]
+
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} Ghostly tide brings in a **{choice}** ({info['rarity']})!"
@@ -2057,12 +2045,13 @@ class Fishing(commands.Cog):
                 lost = inv.pop(random.randrange(len(inv)))
                 await user_conf.items.set(inv)
                 return False, f"👻 Haunting whispers steal your **{lost}**!"
-        # Otherwise give a Phantom Carp
+
         choice = "Phantom Carp"
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[catch]
+
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} You hook a **{choice}** from the darkness!"
@@ -2070,14 +2059,13 @@ class Fishing(commands.Cog):
     async def _event_dream_reverie(self, ctx, user_conf):
         """Dreaming Deep: chance for Dream Pike or Sleepfin."""
         await self._inc_stat(ctx.author, "casts", 1)
-        if random.random() < 0.30:
-            choice = "Dream Pike"
-        else:
-            choice = "Sleepfin"
+        choice = "Dream Pike" if random.random() < 0.30 else "Sleepfin"
+
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[catch]
+
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} In a dream current you net a **{choice}**!"
@@ -2086,10 +2074,12 @@ class Fishing(commands.Cog):
         """Dreaming Deep bloom: Nightmare Grouper lurks."""
         await self._inc_stat(ctx.author, "casts", 1)
         choice = "Nightmare Grouper"
+
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[catch]
+
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} A nightmare bloom surfaces a **{choice}**!"
@@ -2097,14 +2087,13 @@ class Fishing(commands.Cog):
     async def _event_titan_quake(self, ctx, user_conf):
         """Titan's Trench tremor: Titan Crab or Pressure Pike."""
         await self._inc_stat(ctx.author, "casts", 1)
-        if random.random() < 0.30:
-            choice = "Titan Crab"
-        else:
-            choice = "Pressure Pike"
+        choice = "Titan Crab" if random.random() < 0.30 else "Pressure Pike"
+
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[catch]
+
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} A trench quake yields a **{choice}**!"
@@ -2112,14 +2101,13 @@ class Fishing(commands.Cog):
     async def _event_deepwyrm_raise(self, ctx, user_conf):
         """Titan's Trench abyss: Leviathan Cod or Deepwyrm."""
         await self._inc_stat(ctx.author, "casts", 1)
-        if random.random() < 0.25:
-            choice = "Leviathan Cod"
-        else:
-            choice = "Deepwyrm"
+        choice = "Leviathan Cod" if random.random() < 0.25 else "Deepwyrm"
+
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[catch]
+
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} From the depths a **{choice}** emerges!"
@@ -2127,14 +2115,13 @@ class Fishing(commands.Cog):
     async def _event_cavern_glow(self, ctx, user_conf):
         """Bioluminal Cavern glow: Neon Sprat or Glowfin Trout."""
         await self._inc_stat(ctx.author, "casts", 1)
-        if random.random() < 0.40:
-            choice = "Neon Sprat"
-        else:
-            choice = "Glowfin Trout"
+        choice = "Neon Sprat" if random.random() < 0.40 else "Glowfin Trout"
+
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[catch]
+
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} Cavern lights guide you to a **{choice}**!"
@@ -2142,51 +2129,43 @@ class Fishing(commands.Cog):
     async def _event_ethereal_gust(self, ctx, user_conf):
         """Ethereal Lagoon breeze: Moonshadow Koi or Celestial Salmon."""
         await self._inc_stat(ctx.author, "casts", 1)
-        if random.random() < 0.30:
-            choice = "Moonshadow Koi"
-        else:
-            choice = "Celestial Salmon"
+        choice = "Moonshadow Koi" if random.random() < 0.30 else "Celestial Salmon"
+
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[catch]
+
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} A gentle lagoon breeze lands a **{choice}**!"
-        
+
     async def _event_volcanic_spring(self, ctx, user_conf):
         """
         Volcanic Spring:
         – 20% chance to uncover a Lava Pearl item
         – otherwise catch a volcanic fish (Cinderfish or Magma Carp)
         """
-        # count the cast
         await self._inc_stat(ctx.author, "casts", 1)
 
         if random.random() < 0.20:
-            # grant the Lava Pearl item
             items = await user_conf.items()
             items.append("Lava Pearl")
             await user_conf.items.set(items)
-
-            # track as treasure event if you like
             await self._inc_stat(ctx.author, "treasure_found", 1)
-
             return False, (
                 "🌋 You brave the molten depths and unearth a **Lava Pearl**! "
                 "Use it or deliver it for special rewards."
             )
 
-        # else hook one of the volcanic fish
         choice = random.choice(["Cinderfish", "Magma Carp"])
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
 
-        info = fish_definitions[catch]
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
-
         return False, f"{info['emoji']} You caught a **{choice}** ({info['rarity']}) in the lava spring!"
 
     async def _event_haunted_shoal(self, ctx, user_conf):
@@ -2198,30 +2177,25 @@ class Fishing(commands.Cog):
         await self._inc_stat(ctx.author, "casts", 1)
 
         if random.random() < 0.15:
-            # grant the Phantom Pearl item
             items = await user_conf.items()
             items.append("Phantom Pearl")
             await user_conf.items.set(items)
-
-            # track as a pearl event
             await self._inc_stat(ctx.author, "pearl_found", 1)
-
             return False, (
                 "🌑 A skeletal tide washes in a **Phantom Pearl**! "
                 "Keep it safe or turn it in to Grimma."
             )
 
-        # else hook a ghost fish
         choice = random.choice(["Spectral Herring", "Ghost Carp"])
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
 
-        info = fish_definitions[catch]
+        info = self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
-
-        return False, f"{info['emoji']} A shadowy form coalesces—you hook a **{choice}**!"        
+        return False, f"{info['emoji']} A shadowy form coalesces—you hook a **{choice}**!"
+     
         
     async def _paginate_embeds(self, ctx, embeds: List[discord.Embed], timeout: float = 120.0):
         """Show embeds with reaction pagination controlled by the invoking user."""
