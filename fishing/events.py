@@ -89,11 +89,12 @@ class EventManager:
         self.base_w  = [self.handlers[k][1] for k in self.keys]
 
     async def pick_and_run(self, ctx, user_conf):
-    
+    print("DEBUG base_w exists? →", hasattr(self, "base_w"), getattr(self, "base_w", None))
+
+        weights = self.base_w.copy()
         rod_lvl = await user_conf.rod_level()
         fish_mult  = rod_level_fish_multiplier.get(rod_lvl, 1.0)
         break_mult = rod_level_break_reduction.get(rod_lvl, 1.0)
-        weights = self.base_w.copy()
         # 2) Bait modifier
         bait_amt = await user_conf.bait()
         if bait_amt > 0:
