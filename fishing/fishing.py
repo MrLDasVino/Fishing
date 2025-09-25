@@ -1925,27 +1925,49 @@ class Fishing(commands.Cog):
         bait = data["bait"]
         caught = data["caught"]
         if not caught:
-            return await ctx.send(f"You haven't caught anything yet. Use `{ctx.clean_prefix}fish` to start fishing!")
-        counts = {}
+            return await ctx.send(
+                f"You haven't caught anything yet. Use `{ctx.clean_prefix}fish` to start fishing!"
+            )
+
+        # tally up each species
+        counts: Dict[str, int] = {}
         for fish in caught:
             counts[fish] = counts.get(fish, 0) + 1
-        emb = discord.Embed(title=f"{ctx.author.display_name}'s Fishing Stats", colour=discord.Colour.blue())
+
+        # build the embed
+        emb = discord.Embed(
+            title=f"{ctx.author.display_name}'s Fishing Stats",
+            colour=discord.Colour.blue()
+        )
         bal = await bank.get_balance(ctx.author)
         currency = await bank.get_currency_name(ctx.guild)
         emb.set_thumbnail(url=image_url)
         emb.add_field(name="Balance", value=f"**{bal}** {currency}", inline=False)
-        # fish breakdown
-        breakdown = "\n".join(f"• {self.fish_definitions.get(fish, {}).get('emoji','')} {fish}: {count}" for fish, count in counts.items())
+
+        # new breakdown: include emoji, name, rarity, biome, count
+        lines: List[str] = []
+        for fish, count in counts.items():
+            info = self.fish_definitions.get(fish, {})
+            emoji = info.get("emoji", "")
+            rarity = info.get("rarity", "Unknown")
+            biome = info.get("biome", "Unknown")
+            lines.append(f"• {emoji} {fish} ({rarity}, {biome}): {count}")
+        breakdown = "\n".join(lines)
+
         emb.add_field(name="Caught", value=breakdown or "None", inline=False)
         emb.add_field(name="Bait", value=str(bait), inline=True)
+
+        # items as before
         items = await self.config.user(ctx.author).items()
         if items:
-            inv_counts = {}
+            inv_counts: Dict[str, int] = {}
             for it in items:
                 inv_counts[it] = inv_counts.get(it, 0) + 1
-            itemline = "\n".join(f"• {iname}: {count}" for iname, count in inv_counts.items())
-            emb.add_field(name="Items", value=itemline, inline=False)
+            item_lines = "\n".join(f"• {iname}: {cnt}" for iname, cnt in inv_counts.items())
+            emb.add_field(name="Items", value=item_lines, inline=False)
+
         await ctx.send(embed=emb)
+
 
 
     @commands.command()
