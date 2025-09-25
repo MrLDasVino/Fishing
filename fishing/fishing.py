@@ -60,6 +60,7 @@ class Fishing(commands.Cog):
                 "festival_events":     0,
                 "salvage_events":      0,
                 "double_events":       0,
+                "cosmic_events":       0,
                 "crafts_done":         0,
                 "boss_catches":        0,
                 "abyssal_catches":     0,
@@ -1440,21 +1441,30 @@ class Fishing(commands.Cog):
         return False, f"🌊 You explore a tide pool and net {len(caught)} fish: {', '.join(caught)}."
 
     async def _event_meteor_shower(self, ctx, user_conf):
-        await self._inc_stat(ctx.author, "casts", 1)
-        await self._inc_stat(ctx.author, "cosmic_events", 1)
-        if not await self._has_achievement(ctx.author, "cosmic_watcher"):
-            await self._award_achievement(ctx, ctx.author, "cosmic_watcher")
-        if random.random() < 0.10:
-            # celestial fish
-            data = await user_conf.caught()
-            data.append("Star Pike")
-            await user_conf.caught.set(data)
-            await self._maybe_update_unique_and_highest(ctx.author, "Star Pike")
-            return False, "☄️ Meteor light guides you to a **Star Pike**!"
-        else:
-            coins = random.randint(10, 50)
-            new_bal, currency = await self._deposit(ctx.author, coins, ctx)
-            return False, f"☄️ Falling sparks wash ashore coins — you get **{coins} {currency}**."
+      await self._inc_stat(ctx.author, "cosmic_events", 1)
+
+      # try awarding the achievement and capture its message
+      ach_msg = None
+      if not await self._has_achievement(ctx.author, "cosmic_watcher"):
+          ach_msg = await self._award_achievement(ctx, ctx.author, "cosmic_watcher")
+
+      if random.random() < 0.10:
+          # celestial fish
+          catch = "Star Pike"
+          data = await user_conf.caught()
+          data.append(catch)
+          await user_conf.caught.set(data)
+          await self._maybe_update_unique_and_highest(ctx.author, catch)
+          base = "☄️ Meteor light guides you to a **Star Pike**!"
+      else:
+          coins = random.randint(10, 50)
+          new_bal, currency = await self._deposit(ctx.author, coins, ctx)
+          base = f"☄️ Falling sparks wash ashore coins — you get **{coins} {currency}**."
+
+      # append achievement announcement if any
+      if ach_msg:
+          return False, f"{base}\n\n{ach_msg}"
+      return False, base
 
     async def _event_coral_gift(self, ctx, user_conf):
         await self._inc_stat(ctx.author, "casts", 1)
@@ -1605,17 +1615,27 @@ class Fishing(commands.Cog):
         return False, "🌊 The tide changes — coastal/reef spawns feel stronger for a short time."
 
     async def _event_moon_phase(self, ctx, user_conf):
-        await self._inc_stat(ctx.author, "casts", 1)
-        await self._inc_stat(ctx.author, "cosmic_events", 1)
-        if not await self._has_achievement(ctx.author, "cosmic_watcher"):
-            await self._award_achievement(ctx, ctx.author, "cosmic_watcher")
-        if random.random() < 0.05:
-            data = await user_conf.caught()
-            data.append("Silver Seraph")
-            await user_conf.caught.set(data)
-            await self._maybe_update_unique_and_highest(ctx.author, "Silver Seraph")
-            return False, "🌕 Under the moon's eye you catch a **Silver Seraph**!"
-        return False, "🌕 The moon glances off the water — a quiet, promising night."
+      await self._inc_stat(ctx.author, "cosmic_events", 1)
+
+      # try awarding the achievement and capture its message
+      ach_msg = None
+      if not await self._has_achievement(ctx.author, "cosmic_watcher"):
+          ach_msg = await self._award_achievement(ctx, ctx.author, "cosmic_watcher")
+
+      if random.random() < 0.05:
+          catch = "Silver Seraph"
+          data = await user_conf.caught()
+          data.append(catch)
+          await user_conf.caught.set(data)
+          await self._maybe_update_unique_and_highest(ctx.author, catch)
+          base = "🌕 Under the moon's eye you catch a **Silver Seraph**!"
+      else:
+          base = "🌕 The moon glances off the water — a quiet, promising night."
+
+      # append achievement announcement if any
+      if ach_msg:
+          return False, f"{base}\n\n{ach_msg}"
+      return False, base
 
     async def _event_rift_glimpse(self, ctx, user_conf):
         await self._inc_stat(ctx.author, "casts", 1)
