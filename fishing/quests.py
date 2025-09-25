@@ -14,6 +14,7 @@ class Quests(commands.Cog):
     @commands.command()
     async def npcs(self, ctx):
         """List known NPCs in the world (paged embed)."""
+        await ctx.send(f"DEBUG: loaded NPC keys → {', '.join(self.npcs.keys())}")        
         entries = list(self.npcs.items())   # was using some other source
         embeds = []
         per_page = 6
