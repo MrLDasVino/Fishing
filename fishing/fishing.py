@@ -3465,7 +3465,7 @@ class Fishing(commands.Cog):
                 colour=discord.Colour.purple()
             )
             # banner
-            embed.set_image(url=https://files.catbox.moe/npxvr7.png)
+            embed.set_image(url="https://files.catbox.moe/npxvr7.png")
 
             # strip the "Quest complete! " prefix and put the rest into a field
             rewards_text = result[len("Quest complete! "):]
