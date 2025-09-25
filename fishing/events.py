@@ -2,9 +2,9 @@
 
 import random
 from .helpers import deposit, choose_random
+from .data import quests as quests_definitions
 from .data import (
     fish_definitions,
-    quests,
     rod_level_fish_multiplier,
     rod_level_break_reduction,
 )
@@ -88,6 +88,23 @@ class EventManager:
         # bump the requested stat
         stats[key] = stats.get(key, 0) + amount
         # write it back
+        await self.config.user(user).stats.set(stats)
+
+    async def _maybe_update_unique_and_highest(self, user, fish_name):
+        # pull down their stats dict
+        stats = await self.config.user(user).stats()
+
+        # record unique catches
+        uniques = stats.get("unique_catches", [])
+        if fish_name not in uniques:
+            uniques.append(fish_name)
+            stats["unique_catches"] = uniques
+
+        # update highest‐weight catch
+        weight = fish_definitions[fish_name]["weight"]
+        if weight > stats.get("highest_catch_weight", 0):
+            stats["highest_catch_weight"] = weight
+
         await self.config.user(user).stats.set(stats)        
 
 
