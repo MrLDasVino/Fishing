@@ -54,6 +54,17 @@ class Fishing(commands.Cog):
                 "sell_total": 0,
                 "consecutive_catches": 0,
                 "bait_collected_total": 0,
+                "treasure_found":      0,
+                "map_found":           0,
+                "pearl_found":         0,
+                "festival_events":     0,
+                "salvage_events":      0,
+                "double_events":       0,
+                "crafts_done":         0,
+                "boss_catches":        0,
+                "abyssal_catches":     0,
+                "mythic_catches":      0,
+                "legendary_catches":   0,                
             },
             "items": [],         # non-fish items like "Rod Fragment", "Rod Core", "Treasure Map", "Chum"
             "rod_level": 0,      # 0 = basic
@@ -921,7 +932,89 @@ class Fishing(commands.Cog):
             if m:
                 messages.append(m)
 
+                # Epic streak: 3 epics in a row
+        if stats.get("consecutive_catches", 0) >= 3 and "epic_streak_3" not in earned:
+            m = await self._award_achievement(ctx, user, "epic_streak_3")
+            if m: messages.append(m)
+
+        # Double Trouble: 5 double‐catch events
+        if stats.get("double_events", 0) >= 5 and "double_trouble" not in earned:
+            m = await self._award_achievement(ctx, user, "double_trouble")
+            if m: messages.append(m)
+
+        # Treasure Collector: 5 chests found
+        if stats.get("treasure_found", 0) >= 5 and "treasure_collect" not in earned:
+            m = await self._award_achievement(ctx, user, "treasure_collect")
+            if m: messages.append(m)
+
+        # Pearl Hoarder: 3 pearls
+        if stats.get("pearl_found", 0) >= 3 and "pearl_hoarder" not in earned:
+            m = await self._award_achievement(ctx, user, "pearl_hoarder")
+            if m: messages.append(m)
+
+        # Map Explorer: 3 maps
+        if stats.get("map_found", 0) >= 3 and "map_explorer" not in earned:
+            m = await self._award_achievement(ctx, user, "map_explorer")
+            if m: messages.append(m)
+
+        # Festival Fan: 3 festival events
+        if stats.get("festival_events", 0) >= 3 and "festival_fan" not in earned:
+            m = await self._award_achievement(ctx, user, "festival_fan")
+            if m: messages.append(m)
+
+        # Salvage Expert: 20 salvage events
+        if stats.get("salvage_events", 0) >= 20 and "salvage_expert" not in earned:
+            m = await self._award_achievement(ctx, user, "salvage_expert")
+            if m: messages.append(m)
+
+        # Sea Legend: caught a boss fish
+        if stats.get("boss_catches", 0) >= 1 and "sea_legend" not in earned:
+            m = await self._award_achievement(ctx, user, "sea_legend")
+            if m: messages.append(m)
+
+        # Abyssal Finder: caught an Abyssal or Mythic
+        if stats.get("abyssal_catches", 0) >= 1 and "abyssal_finder" not in earned:
+            m = await self._award_achievement(ctx, user, "abyssal_finder")
+            if m: messages.append(m)
+
+        # Mythic Hunter: 3 mythic catches
+        if stats.get("mythic_catches", 0) >= 3 and "mythic_hunter" not in earned:
+            m = await self._award_achievement(ctx, user, "mythic_hunter")
+            if m: messages.append(m)
+
+        # Legend Chaser: 5 legendary catches
+        if stats.get("legendary_catches", 0) >= 5 and "legend_chaser" not in earned:
+            m = await self._award_achievement(ctx, user, "legend_chaser")
+            if m: messages.append(m)
+
+        # Collector: 100 unique fish
+        if stats.get("unique_fish", 0) >= 100 and "collector_100" not in earned:
+            m = await self._award_achievement(ctx, user, "collector_100")
+            if m: messages.append(m)
+
+        # Merchant of Mean: sell 500 total
+        if stats.get("sell_total", 0) >= 500 and "merchant_of_mean" not in earned:
+            m = await self._award_achievement(ctx, user, "merchant_of_mean")
+            if m: messages.append(m)
+
+        # Seasoned Angler: cast 1000 times
+        if stats.get("casts", 0) >= 1000 and "seasoned_angler" not in earned:
+            m = await self._award_achievement(ctx, user, "seasoned_angler")
+            if m: messages.append(m)
+
+        # Bait Baron: collect 100 bait
+        if stats.get("bait_collected_total", 0) >= 100 and "bait_hoarder_plus" not in earned:
+            m = await self._award_achievement(ctx, user, "bait_hoarder_plus")
+            if m: messages.append(m)
+
+        # Crafting Ace: craft every recipe (use crafts_done >= len recipes)
+        total_recipes = len(self.crafting_recipes)
+        if stats.get("crafts_done", 0) >= total_recipes and "crafting_ace" not in earned:
+            m = await self._award_achievement(ctx, user, "crafting_ace")
+            if m: messages.append(m)
+
         return messages
+
 
     async def _inc_stat(self, user, key: str, amount: int = 1):
         conf = self.config.user(user)
@@ -968,6 +1061,15 @@ class Fishing(commands.Cog):
         data = await user_conf.caught()
         data.append(catch)
         await user_conf.caught.set(data)
+        info = self.fish_definitions[catch]
+        if info["rarity"] == "Boss":
+            await self._inc_stat(ctx.author, "boss_catches", 1)
+        if info["rarity"] in ("Abyssal", "Mythic"):
+            await self._inc_stat(ctx.author, "abyssal_catches", 1)
+        if info["rarity"] == "Mythic":
+            await self._inc_stat(ctx.author, "mythic_catches", 1)
+        if info["rarity"] == "Legendary":
+            await self._inc_stat(ctx.author, "legendary_catches", 1)        
         await self._maybe_update_unique_and_highest(ctx.author, catch)
         await self._inc_stat(ctx.author, "casts", 1)
         await self._advance_quest_on_catch(ctx.author, catch)
@@ -987,6 +1089,7 @@ class Fishing(commands.Cog):
         await self._maybe_update_unique_and_highest(ctx.author, catch1)
         await self._maybe_update_unique_and_highest(ctx.author, catch2)
         await self._inc_stat(ctx.author, "casts", 1)
+        await self._inc_stat(ctx.author, "double_events", 1)
         await self._advance_quest_on_catch(ctx.author, catch1)
         await self._advance_quest_on_catch(ctx.author, catch2)
         msg_ach = None
@@ -1025,6 +1128,7 @@ class Fishing(commands.Cog):
         coins = random.randint(10, 60)
         new_bal, currency = await self._deposit(ctx.author, coins, ctx)
         await self._inc_stat(ctx.author, "casts", 1)
+        await self._inc_stat(ctx.author, "treasure_found", 1)
         # small chance for rod fragment
         if random.random() < 0.06:
             items = await user_conf.items()
@@ -1142,6 +1246,7 @@ class Fishing(commands.Cog):
         value = random.randint(50, 150)
         new_bal, currency = await self._deposit(ctx.author, value, ctx)
         await self._inc_stat(ctx.author, "casts", 1)
+        await self._inc_stat(ctx.author, "pearl_found", 1)
         
         # give the player a Pearl item
         items = await user_conf.items()
@@ -1165,6 +1270,7 @@ class Fishing(commands.Cog):
         items.append("Treasure Map")
         await user_conf.items.set(items)
         await self._inc_stat(ctx.author, "casts", 1)
+        await self._inc_stat(ctx.author, "map_found", 1)
         if not await self._has_achievement(ctx.author, "map_collector"):
             msg = await self._award_achievement(ctx, ctx.author, "map_collector")
             if msg:
@@ -1202,6 +1308,7 @@ class Fishing(commands.Cog):
     async def _event_festival(self, ctx, user_conf):
         await user_conf.luck.set(3)
         await self._inc_stat(ctx.author, "casts", 1)
+        await self._inc_stat(ctx.author, "festival_events", 1)
         return False, "🎉 Festival of Fishermen! Sold fish pay more for a short while."
 
     async def _event_charity(self, ctx, user_conf):
@@ -1219,6 +1326,7 @@ class Fishing(commands.Cog):
         coins = random.randint(5, 40)
         new_bal, currency = await self._deposit(ctx.author, coins, ctx)
         await self._inc_stat(ctx.author, "casts", 1)
+        await self._inc_stat(ctx.author, "salvage_events", 1)
         r = random.random()
         if r < 0.03:
             items = await user_conf.items()
@@ -2031,6 +2139,7 @@ class Fishing(commands.Cog):
             items.append(result["item"])
             await user_conf.items.set(items)
             messages.append(f"🔧 Craft successful: **{recipe['name']}** — you received **{result['item']}**.")
+            await self._inc_stat(ctx.author, "crafts_done", 1)
         if "items" in result:
             items_cfg = await user_conf.items()
             for iname, count in result["items"].items():
