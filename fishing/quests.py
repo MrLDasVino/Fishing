@@ -1,5 +1,5 @@
 # cogs/fishing/quests.py
-
+import discord
 import asyncio
 from redbot.core import commands
 from .data import npcs as NPC_DEFS, quests as QUEST_DEFS
