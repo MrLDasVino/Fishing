@@ -1972,7 +1972,7 @@ class Fishing(commands.Cog):
         data.append(catch)
         await user_conf.caught.set(data)
 
-        info = fish_definitions[catch]
+        self.fish_definitions[catch]
         await self._maybe_update_unique_and_highest(ctx.author, catch)
         await self._advance_quest_on_catch(ctx.author, catch)
         return False, f"{info['emoji']} You net a **{catch}** from the glowing depths!"
@@ -2000,7 +2000,7 @@ class Fishing(commands.Cog):
         data.append(catch)
         await user_conf.caught.set(data)
 
-        info = fish_definitions[catch]
+        self.fish_definitions[catch]
         await self._maybe_update_unique_and_highest(ctx.author, catch)
         await self._advance_quest_on_catch(ctx.author, catch)
         return False, f"{info['emoji']} In the trench you haul up a **{catch}**!"
@@ -2015,7 +2015,7 @@ class Fishing(commands.Cog):
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} Scorching currents yield a **{choice}** ({info['rarity']})!"
@@ -2028,7 +2028,7 @@ class Fishing(commands.Cog):
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} A sudden lava spout spews a **{choice}**!"
@@ -2043,7 +2043,7 @@ class Fishing(commands.Cog):
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} Ghostly tide brings in a **{choice}** ({info['rarity']})!"
@@ -2062,7 +2062,7 @@ class Fishing(commands.Cog):
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} You hook a **{choice}** from the darkness!"
@@ -2077,7 +2077,7 @@ class Fishing(commands.Cog):
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} In a dream current you net a **{choice}**!"
@@ -2089,7 +2089,7 @@ class Fishing(commands.Cog):
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} A nightmare bloom surfaces a **{choice}**!"
@@ -2104,7 +2104,7 @@ class Fishing(commands.Cog):
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} A trench quake yields a **{choice}**!"
@@ -2119,7 +2119,7 @@ class Fishing(commands.Cog):
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} From the depths a **{choice}** emerges!"
@@ -2134,7 +2134,7 @@ class Fishing(commands.Cog):
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} Cavern lights guide you to a **{choice}**!"
@@ -2149,7 +2149,7 @@ class Fishing(commands.Cog):
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} A gentle lagoon breeze lands a **{choice}**!"
@@ -2183,7 +2183,7 @@ class Fishing(commands.Cog):
         data.append(choice)
         await user_conf.caught.set(data)
 
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
 
@@ -2217,7 +2217,7 @@ class Fishing(commands.Cog):
         data.append(choice)
         await user_conf.caught.set(data)
 
-        info = fish_definitions[choice]
+        self.fish_definitions[choice]
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
 
