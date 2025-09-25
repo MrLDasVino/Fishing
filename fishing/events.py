@@ -111,10 +111,6 @@ class EventManager:
                 if key in ("fish", "double", "treasure", "pearl", "merchant"):
                     weights[i] = int(weights[i] * 2)
 
-        # 4) Rod‐level modifier
-        rod_lvl = await user_conf.rod_level()
-        fish_mult  = rod_level_fish_multiplier.get(rod_lvl, 1.0)
-        break_mult = rod_level_break_reduction.get(rod_lvl, 1.0)
         for i, key in enumerate(self.keys):
             if key in ("fish", "double", "treasure", "pearl", "merchant"):
                 weights[i] = int(weights[i] * fish_mult)
