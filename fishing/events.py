@@ -14,6 +14,17 @@ class EventManager:
         self.config = config
         self.fish_names   = fish_names
         self.fish_weights = fish_weights
+        
+    async def _inc_stat(self, user, key, amount=1):
+        """
+        Increment a numeric stat in user_conf.stats
+        """
+        # load the full stats dict
+        stats = await self.config.user(user).stats()
+        # bump the requested stat
+        stats[key] = stats.get(key, 0) + amount
+        # write it back
+        await self.config.user(user).stats.set(stats)        
 
         # build registry
         self.handlers = {
