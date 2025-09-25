@@ -139,7 +139,7 @@ class FishingCommands(commands.Cog):
                     await message.edit(embed=make_embed(current))
                 except Exception:
                     pass
-        …
+        pass
 
     @commands.command()
     async def fishstats(self, ctx):
@@ -209,7 +209,7 @@ class FishingCommands(commands.Cog):
 
         # 4) hand off to your paginator
         await self._paginate_embeds(ctx, embeds)
-        …
+        pass
 
     @commands.command()
     async def achievements(self, ctx):
@@ -250,7 +250,7 @@ class FishingCommands(commands.Cog):
             emb.set_footer(text=f"Page {i//per_embed+1}/{(len(lines)-1)//per_embed+1}")
             embeds.append(emb)
         await self._paginate_embeds(ctx, embeds)
-        …
+        pass
 
     @commands.command()
     async def achievementlist(self, ctx):
@@ -268,7 +268,7 @@ class FishingCommands(commands.Cog):
             emb.set_footer(text=f"Page {i//per_page+1}/{(len(items)-1)//per_page+1}")
             embeds.append(emb)
         await self._paginate_embeds(ctx, embeds)
-        …
+        pass
 
     @commands.command()
     async def repairrod(self, ctx):
@@ -292,7 +292,7 @@ class FishingCommands(commands.Cog):
             await ctx.send("🔧 Your rod is repaired! " + ach_msg)
         else:
             await ctx.send("🔧 Your rod is repaired! Time to cast again.")
-        …
+        pass
 
     @commands.command()
     async def sell(self, ctx, amount: int, *, fish_name: str):
@@ -320,7 +320,7 @@ class FishingCommands(commands.Cog):
         if msgs:
             message += "\n\n" + "\n".join(msgs)
         await ctx.send(message)
-        …
+        pass
 
     @commands.command()
     async def fishleaderboard(self, ctx, top: int = 10):
@@ -353,7 +353,7 @@ class FishingCommands(commands.Cog):
         emb.set_thumbnail(url="https://files.catbox.moe/awbf4w.png")
 
         await ctx.send(embed=emb)
-        …
+        pass
 
     @commands.command()
     async def givefish(self, ctx, recipient: commands.MemberConverter, amount: int, *, name: str):
@@ -400,4 +400,4 @@ class FishingCommands(commands.Cog):
         await ctx.send(
             f"🤝 {ctx.author.mention} gave {amount}× **{name}** to {recipient.mention}!"
         )
-        …
+        pass

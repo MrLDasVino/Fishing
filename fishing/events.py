@@ -121,7 +121,7 @@ class EventManager:
         await user_conf.stats.set(stats)
         await self._inc_stat(ctx.author, "casts", 1)
         return False, "…No bites this time. Better luck next cast!"
-        …
+        pass
 
     async def _event_junk(self, ctx, user_conf):
         junk_items = [
@@ -136,7 +136,7 @@ class EventManager:
         item = random.choice(junk_items)
         await self._inc_stat(ctx.author, "casts", 1)
         return False, f"👎 You pulled up {item}. Better luck next time!"
-        …
+        pass
 
     async def _event_fish(self, ctx, user_conf):
         catch = choose_random(self.fish_names, self.fish_weights)
@@ -160,7 +160,7 @@ class EventManager:
         await self._advance_quest_on_catch(ctx.author, catch)
 
         return False, f"{info['emoji']} You caught a **{catch}** ({rarity})!"
-        …
+        pass
 
     async def _event_double(self, ctx, user_conf):
         catch1 = self._random_fish()

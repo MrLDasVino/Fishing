@@ -151,7 +151,7 @@ class Crafting(commands.Cog):
         except Exception:
             pass        
         await ctx.send("\n".join(messages))
-        …
+        pass
 
     @commands.command()
     async def useitem(self, ctx, *, item_name: str):
@@ -278,4 +278,4 @@ class Crafting(commands.Cog):
 
         # anything else isn’t usable
         return await ctx.send(f"❌ **{match}** cannot be used directly.")
-        …
+        pass

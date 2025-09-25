@@ -85,7 +85,7 @@ class Quests(commands.Cog):
         emb.set_footer(text=f"Use {ctx.clean_prefix}acceptquest <id> to accept. Use {ctx.clean_prefix}npcs to list NPCs.")
 
         await ctx.send(embed=emb)
-        …
+        pass
 
     @commands.command()
     async def acceptquest(self, ctx, quest_id: str):
@@ -188,7 +188,7 @@ class Quests(commands.Cog):
             await ctx.send(f"✅ Quest accepted: **{qdef['title']}**. Use `quest` to track progress.")
         else:
             await ctx.send("❌ Quest acceptance cancelled.")
-        …
+        pass
 
     @commands.command()
     async def quest(self, ctx):
@@ -270,7 +270,7 @@ class Quests(commands.Cog):
             )
 
         await ctx.send(embed=emb)
-        …
+        pass
 
     @commands.command()
     async def abandonquest(self, ctx):
@@ -430,7 +430,7 @@ class Quests(commands.Cog):
         except Exception:
             pass        
         return "Quest complete! " + " ".join(messages)
-        …
+        pass
 
     @commands.command()
     async def completequest(self, ctx):
@@ -442,7 +442,7 @@ class Quests(commands.Cog):
             return await ctx.send("You have no active quest.")
         msg = await self._complete_quest_for_user(ctx.author, ctx)
         await ctx.send(msg)
-        …
+        pass
 
     @commands.command()
     async def visitnpc(self, ctx, npc_key: str):
@@ -467,4 +467,4 @@ class Quests(commands.Cog):
             await user_conf.quests.set(qstate)
             return await ctx.send(f"You spoke with {npc['display']}. Quest advanced.")
         return await ctx.send(f"You speak with {npc['display']}. {npc.get('greeting','')}")
-        …
+        pass

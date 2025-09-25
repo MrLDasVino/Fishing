@@ -111,7 +111,7 @@ class AchievementManager:
         text = "\n".join(parts)
 
         return text
-        …
+        pass
 
     async def _check_and_award(self, ctx, user) -> List[str]:
         user_conf = self.config.user(user)
@@ -262,4 +262,4 @@ class AchievementManager:
               
 
         return messages
-        …
+        pass

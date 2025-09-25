@@ -41,7 +41,7 @@ class Rod(commands.Cog):
         emb.add_field(name="Next Upgrade", value=req_text, inline=False)
 
         await ctx.send(embed=emb)
-        …
+        pass
 
     @commands.command()
     async def upgraderod(self, ctx):
@@ -92,4 +92,4 @@ class Rod(commands.Cog):
 
         await user_conf.rod_level.set(target)
         await ctx.send(f"🔧 Upgrade complete! Your rod is now level **{target}**.")
-        …
+        pass
