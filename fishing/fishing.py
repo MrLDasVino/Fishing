@@ -1012,21 +1012,7 @@ class Fishing(commands.Cog):
         if stats.get("crafts_done", 0) >= total_recipes and "crafting_ace" not in earned:
             m = await self._award_achievement(ctx, user, "crafting_ace")
             if m: messages.append(m)
-            
-        # Epic Streak: 3 consecutive epic-or-better
-        if stats["consecutive_catches"] >= 3 and "epic_streak_3" not in earned:
-            m = await self._award_achievement(ctx, user, "epic_streak_3")
-            if m: messages.append(m)
-        
-        # Merchant of Mean: sell 500 total value
-        if stats["sell_total"] >= 500 and "merchant_of_mean" not in earned:
-            m = await self._award_achievement(ctx, user, "merchant_of_mean")
-            if m: messages.append(m)
-        
-        # Bait Baron: collect 100 bait
-        if stats["bait_collected_total"] >= 100 and "bait_hoarder_plus" not in earned:
-            m = await self._award_achievement(ctx, user, "bait_hoarder_plus")
-            if m: messages.append(m)    
+              
 
         return messages
 
@@ -1380,15 +1366,15 @@ class Fishing(commands.Cog):
         return False, f"🛠️ You salvage metal and get **{coins} {currency}**."
 
     async def _event_message(self, ctx, user_conf):
+        await self._inc_stat(ctx.author, "casts", 1)
         if random.random() < 0.5:
             bait = random.randint(1, 3)
             current = await user_conf.bait()
             await user_conf.bait.set(current + bait)
-            await self._inc_stat(ctx.author, "casts", 1)
-            return False, f"✉️ A friendly note contains **{bait}** bait. Use it to attract better fish."
+            return False, f"✉️ A friendly note contains **{bait}** bait. You now have **{current + bait}** bait."
+        else:
             coins = random.randint(5, 20)
             new_bal, currency = await self._deposit(ctx.author, coins, ctx)
-            await self._inc_stat(ctx.author, "casts", 1)
             return False, f"✉️ You find **{coins} {currency}** tucked in a note. New balance: **{new_bal} {currency}**."
             
     async def _event_bubble_burst(self, ctx, user_conf):
@@ -1718,7 +1704,9 @@ class Fishing(commands.Cog):
     async def fish(self, ctx):
     
         user_conf = self.config.user(ctx.author)
-        # … rod‐broken check …
+        # prevent fishing when your rod is broken
+        if await user_conf.rod_broken():
+            return await ctx.send("🔧 Your rod is broken. Repair it with `!repairrod` first.")
 
         waiting_msg = await ctx.send("🎣 You cast your line and wait patiently…")
         await asyncio.sleep(random.uniform(1.5, 5.5))
