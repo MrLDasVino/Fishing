@@ -54,6 +54,8 @@ class EventManager:
             "tide_change":     (self._event_tide_change, 1),
             "moon_phase":      (self._event_moon_phase,  1),
             "rift_glimpse":    (self._event_rift_glimpse,1),
+            "luminous_cavern": (self._event_luminous_cavern, 2),
+            "prehistoric_trench": (self._event_prehistoric_trench, 2),            
         }
         self.keys    = list(self.handlers)
         self.base_w  = [self.handlers[k][1] for k in self.keys]
@@ -740,3 +742,58 @@ class EventManager:
             await self._maybe_update_unique_and_highest(ctx.author, "Abyssal Wisp")
             return False, "🔱 A rift glimpse draws forth an **Abyssal Wisp**!"
         return False, "🔱 You glimpse a rift far below; nothing pulled up this time."
+        
+    async def _event_luminous_cavern(self, ctx, user_conf):
+        """
+        Bioluminal Sea vibes: catch a Glimmer Eel or find extra bait.
+        """
+        # count this cast
+        await self._inc_stat(ctx.author, "casts", 1)
+
+        r = random.random()
+        if r < 0.25:
+            # find bait in the glowing water
+            bait = random.randint(1, 3)
+            cur = await user_conf.bait()
+            await user_conf.bait.set(cur + bait)
+            return False, f"🌌 Luminous Cavern sparkles — you gather **{bait}** bait."
+
+        # otherwise hook a Glimmer Eel
+        catch = "Glimmer Eel"
+        data = await user_conf.caught()
+        data.append(catch)
+        await user_conf.caught.set(data)
+
+        info = fish_definitions[catch]
+        await self._maybe_update_unique_and_highest(ctx.author, catch)
+        await self._advance_quest_on_catch(ctx.author, catch)
+        return False, f"{info['emoji']} You net a **{catch}** from the glowing depths!"
+
+    async def _event_prehistoric_trench(self, ctx, user_conf):
+        """
+        Ancient waters: chance for a Coelacanth, Trilobite, or a brush with a Megalodon.
+        """
+        await self._inc_stat(ctx.author, "casts", 1)
+
+        r = random.random()
+        if r < 0.10:
+            # Megalodon encounter—rod might break
+            await user_conf.rod_broken.set(True)
+            return False, "🦈 A colossal silhouette thrashes—your rod shatters as you escape!"
+
+        if r < 0.35:
+            # rare Coelacanth catch
+            catch = "Coelacanth"
+        else:
+            # common Trilobite
+            catch = "Trilobite"
+
+        data = await user_conf.caught()
+        data.append(catch)
+        await user_conf.caught.set(data)
+
+        info = fish_definitions[catch]
+        await self._maybe_update_unique_and_highest(ctx.author, catch)
+        await self._advance_quest_on_catch(ctx.author, catch)
+        return False, f"{info['emoji']} In the trench you haul up a **{catch}**!"
+        
