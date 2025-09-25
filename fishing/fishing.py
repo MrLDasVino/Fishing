@@ -208,7 +208,37 @@ class Fishing(commands.Cog):
             "Quasar Pike":       {"weight": 54, "price":140, "emoji":"✨", "rarity":"Epic",       "biome":"Space"},
             "Gravity Grouper":   {"weight": 48, "price":115, "emoji":"🌍", "rarity":"Rare",       "biome":"Space"},
             "Supernova Snapper": {"weight": 24, "price":160, "emoji":"💥", "rarity":"Legendary",  "biome":"Space"},
-            "Astro Anglerfish":  {"weight":  6, "price":220, "emoji":"🚀", "rarity":"Mythic",     "biome":"Space"},            
+            "Astro Anglerfish":  {"weight":  6, "price":220, "emoji":"🚀", "rarity":"Mythic",     "biome":"Space"},
+            "Ember Carp":        {"weight": 20,  "price": 100, "emoji": "🔥",  "rarity": "Epic",     "biome": "Volcanic Spring"},
+            "Lava Snapper":      {"weight": 10,  "price": 140, "emoji": "🌋",  "rarity": "Legendary","biome": "Volcanic Spring"},
+            "Magma Eel":         {"weight": 5,   "price": 220, "emoji": "🌋",  "rarity": "Mythic",   "biome": "Volcanic Spring"},
+            "Fire Goby":         {"weight": 60,  "price": 35,  "emoji": "🔥",  "rarity": "Uncommon", "biome": "Volcanic Spring"},
+            "Cinder Minnow":     {"weight": 120, "price": 25,  "emoji": "🪵",  "rarity": "Common",   "biome": "Volcanic Spring"},
+            "Wraith Herring":    {"weight": 60,  "price": 80,  "emoji": "👻",  "rarity": "Rare",     "biome": "Haunted Shoals"},
+            "Bonefish":          {"weight": 80,  "price": 30,  "emoji": "💀",  "rarity": "Uncommon", "biome": "Haunted Shoals"},
+            "Ghost Catfish":     {"weight": 30,  "price": 110, "emoji": "👻",  "rarity": "Epic",     "biome": "Haunted Shoals"},
+            "Phantom Carp":      {"weight": 12,  "price": 160, "emoji": "🌑",  "rarity": "Legendary","biome": "Haunted Shoals"},
+            "Specter Eel":       {"weight": 6,   "price": 200, "emoji": "👻",  "rarity": "Mythic",   "biome": "Haunted Shoals"},
+            "Dream Pike":        {"weight": 50,  "price": 85,  "emoji": "💭",  "rarity": "Rare",     "biome": "Dreaming Deep"},
+            "Nightmare Grouper": {"weight": 25,  "price": 130, "emoji": "🌑",  "rarity": "Epic",     "biome": "Dreaming Deep"},
+            "Sleepfin":          {"weight": 75,  "price": 28,  "emoji": "😴",  "rarity": "Uncommon", "biome": "Dreaming Deep"},
+            "Somnus Shrimp":     {"weight": 55,  "price": 90,  "emoji": "🦐",  "rarity": "Rare",     "biome": "Dreaming Deep"},
+            "Hypnos Bass":       {"weight": 15,  "price": 150, "emoji": "💤",  "rarity": "Legendary","biome": "Dreaming Deep"},
+            "Leviathan Cod":     {"weight": 4,   "price": 300, "emoji": "🐋",  "rarity": "Mythic",   "biome": "Titan's Trench"},
+            "Titan Crab":        {"weight": 40,  "price": 140, "emoji": "🦀",  "rarity": "Epic",     "biome": "Titan's Trench"},
+            "Abyssal Angler":    {"weight": 10,  "price": 180, "emoji": "🎣",  "rarity": "Legendary","biome": "Titan's Trench"},
+            "Deepwyrm":          {"weight": 3,   "price": 350, "emoji": "🐉",  "rarity": "Mythic",   "biome": "Titan's Trench"},
+            "Pressure Pike":     {"weight": 70,  "price": 45,  "emoji": "🐟",  "rarity": "Uncommon", "biome": "Titan's Trench"},
+            "Neon Sprat":        {"weight": 140, "price": 18,  "emoji": "🌟",  "rarity": "Common",   "biome": "Bioluminal Cavern"},
+            "Glowfin Trout":     {"weight": 50,  "price": 95,  "emoji": "✨",  "rarity": "Rare",     "biome": "Bioluminal Cavern"},
+            "Radiant Ray":       {"weight": 14,  "price": 220, "emoji": "⚡",  "rarity": "Legendary","biome": "Bioluminal Cavern"},
+            "Luminous Carp":     {"weight": 32,  "price": 120, "emoji": "💡",  "rarity": "Epic",     "biome": "Bioluminal Cavern"},
+            "Lucent Gudgeon":    {"weight": 80,  "price": 35,  "emoji": "🔆",  "rarity": "Uncommon", "biome": "Bioluminal Cavern"},
+            "Moonshadow Koi":    {"weight": 30,  "price": 125, "emoji": "🌙",  "rarity": "Epic",     "biome": "Ethereal Lagoon"},
+            "Starling Minnow":   {"weight": 130, "price": 20,  "emoji": "⭐",  "rarity": "Common",   "biome": "Ethereal Lagoon"},
+            "Celestial Salmon":  {"weight": 8,   "price": 180, "emoji": "🌌",  "rarity": "Legendary","biome": "Ethereal Lagoon"},
+            "Nebula Nibbler":    {"weight": 5,   "price": 240, "emoji": "☄️",  "rarity": "Mythic",   "biome": "Ethereal Lagoon"},
+            "Skyfin":            {"weight": 65,  "price": 40,  "emoji": "🌤️", "rarity": "Uncommon", "biome": "Ethereal Lagoon"},            
         }
         # Derived prices
         self.fish_prices = {name: info["price"] for name, info in self.fish_definitions.items()}
@@ -422,6 +452,30 @@ class Fishing(commands.Cog):
                 "quests": ["mire_tasks", "mossback_call", "river_cleanse", "legendary_capture"],
                 "image": "https://files.catbox.moe/a78qlb.png",
             },
+            "vulko": {
+                "display": "Vulko the Lava Shaman",
+                "greeting": "'The magma sings to those who dare. Will you listen to its rhythm?'",
+                "quests": ["volcanic_venture","ember_hunt","inferno_artifact","lava_challenge"],
+                "image": "https://files.catbox.moe/kd6fvu.png",
+            },
+            "paleon": {
+                "display": "Paleon the Fossil Chaser",
+                "greeting": "'These ancient currents whisper of long-lost beasts. Help me unearth their bones.'",
+                "quests": ["fossil_hunt","dunkle_search","leviathan_probe","placoderm_delve"],
+                "image": "https://files.catbox.moe/irhj3p.png",
+            },
+            "grimma": {
+                "display": "Grimma the Ghost Whisperer",
+                "greeting": "'Shadows stir beneath haunted shoals. Are you bold enough to answer their call?'",
+                "quests": ["haunted_whispers","spectral_tide","phantom_treasure","wraith_bounty"],
+                "image": "https://files.catbox.moe/bphqno.png",
+            }, 
+            "stellara": {
+                "display": "Stellara the Starfarer",
+                "greeting": "'The void beyond the waves is alive with cosmic wonders. Cast into the stars.'",
+                "quests": ["asteroid_hunt","nebula_expedition","cosmic_probe","starwhale_sighting"],
+                "image": "https://files.catbox.moe/ysmx5h.png",
+            },            
         }
         self.quests = {
             "finn_first_catch": {
@@ -762,6 +816,20 @@ class Fishing(commands.Cog):
             "tide_change": (self._event_tide_change, 1),
             "moon_phase": (self._event_moon_phase, 1),
             "rift_glimpse": (self._event_rift_glimpse, 1),
+            "luminous_cavern": (self._event_luminous_cavern, 2),
+            "prehistoric_trench": (self._event_prehistoric_trench, 2),
+            "smoldering_pool":   (self._event_smoldering_pool,  2),
+            "lava_spout":        (self._event_lava_spout,       2),
+            "phantom_tide":      (self._event_phantom_tide,     2),
+            "haunted_whispers":  (self._event_haunted_whispers, 2),
+            "dream_reverie":     (self._event_dream_reverie,    2),
+            "nightmare_bloom":   (self._event_nightmare_bloom,  2),
+            "titan_quake":       (self._event_titan_quake,      2),
+            "deepwyrm_raise":    (self._event_deepwyrm_raise,   2),
+            "cavern_glow":       (self._event_cavern_glow,      2),
+            "ethereal_gust":     (self._event_ethereal_gust,    2),
+            "volcanic_spring": (self._event_volcanic_spring,    2),
+            "haunted_shoal":   (self._event_haunted_shoal,      2),            
         }
         
         # ——— Pre-cache keys & base weights for faster picks ———
@@ -1674,6 +1742,278 @@ class Fishing(commands.Cog):
             await self._maybe_update_unique_and_highest(ctx.author, "Abyssal Wisp")
             return False, "🔱 A rift glimpse draws forth an **Abyssal Wisp**!"
         return False, "🔱 You glimpse a rift far below; nothing pulled up this time."
+        
+    async def _event_luminous_cavern(self, ctx, user_conf):
+        """
+        Bioluminal Sea vibes: catch a Glimmer Eel or find extra bait.
+        """
+        # count this cast
+        await self._inc_stat(ctx.author, "casts", 1)
+
+        r = random.random()
+        if r < 0.25:
+            # find bait in the glowing water
+            bait = random.randint(1, 3)
+            cur = await user_conf.bait()
+            await user_conf.bait.set(cur + bait)
+            return False, f"🌌 Luminous Cavern sparkles — you gather **{bait}** bait."
+
+        # otherwise hook a Glimmer Eel
+        catch = "Glimmer Eel"
+        data = await user_conf.caught()
+        data.append(catch)
+        await user_conf.caught.set(data)
+
+        info = fish_definitions[catch]
+        await self._maybe_update_unique_and_highest(ctx.author, catch)
+        await self._advance_quest_on_catch(ctx.author, catch)
+        return False, f"{info['emoji']} You net a **{catch}** from the glowing depths!"
+
+    async def _event_prehistoric_trench(self, ctx, user_conf):
+        """
+        Ancient waters: chance for a Coelacanth, Trilobite, or a brush with a Megalodon.
+        """
+        await self._inc_stat(ctx.author, "casts", 1)
+
+        r = random.random()
+        if r < 0.10:
+            # Megalodon encounter—rod might break
+            await user_conf.rod_broken.set(True)
+            return False, "🦈 A colossal silhouette thrashes—your rod shatters as you escape!"
+
+        if r < 0.35:
+            # rare Coelacanth catch
+            catch = "Coelacanth"
+        else:
+            # common Trilobite
+            catch = "Trilobite"
+
+        data = await user_conf.caught()
+        data.append(catch)
+        await user_conf.caught.set(data)
+
+        info = fish_definitions[catch]
+        await self._maybe_update_unique_and_highest(ctx.author, catch)
+        await self._advance_quest_on_catch(ctx.author, catch)
+        return False, f"{info['emoji']} In the trench you haul up a **{catch}**!"
+
+    async def _event_smoldering_pool(self, ctx, user_conf):
+        """Volcanic Spring: yielding Fire Goby or Magma Eel."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.20:
+            choice = "Magma Eel"
+        else:
+            choice = "Fire Goby"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} Scorching currents yield a **{choice}** ({info['rarity']})!"
+
+    async def _event_lava_spout(self, ctx, user_conf):
+        """Volcanic Spring burst: Ember Carp blast."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        # Always Ember Carp
+        choice = "Ember Carp"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} A sudden lava spout spews a **{choice}**!"
+
+    async def _event_phantom_tide(self, ctx, user_conf):
+        """Haunted Shoals tide: Wraith Herring or Bonefish."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.30:
+            choice = "Wraith Herring"
+        else:
+            choice = "Bonefish"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} Ghostly tide brings in a **{choice}** ({info['rarity']})!"
+
+    async def _event_haunted_whispers(self, ctx, user_conf):
+        """Haunted Shoals whispers: steal or grant Phantom Carp."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.25:
+            inv = await user_conf.items()
+            if inv:
+                lost = inv.pop(random.randrange(len(inv)))
+                await user_conf.items.set(inv)
+                return False, f"👻 Haunting whispers steal your **{lost}**!"
+        # Otherwise give a Phantom Carp
+        choice = "Phantom Carp"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} You hook a **{choice}** from the darkness!"
+
+    async def _event_dream_reverie(self, ctx, user_conf):
+        """Dreaming Deep: chance for Dream Pike or Sleepfin."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.30:
+            choice = "Dream Pike"
+        else:
+            choice = "Sleepfin"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} In a dream current you net a **{choice}**!"
+
+    async def _event_nightmare_bloom(self, ctx, user_conf):
+        """Dreaming Deep bloom: Nightmare Grouper lurks."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        choice = "Nightmare Grouper"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} A nightmare bloom surfaces a **{choice}**!"
+
+    async def _event_titan_quake(self, ctx, user_conf):
+        """Titan's Trench tremor: Titan Crab or Pressure Pike."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.30:
+            choice = "Titan Crab"
+        else:
+            choice = "Pressure Pike"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} A trench quake yields a **{choice}**!"
+
+    async def _event_deepwyrm_raise(self, ctx, user_conf):
+        """Titan's Trench abyss: Leviathan Cod or Deepwyrm."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.25:
+            choice = "Leviathan Cod"
+        else:
+            choice = "Deepwyrm"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} From the depths a **{choice}** emerges!"
+
+    async def _event_cavern_glow(self, ctx, user_conf):
+        """Bioluminal Cavern glow: Neon Sprat or Glowfin Trout."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.40:
+            choice = "Neon Sprat"
+        else:
+            choice = "Glowfin Trout"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} Cavern lights guide you to a **{choice}**!"
+
+    async def _event_ethereal_gust(self, ctx, user_conf):
+        """Ethereal Lagoon breeze: Moonshadow Koi or Celestial Salmon."""
+        await self._inc_stat(ctx.author, "casts", 1)
+        if random.random() < 0.30:
+            choice = "Moonshadow Koi"
+        else:
+            choice = "Celestial Salmon"
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+        return False, f"{info['emoji']} A gentle lagoon breeze lands a **{choice}**!"
+        
+    async def _event_volcanic_spring(self, ctx, user_conf):
+        """
+        Volcanic Spring:
+        – 20% chance to uncover a Lava Pearl item
+        – otherwise catch a volcanic fish (Cinderfish or Magma Carp)
+        """
+        # count the cast
+        await self._inc_stat(ctx.author, "casts", 1)
+
+        if random.random() < 0.20:
+            # grant the Lava Pearl item
+            items = await user_conf.items()
+            items.append("Lava Pearl")
+            await user_conf.items.set(items)
+
+            # track as treasure event if you like
+            await self._inc_stat(ctx.author, "treasure_found", 1)
+
+            return False, (
+                "🌋 You brave the molten depths and unearth a **Lava Pearl**! "
+                "Use it or deliver it for special rewards."
+            )
+
+        # else hook one of the volcanic fish
+        choice = random.choice(["Cinderfish", "Magma Carp"])
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+
+        return False, f"{info['emoji']} You caught a **{choice}** ({info['rarity']}) in the lava spring!"
+
+    async def _event_haunted_shoal(self, ctx, user_conf):
+        """
+        Haunted Shoals:
+        – 15% chance to receive a Phantom Pearl item
+        – else catch a ghostly fish (Spectral Herring or Ghost Carp)
+        """
+        await self._inc_stat(ctx.author, "casts", 1)
+
+        if random.random() < 0.15:
+            # grant the Phantom Pearl item
+            items = await user_conf.items()
+            items.append("Phantom Pearl")
+            await user_conf.items.set(items)
+
+            # track as a pearl event
+            await self._inc_stat(ctx.author, "pearl_found", 1)
+
+            return False, (
+                "🌑 A skeletal tide washes in a **Phantom Pearl**! "
+                "Keep it safe or turn it in to Grimma."
+            )
+
+        # else hook a ghost fish
+        choice = random.choice(["Spectral Herring", "Ghost Carp"])
+        data = await user_conf.caught()
+        data.append(choice)
+        await user_conf.caught.set(data)
+
+        info = fish_definitions[choice]
+        await self._maybe_update_unique_and_highest(ctx.author, choice)
+        await self._advance_quest_on_catch(ctx.author, choice)
+
+        return False, f"{info['emoji']} A shadowy form coalesces—you hook a **{choice}**!"        
         
     async def _paginate_embeds(self, ctx, embeds: List[discord.Embed], timeout: float = 120.0):
         """Show embeds with reaction pagination controlled by the invoking user."""
