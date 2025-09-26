@@ -417,13 +417,13 @@ class Fishing(commands.Cog):
         # ─── Consumable definitions ───
         # Used by fishshop & fishbuy
         self.consumable_definitions = {
-            "Bait":    {"price": 150,  "emoji": "🪱", "description": "Adds 5 bait to your tackle box."},
-            "Chum":    {"price": 100,  "emoji": "🦐", "description": "Increases rare catch chance by 5% for next 3 casts."},
-            "Stew":    {"price": 300,  "emoji": "🍲", "description": "Restores rod durability; grants +1 luck."},
-            "Fragment":{"price":1500, "emoji": "🧩", "description": "Salvage to repair rods or unlock upgrades."},
-            "Journal": {"price": 500,  "emoji": "📔", "description": "Logs biomes; +10% catch bonus in unexplored areas."},
-            "Pack":    {"price": 300,  "emoji": "🥫", "description": "Boosts bait effectiveness by 15% for 5 casts."},
-            "Mystery": {"price":1000,  "emoji": "🎁", "description": "Contains random consumables or gear."}
+            "Bait":          {"price": 150,  "emoji": "🪱", "description": "Adds 5 bait to your tackle box."},
+            "Chum":          {"price": 100,  "emoji": "🦐", "description": "Increases rare catch chance by 5% for next 3 casts."},
+            "Stew Bowl":     {"price": 300,  "emoji": "🍲", "description": "Restores rod durability; grants +1 luck."},
+            "Rod Fragment":  {"price":1500,  "emoji": "🧩", "description": "Salvage to repair rods or unlock upgrades."},
+            "Biome Explorer’s Journal":       {"price": 500,  "emoji": "📔", "description": "Logs biomes; +10% catch bonus in unexplored areas."},
+            "Nutrient Pack": {"price": 300,  "emoji": "🥫", "description": "Boosts bait effectiveness by 15% for 5 casts."},
+            "Mystery Box":   {"price":1000,  "emoji": "🎁", "description": "Contains random consumables or gear."}
         }        
 
         # Achievements                
@@ -574,7 +574,10 @@ class Fishing(commands.Cog):
                     "fish:River": 1,
                     "fish:Open Ocean": 1
                 },
-                "result": {"coins": 100},
+            "result": {
+                "coins": 100,
+                "item": "Biome Explorer’s Journal"
+            },
                 "description": "Grants +10% chance of biome-specific rares for 10 casts.",
             },
             "mystery_box": {
@@ -4116,12 +4119,21 @@ class Fishing(commands.Cog):
         if buy_type == "vessel":
             await user_conf.vessel.set(name)
             return await ctx.send(f"🚤 You bought the **{name}**! New waters await you.")
-        else:
-            items = await user_conf.items()
-            items.append(name)
-            await user_conf.items.set(items)
-            emoji = "⚙️" if buy_type == "gear" else "🧪"
-            return await ctx.send(f"{emoji} You bought **{name}**, it’s been added to your items.")
+    else:
+        # ─── Consumable: Bait ───
+        if buy_type == "consumable" and name == "Bait":
+            # give 5 bait directly to the counter
+            current = await user_conf.bait()
+            new_amount = current + 5
+            await user_conf.bait.set(new_amount)
+            return await ctx.send(f"🪱 You bought 5 bait! You now have **{new_amount}** bait.")
+
+        # ─── Default: add gear or other consumable to items list ───
+        items = await user_conf.items()
+        items.append(name)
+        await user_conf.items.set(items)
+        emoji = "⚙️" if buy_type == "gear" else "🧪"
+        return await ctx.send(f"{emoji} You bought **{name}**, it’s been added to your items.")
 
         
 
