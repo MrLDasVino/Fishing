@@ -16,8 +16,7 @@ class ImageFilter(BaseCog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890)
-        default_user = {"api_key": None}
-        self.config.register_user(**default_user)
+        self.config.register_user(api_key=None)
 
     @commands.group(name="imgmanip", invoke_without_command=True)
     async def imgmanip(self, ctx):
@@ -30,18 +29,28 @@ class ImageFilter(BaseCog):
         await self.config.user(ctx.author).api_key.set(api_key)
         await ctx.send("✅ Your Jeyy API key has been saved.")
 
-    async def _fetch(self, endpoint: str, img_url: str, api_key: str) -> bytes:
+    async def _fetch(self, endpoint: str, img_url: str, api_key: str, method: str = "POST") -> bytes:
         """Internal helper: call Jeyy API and return raw image bytes."""
         url = f"https://api.jeyy.xyz/{endpoint}"
         headers = {"Authorization": api_key}
-        payload = {"image": img_url}  # if API wants {"url": img_url}, swap the key here
+
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers) as resp:
-                text = await resp.text()
-                if resp.status != 200:
-                    logger.warning(f"Jeyy `{endpoint}` failed: {resp.status} {text}")
-                    raise RuntimeError(f"HTTP {resp.status}")
-                return await resp.read()
+            if method == "GET":
+                params = {"image": img_url}
+                async with session.get(url, params=params, headers=headers) as resp:
+                    text = await resp.text()
+                    if resp.status != 200:
+                        logger.warning(f"Jeyy GET /{endpoint} failed: {resp.status} {text}")
+                        raise RuntimeError(f"HTTP {resp.status}")
+                    return await resp.read()
+            else:  # POST
+                payload = {"image": img_url}
+                async with session.post(url, json=payload, headers=headers) as resp:
+                    text = await resp.text()
+                    if resp.status != 200:
+                        logger.warning(f"Jeyy POST /{endpoint} failed: {resp.status} {text}")
+                        raise RuntimeError(f"HTTP {resp.status}")
+                    return await resp.read()
 
     @imgmanip.command(name="blur")
     async def blur(self, ctx, intensity: int = 5):
@@ -57,7 +66,7 @@ class ImageFilter(BaseCog):
         img_url = ctx.message.attachments[0].url
         await ctx.send(f"🔄 Blurring (intensity={intensity})…")
         try:
-            data = await self._fetch(f"blur/{intensity}", img_url, api_key)
+            data = await self._fetch(f"blur/{intensity}", img_url, api_key, method="POST")
         except Exception as e:
             return await ctx.send(f"❌ Error: {e}")
 
@@ -72,19 +81,13 @@ class ImageFilter(BaseCog):
             return await ctx.send("❌ Set your API key with `[p]imgmanip setkey YOUR_KEY`.")
         if not ctx.message.attachments:
             return await ctx.send("❌ Please attach an image.")
-        img_url = ctx.message.attachments[0].url
 
+        img_url = ctx.message.attachments[0].url
         await ctx.send("🔄 Converting to grayscale…")
-        headers = {"Authorization": api_key}
-        params = {"image": img_url}
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://api.jeyy.xyz/grayscale", params=params, headers=headers) as resp:
-                text = await resp.text()
-                if resp.status != 200:
-                    logger.warning(f"Jeyy GET /grayscale failed: {resp.status} {text}")
-                    return await ctx.send(f"❌ API error {resp.status}: see console for details.")
-                data = await resp.read()
+        try:
+            data = await self._fetch("filters/grayscale", img_url, api_key, method="GET")
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
 
         fp = io.BytesIO(data)
         await ctx.send(file=discord.File(fp, "grayscale.png"))
-
