@@ -3969,8 +3969,7 @@ class Fishing(commands.Cog):
     @commands.command(name="fishshop")
     async def fishshop(self, ctx):
         """
-        Display available vessels and gear items for purchase.
-        Use `!fishbuy <item>` to buy.
+        Compact shop: Vessels, Gear & Consumables grouped by category.
         """
         currency = await bank.get_currency_name(ctx.guild)
         bal = await bank.get_balance(ctx.author)
@@ -3978,79 +3977,60 @@ class Fishing(commands.Cog):
         embed = discord.Embed(
             title="🎣 Fishing Emporium",
             colour=discord.Colour.gold(),
-            description=f"Your balance: **{bal} {currency}**\nUse `fishbuy <item>` to purchase."
+            description=f"Balance: **{bal} {currency}**  •  `!fishbuy <item>`"
         )
-        # thumbnail (you can replace with your own URL)
         embed.set_thumbnail(url="https://files.catbox.moe/9r0mzw.png")
 
-        # ─── VESSELS ───
-        embed.add_field(name="⛵ Rowboat", value="Price: **100**\nPond, Garden Pond, Lake", inline=True)
-        embed.add_field(name="🛶 Canoe", value="Price: **150**\nRiver, Stream, Estuary", inline=True)
-        embed.add_field(name="🚤 Wooden Dinghy", value="Price: **200**\nCoastal, Reef", inline=True)
-        embed.add_field(name="🔍 Glass-Bottom Skiff", value="Price: **350**\nMangrove, Bioluminal Seas", inline=True)
-        embed.add_field(name="⚙️ Steel Trawler", value="Price: **500**\nTropical & Open Ocean", inline=True)
-        embed.add_field(name="⛵ Sailboat", value="Price: **800**\nOffshore, Tropical & Open Ocean", inline=True)
-        embed.add_field(name="🔥 Magma Dinghy", value="Price: **750**\nVolcanic Spring, Lava Reef", inline=True)
-        embed.add_field(name="👻 Ghost Drifter", value="Price: **900**\nHaunted Shoals, Phantom Tide", inline=True)
-        embed.add_field(name="🌙 Dreamboat", value="Price: **1000**\nDreaming Deep, Nightmare Bloom", inline=True)
-        embed.add_field(name="🔮 Enchanted Barque", value="Price: **1200**\nMagical, Space", inline=True)
-        embed.add_field(name="🧜 Submersible Pod", value="Price: **2000**\nOcean Floor, Abyssal Rift", inline=True)
-        embed.add_field(name="⚓ Fossil Frigate", value="Price: **1500**\nPrehistoric", inline=True)
-        embed.add_field(name="🚢 Fishing Yacht", value="Price: **10000**\nAll Biomes", inline=True)
+        #  Vessels
+        lines = []
+        emoji_map = {
+            "Rowboat":"⛵","Canoe":"🛶","Wooden Dinghy":"🚤","Glass-Bottom Skiff":"🔍",
+            "Steel Trawler":"⚙️","Sailboat":"⛵","Magma Dinghy":"🔥","Ghost Drifter":"👻",
+            "Dreamboat":"🌙","Enchanted Barque":"🔮","Submersible Pod":"🧜","Fossil Frigate":"⚓",
+            "Fishing Yacht":"🚢"
+        }
+        for name, info in self.vessel_definitions.items():
+            icon = emoji_map.get(name, "⛵")
+            lines.append(f"{icon} **{name}** — {info['price']} {currency}")
+        embed.add_field(name="⛵ Vessels", value="\n".join(lines), inline=False)
 
-        # ─── GEAR ───
-        # assume self.gear_definitions items have a 'price' key
-        for category, icon in [("reels", "⚙️"), ("lines", "🧵"), ("lures", "🪝")]:
-            # header for each gear category
-            embed.add_field(
-                name=f"\u200b", 
-                value=f"**{category.capitalize()}**", 
-                inline=False
-            )
-            for name, info in self.gear_definitions[category].items():
-                price = info.get("price", "—")
-                embed.add_field(
-                    name=f"{icon} {name}", 
-                    value=f"Price: **{price}**\n{info['description']}", 
-                    inline=True
-                )
-                
-        embed.add_field(name="\u200b", value="**🧪 Consumables**", inline=False)
+        # ─── GEAR ATTACHMENTS ───
+        gear_lines = []
+        for category, icon in [("reels","⚙️"), ("lines","🧵"), ("lures","🪝")]:
+            # section header
+            gear_lines.append(f"**{category.capitalize()}**")
+            for gname, ginfo in self.gear_definitions[category].items():
+                price = ginfo.get("price", "—")
+                gear_lines.append(f"{icon} {gname} — {price} {currency}")
+            gear_lines.append("")  # blank line between categories
         embed.add_field(
-            name="🪱 Bait",
-            value=f"150 {currency} — Adds **5** bait to your tackle box.",
-            inline=True
+            name="🎣 Gear Attachments",
+            value="\n".join(gear_lines).strip(),
+            inline=False
         )
+
+        #  Consumables
+        cons = {
+            "Bait":    ("🪱",  150,  "Adds 5 bait to your tackle box."),
+            "Chum":    ("🦐",  100,  "Increases rare catch chance by 5% for next 3 casts."),
+            "Stew":    ("🍲", 300,  "Restores rod durability; grants +1 luck."),
+            "Fragment":("🧩", 1500,  "Salvage to repair rods or unlock upgrades."),
+            "Journal": ("📔", 500,  "Logs biomes; +10% catch bonus in unexplored areas."),
+            "Pack":    ("🥫", 300,  "Boosts bait effectiveness by 15% for 5 casts."),
+            "Mystery": ("🎁", 1000,  "Contains random consumables or gear."),
+        }
+        lines = [f"{e} **{n}** — {p} {currency}: {d}" for n,(e,p,d) in cons.items()]
+        embed.add_field(name="🧪 Consumables", value="\n".join(lines), inline=False)
+
+        #  Quick note
         embed.add_field(
-            name="🦐 Chum",
-            value=f"100 {currency} — Temporarily increases rare catch chance by **5%** for the next 3 casts.",
-            inline=True
+            name="\u200b",
+            value="Type `fishbuy <item name>` to purchase any of the above.",
+            inline=False
         )
-        embed.add_field(
-            name="🍲 Hearty Fish Stew",
-            value=f"500 {currency} — Restores rod durability and grants **+1** luck point.",
-            inline=True
-        )
-        embed.add_field(
-            name="🪵 Rod Fragment",
-            value=f"1500 {currency} — Salvage pieces to repair rods or unlock upgrades.",
-            inline=True
-        )
-        embed.add_field(
-            name="📔 Biome Explorer’s Journal",
-            value=f"500 {currency} — Logs new biomes, grants **+10%** catch bonus in unexplored areas.",
-            inline=True
-        )
-        embed.add_field(
-            name="🥫 Nutrient Pack",
-            value=f"150 {currency} — Increases bait effectiveness by **15%** for the next 5 casts.",
-            inline=True
-        )
-        embed.add_field(
-            name="🎁 Mystery Box",
-            value=f"1000 {currency} — Contains random consumables or gear attachments.",
-            inline=True
-        )                
+
+        await ctx.send(embed=embed)
+               
 
         await ctx.send(embed=embed)
 
