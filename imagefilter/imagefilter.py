@@ -785,7 +785,235 @@ class ImageFilter(BaseCog):
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "earthquake.gif"))
 
+    @imgmanip.command(name="emojify")
+    async def emojify(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Emojify filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Emojify filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/emojify",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "emojify.gif"))
+
+    @imgmanip.command(name="endless")
+    async def endless(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Endless filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Endless filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/endless",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "endless.gif"))
+
+    @imgmanip.command(name="equations")
+    async def equations(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Equations filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Equations filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/equations",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "equations.gif"))
+
+    @imgmanip.command(name="explicit")
+    async def explicit(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Explicit filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Explicit filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/explicit",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "explicit.gif"))
+
+    @imgmanip.command(name="fall")
+    async def fall(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Fall filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Fall filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/fall",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "fall.gif"))
+
+    @imgmanip.command(name="fan")
+    async def fan(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Fan filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Fan filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/fan",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "fan.gif"))
+
+    @imgmanip.command(name="fire")
+    async def fire(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Fire filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Fire filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/fire",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "fire.gif"))
+
+    @imgmanip.command(name="flag")
+    async def flag(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Flag filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Flag filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/flag",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "flag.gif"))
+
+    @imgmanip.command(name="flush")
+    async def flush(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Flush filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Flush filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/flush",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "flush.gif"))
+
+    @imgmanip.command(name="gallery")
+    async def gallery(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Gallery filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Gallery filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/gallery",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "gallery.gif"))
 
 
 
