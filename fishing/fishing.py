@@ -3969,70 +3969,92 @@ class Fishing(commands.Cog):
     @commands.command(name="fishshop")
     async def fishshop(self, ctx):
         """
-        Compact shop: Vessels, Gear & Consumables grouped by category.
+        Shop split across 3 pages:
+        1) Vessels
+        2) Gear Attachments
+        3) Consumables
+        Navigate with ⬅️/➡️/⏹️.
         """
         currency = await bank.get_currency_name(ctx.guild)
         bal = await bank.get_balance(ctx.author)
 
-        embed = discord.Embed(
-            title="🎣 Fishing Emporium",
+        # ─── Page 1: Vessels ───
+        page1 = discord.Embed(
+            title="🎣 Fishing Shop — Page 1/3: Vessels",
             colour=discord.Colour.gold(),
-            description=f"Balance: **{bal} {currency}**  •  `!fishbuy <item>`"
+            description=f"Balance: **{bal} {currency}**\nUse `fishbuy <item>` to purchase."
         )
-        embed.set_thumbnail(url="https://files.catbox.moe/9r0mzw.png")
+        page1.set_thumbnail(url="https://files.catbox.moe/9r0mzw.png")
 
-        #  Vessels
-        lines = []
+        # map each vessel name to an emoji
         emoji_map = {
-            "Rowboat":"⛵","Canoe":"🛶","Wooden Dinghy":"🚤","Glass-Bottom Skiff":"🔍",
-            "Steel Trawler":"⚙️","Sailboat":"⛵","Magma Dinghy":"🔥","Ghost Drifter":"👻",
-            "Dreamboat":"🌙","Enchanted Barque":"🔮","Submersible Pod":"🧜","Fossil Frigate":"⚓",
-            "Fishing Yacht":"🚢"
+            "Rowboat":"⛵","Canoe":"🛶","Wooden Dinghy":"🚤",
+            "Glass-Bottom Skiff":"🔍","Steel Trawler":"⚙️","Sailboat":"⛵",
+            "Magma Dinghy":"🔥","Ghost Drifter":"👻","Dreamboat":"🌙",
+            "Enchanted Barque":"🔮","Submersible Pod":"🧜","Fossil Frigate":"⚓",
+            "Fishing Yacht":"🚢",
         }
         for name, info in self.vessel_definitions.items():
             icon = emoji_map.get(name, "⛵")
-            lines.append(f"{icon} **{name}** — {info['price']} {currency}")
-        embed.add_field(name="⛵ Vessels", value="\n".join(lines), inline=False)
+            page1.add_field(
+                name=f"{icon} {name}",
+                value=(
+                    f"**{info['price']} {currency}**\n"
+                    f"Unlocks: {', '.join(info['unlock_biomes'])}"
+                ),
+                inline=True
+            )
 
-        # ─── GEAR ATTACHMENTS ───
-        gear_lines = []
+        # ─── Page 2: Gear Attachments ───
+        page2 = discord.Embed(
+            title="🎣 Fishing Shop — Page 2/3: Gear",
+            colour=discord.Colour.blue(),
+            description=f"Balance: **{bal} {currency}**\nUse `fishbuy <item>` to purchase."
+        )
+        page2.set_thumbnail(url="https://files.catbox.moe/9r0mzw.png")
+
         for category, icon in [("reels","⚙️"), ("lines","🧵"), ("lures","🪝")]:
-            # section header
-            gear_lines.append(f"**{category.capitalize()}**")
+            # category header
+            page2.add_field(name=f"{icon} {category.capitalize()}",
+                            value="\u200b", inline=False)
             for gname, ginfo in self.gear_definitions[category].items():
                 price = ginfo.get("price", "—")
-                gear_lines.append(f"{icon} {gname} — {price} {currency}")
-            gear_lines.append("")  # blank line between categories
-        embed.add_field(
-            name="🎣 Gear Attachments",
-            value="\n".join(gear_lines).strip(),
-            inline=False
-        )
+                page2.add_field(
+                    name=f"{icon} {gname}",
+                    value=(
+                        f"**{price} {currency}**\n"
+                        f"{ginfo['description']}"
+                    ),
+                    inline=True
+                )
 
-        #  Consumables
+        # ─── Page 3: Consumables ───
         cons = {
             "Bait":    ("🪱",  150,  "Adds 5 bait to your tackle box."),
             "Chum":    ("🦐",  100,  "Increases rare catch chance by 5% for next 3 casts."),
             "Stew":    ("🍲", 300,  "Restores rod durability; grants +1 luck."),
-            "Fragment":("🧩", 1500,  "Salvage to repair rods or unlock upgrades."),
-            "Journal": ("📔", 500,  "Logs biomes; +10% catch bonus in unexplored areas."),
+            "Fragment":("🧩", 1500, "Salvage to repair rods or unlock upgrades."),
+            "Journal": ("📔", 500,  "Logs new biomes; +10% catch bonus in unexplored areas."),
             "Pack":    ("🥫", 300,  "Boosts bait effectiveness by 15% for 5 casts."),
-            "Mystery": ("🎁", 1000,  "Contains random consumables or gear."),
+            "Mystery": ("🎁",1000,  "Contains random consumables or gear."),
         }
-        lines = [f"{e} **{n}** — {p} {currency}: {d}" for n,(e,p,d) in cons.items()]
-        embed.add_field(name="🧪 Consumables", value="\n".join(lines), inline=False)
-
-        #  Quick note
-        embed.add_field(
-            name="\u200b",
-            value="Type `fishbuy <item name>` to purchase any of the above.",
-            inline=False
+        page3 = discord.Embed(
+            title="🎣 Fishing Shop — Page 3/3: Consumables",
+            colour=discord.Colour.green(),
+            description=f"Balance: **{bal} {currency}**\nUse `fishbuy <item>` to purchase."
         )
+        page3.set_thumbnail(url="https://files.catbox.moe/9r0mzw.png")
 
-        await ctx.send(embed=embed)
-               
+        for name, (emoji, price, desc) in cons.items():
+            page3.add_field(
+                name=f"{emoji} {name}",
+                value=f"**{price} {currency}**\n{desc}",
+                inline=True
+            )
 
-        await ctx.send(embed=embed)
+        # paginate the three pages
+        await self._paginate_embeds(ctx, [page1, page2, page3])
+
 
 
 
