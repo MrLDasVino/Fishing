@@ -3524,7 +3524,7 @@ class Fishing(commands.Cog):
                 "progress":  {},
                 "completed": prev,
             })
-            await ctx.send(f"✅ Quest accepted: **{qdef['title']}**. Use `quest` to track progress.")
+            await ctx.send(f"✅ Quest accepted: **{qdef['title']}**. Use `fishquestquest` to track progress.")
         else:
             await ctx.send("❌ Quest acceptance cancelled.")
 
@@ -3539,8 +3539,8 @@ class Fishing(commands.Cog):
         active    = qstate.get("active")
         if not active:
             return await ctx.send(
-                "You have no active quest. Use `talknpc <npc>` to find quests or "
-                "`acceptquest <id>` to accept one."
+                "You have no active quest. Use `fishtalknpc <npc>` to find quests or "
+                "`fishacceptquest <id>` to accept one."
             )
 
         qdef       = self.quests.get(active)
@@ -3944,9 +3944,9 @@ class Fishing(commands.Cog):
             stats = self.gear_definitions[category][name]
             return f"**{name}** — {stats.get('description', '')}"
 
-        embed.add_field(name="🎣 Reel", value=fmt("rod_reel", "reels"), inline=False)
-        embed.add_field(name="🪝 Line", value=fmt("rod_line", "lines"), inline=False)
-        embed.add_field(name="🦤 Lure", value=fmt("rod_lure", "lures"), inline=False)
+        embed.add_field(name="⚙️ Reel", value=fmt("rod_reel", "reels"), inline=False)
+        embed.add_field(name="🧵 Line", value=fmt("rod_line", "lines"), inline=False)
+        embed.add_field(name="🪝 Lure", value=fmt("rod_lure", "lures"), inline=False)
         vessel = await user_conf.vessel()
         embed.add_field(name="⛵ Vessel", value=vessel or "None", inline=False)        
 
