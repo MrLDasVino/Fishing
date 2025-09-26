@@ -70,8 +70,47 @@ class Fishing(commands.Cog):
             "items": [],         # non-fish items like "Rod Fragment", "Rod Core", "Treasure Map", "Chum"
             "rod_level": 0,      # 0 = basic
             "quests": {},        # per-user quest state: {"active": quest_id or None, "step": int, "progress": {...}, "completed": [...]}
+            "equipment": {
+                "rod_reel": None,
+                "rod_line": None,
+                "rod_lure": None,
+            },            
         }
         self.config.register_user(**default_user)
+        
+        # Gear stats definitions
+        self.gear_definitions = {
+            "reels": {
+                "Precision Reel": {
+                    "hook_speed": 0.20,
+                    "description": "Reel in fish 20% quicker.",
+                },
+                "Tangle-Free Reel": {
+                    "durability_boost": 0.30,
+                    "description": "30% reduced rod-break chance.",
+                },
+            },
+            "lines": {
+                "Kevlar Line": {
+                    "durability_boost": 0.50,
+                    "description": "Halves rod break events.",
+                },
+                "Elastic Line": {
+                    "double_catch_boost": 0.10,
+                    "description": "+10% chance for double catch.",
+                },
+            },
+            "lures": {
+                "Glow Lure": {
+                    "rare_fish_boost": 0.15,
+                    "description": "+15% chance of Rare+ fish.",
+                },
+                "Storm Lure": {
+                    "mythic_boost": 0.05,
+                    "description": "+5% chance of Mythic catches.",
+                },
+            },
+        }        
         
         # ─── Flavor texts for casting ───
         self.cast_flavor = [
@@ -3579,8 +3618,8 @@ class Fishing(commands.Cog):
     async def givefish(self, ctx, recipient: discord.Member, amount: int, *, name: str):
         """
         Give away your fish or items to another user.
-        Usage: !givefish @Bob 2 Salmon
-               !givefish @Bob 1 "Treasure Map"
+        Usage: givefish @Bob 2 Salmon
+               givefish @Bob 1 "Treasure Map"
         """
         giver_conf = self.config.user(ctx.author)
         rec_conf   = self.config.user(recipient)
@@ -3620,6 +3659,73 @@ class Fishing(commands.Cog):
         await ctx.send(
             f"🤝 {ctx.author.mention} gave {amount}× **{name}** to {recipient.mention}!"
         )
+        
+    @commands.command(name="fishgear")
+    async def fishgear(self, ctx):
+        """Show your equipped reel, line, and lure."""
+        user_conf = self.config.user(ctx.author)
+        eq = await user_conf.equipment()
+
+        embed = discord.Embed(
+            title=f"{ctx.author.display_name}'s Fishing Gear",
+            colour=discord.Colour.dark_blue()
+        )
+
+        def fmt(slot_key, category):
+            name = eq.get(slot_key)
+            if not name:
+                return "None"
+            stats = self.gear_definitions[category][name]
+            return f"**{name}** — {stats.get('description', '')}"
+
+        embed.add_field(name="🎣 Reel", value=fmt("rod_reel", "reels"), inline=False)
+        embed.add_field(name="🪝 Line", value=fmt("rod_line", "lines"), inline=False)
+        embed.add_field(name="🦤 Lure", value=fmt("rod_lure", "lures"), inline=False)
+
+        await ctx.send(embed=embed)
+
+    @commands.command(name="fishequip")
+    async def fishequip(self, ctx, slot: str, *, item_name: str):
+        """
+        Equip a gear item to your rod.
+        Usage: fishequip reel "Precision Reel"
+               fishequip line Kevlar Line
+               fishequip lure "Glow Lure"
+        """
+        slot = slot.lower()
+        user_conf = self.config.user(ctx.author)
+        items = await user_conf.items()
+
+        mapping = {
+            "reel": ("rod_reel", "reels"),
+            "line": ("rod_line", "lines"),
+            "lure": ("rod_lure", "lures"),
+        }
+        if slot not in mapping:
+            return await ctx.send("❌ Invalid slot. Choose one of: reel, line, lure.")
+
+        cfg_key, category = mapping[slot]
+        if item_name not in self.gear_definitions[category]:
+            valid = ", ".join(self.gear_definitions[category].keys())
+            return await ctx.send(f"❌ Unknown {slot}. Available: {valid}")
+
+        if items.count(item_name) < 1:
+            return await ctx.send(f"❌ You don't have **{item_name}** in your items.")
+
+        # remove the new gear from inventory
+        items.remove(item_name)
+        # return the old gear (if any) back to inventory
+        eq = await user_conf.equipment()
+        previous = eq.get(cfg_key)
+        if previous:
+            items.append(previous)
+
+        # save changes
+        await user_conf.items.set(items)
+        eq[cfg_key] = item_name
+        await user_conf.equipment.set(eq)
+
+        await ctx.send(f"✨ You equipped **{item_name}** to your {slot} slot!")        
 
 
     async def cog_unload(self):
