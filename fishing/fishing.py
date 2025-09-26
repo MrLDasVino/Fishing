@@ -4101,8 +4101,7 @@ class Fishing(commands.Cog):
 
         # 3) Consumable?
         if price is None and name in self.consumable_definitions:
-            info = self.consumable_definitions[name]
-            price = info["price"]
+            price = self.consumable_definitions[name]["price"]
             buy_type = "consumable"
 
         # 4) Validate
@@ -4119,21 +4118,21 @@ class Fishing(commands.Cog):
         if buy_type == "vessel":
             await user_conf.vessel.set(name)
             return await ctx.send(f"🚤 You bought the **{name}**! New waters await you.")
-    else:
-        # ─── Consumable: Bait ───
-        if buy_type == "consumable" and name == "Bait":
-            # give 5 bait directly to the counter
-            current = await user_conf.bait()
-            new_amount = current + 5
-            await user_conf.bait.set(new_amount)
-            return await ctx.send(f"🪱 You bought 5 bait! You now have **{new_amount}** bait.")
 
-        # ─── Default: add gear or other consumable to items list ───
+        # special-case Bait so it bumps your bait counter by 5
+        if buy_type == "consumable" and name == "Bait":
+            current_bait = await user_conf.bait()
+            new_bait = current_bait + 5
+            await user_conf.bait.set(new_bait)
+            return await ctx.send(f"🪱 You bought 5 bait! You now have **{new_bait}** bait.")
+
+        # default: put gear or other consumable into items
         items = await user_conf.items()
         items.append(name)
         await user_conf.items.set(items)
         emoji = "⚙️" if buy_type == "gear" else "🧪"
         return await ctx.send(f"{emoji} You bought **{name}**, it’s been added to your items.")
+
 
         
 
