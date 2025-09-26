@@ -4014,6 +4014,43 @@ class Fishing(commands.Cog):
                     value=f"Price: **{price}**\n{info['description']}", 
                     inline=True
                 )
+                
+        embed.add_field(name="\u200b", value="**🧪 Consumables**", inline=False)
+        embed.add_field(
+            name="🪱 Bait",
+            value=f"150 {currency} — Adds **5** bait to your tackle box.",
+            inline=True
+        )
+        embed.add_field(
+            name="🦐 Chum",
+            value=f"100 {currency} — Temporarily increases rare catch chance by **5%** for the next 3 casts.",
+            inline=True
+        )
+        embed.add_field(
+            name="🍲 Hearty Fish Stew",
+            value=f"500 {currency} — Restores rod durability and grants **+1** luck point.",
+            inline=True
+        )
+        embed.add_field(
+            name="🪵 Rod Fragment",
+            value=f"1500 {currency} — Salvage pieces to repair rods or unlock upgrades.",
+            inline=True
+        )
+        embed.add_field(
+            name="📔 Biome Explorer’s Journal",
+            value=f"500 {currency} — Logs new biomes, grants **+10%** catch bonus in unexplored areas.",
+            inline=True
+        )
+        embed.add_field(
+            name="🥫 Nutrient Pack",
+            value=f"150 {currency} — Increases bait effectiveness by **15%** for the next 5 casts.",
+            inline=True
+        )
+        embed.add_field(
+            name="🎁 Mystery Box",
+            value=f"1000 {currency} — Contains random consumables or gear attachments.",
+            inline=True
+                        
 
         await ctx.send(embed=embed)
 
