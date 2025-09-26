@@ -1056,6 +1056,163 @@ class ImageFilter(BaseCog):
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "gallery.gif"))
 
+    @imgmanip.command(name="gameboy_camera")
+    async def gameboy_camera(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Gameboy Camera filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Gameboy Camera filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/gameboy_camera",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
 
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "gameboy_camera.gif"))
+
+    @imgmanip.command(name="glitch")
+    async def glitch(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Glitch filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Glitch filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/glitch",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "glitch.gif"))
+
+    @imgmanip.command(name="globe")
+    async def globe(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Globe filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Globe filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/globe",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "globe.gif"))
         
+    @imgmanip.command(name="half_invert")
+    async def half_invert(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Half Invert filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Half Invert filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/half_invert",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "half_invert.gif"))
+
+    @imgmanip.command(name="heart_diffraction")
+    async def heart_diffraction(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Heart Diffraction filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Heart Diffraction filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/heart_diffraction",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "heart_diffraction.gif"))
+
+    @imgmanip.command(name="heart_locket")
+    async def heart_locket(
+        self,
+        ctx,
+        first: Optional[Union[discord.Member, str]] = None,
+        second: Optional[Union[discord.Member, str]] = None,
+    ):
+        """Apply Heart Locket filter with two images (attachments, mentions, URLs, or avatars)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        # Gather attachments if no explicit args
+        attachment_urls = [att.url for att in ctx.message.attachments]
+        if not first and not second and len(attachment_urls) >= 2:
+            img_url1, img_url2 = attachment_urls[:2]
+        else:
+            img_url1 = self._resolve_image_url(ctx, first)
+            img_url2 = self._resolve_image_url(ctx, second)
+
+        # Require both images
+        if not img_url1 or not img_url2:
+            return await ctx.send("❌ Please provide two images (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Heart Locket filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/heart_locket",
+                api_key=api_key,
+                method="GET",
+                params={"image_url1": img_url1, "image_url2": img_url2},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "heart_locket.gif"))
+
+
+
+
+
+
+
