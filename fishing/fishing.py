@@ -1098,7 +1098,10 @@ class Fishing(commands.Cog):
             "cavern_glow":       (self._event_cavern_glow,      2),
             "ethereal_gust":     (self._event_ethereal_gust,    2),
             "volcanic_spring": (self._event_volcanic_spring,    2),
-            "haunted_shoal":   (self._event_haunted_shoal,      2),            
+            "haunted_shoal":   (self._event_haunted_shoal,      2),
+            "find_reel": (self._event_find_reel, 1),
+            "find_line": (self._event_find_line, 1),
+            "find_lure": (self._event_find_lure, 1),            
         }
         
         # ——— Pre-cache keys & base weights for faster picks ———
@@ -2256,6 +2259,121 @@ class Fishing(commands.Cog):
         await self._maybe_update_unique_and_highest(ctx.author, choice)
         await self._advance_quest_on_catch(ctx.author, choice)
         return False, f"{info['emoji']} A shadowy form coalesces—you hook a **{choice}**!"
+        
+    async def _event_find_reel(self, ctx, user_conf):
+        """
+        Rare salvage: coins + bait, small chance for Rod Fragment,
+        and an extra chance to uncover a Reel attachment.
+        """
+        await self._inc_stat(ctx.author, "casts", 1)
+
+        # 1) Coins
+        coins = random.randint(10, 40)
+        new_bal, currency = await self._deposit(ctx.author, coins, ctx)
+
+        # 2) Bait
+        bait_found = random.randint(1, 3)
+        cur_bait = await user_conf.bait()
+        await user_conf.bait.set(cur_bait + bait_found)
+
+        # 3) Maybe a Rod Fragment
+        items = await user_conf.items()
+        frag_msg = ""
+        if random.random() < 0.05:  # 5% frag chance
+            items.append("Rod Fragment")
+            frag_msg = " You also salvage a **Rod Fragment**."
+
+        # 4) Maybe a Reel
+        gear_msg = ""
+        if random.random() < 0.10:  # 10% gear chance
+            gear = random.choice(list(self.gear_definitions["reels"].keys()))
+            items.append(gear)
+            gear_msg = f" And among the debris you uncover a **{gear}**!"
+
+        # Save items list
+        await user_conf.items.set(items)
+
+        msg = (
+            f"🔧 You scour the shoreline wreckage and earn **{coins} {currency}** "
+            f"(new balance: **{new_bal} {currency}**), and find **{bait_found}** bait."
+            f"{frag_msg}{gear_msg}"
+        )
+        return False, msg
+
+
+    async def _event_find_line(self, ctx, user_conf):
+        """
+        Rare salvage: coins + bait, small chance for Rod Fragment,
+        and an extra chance to snag a Line attachment.
+        """
+        await self._inc_stat(ctx.author, "casts", 1)
+
+        coins = random.randint(5, 35)
+        new_bal, currency = await self._deposit(ctx.author, coins, ctx)
+
+        bait_found = random.randint(1, 2)
+        cur_bait = await user_conf.bait()
+        await user_conf.bait.set(cur_bait + bait_found)
+
+        items = await user_conf.items()
+        frag_msg = ""
+        if random.random() < 0.05:
+            items.append("Rod Fragment")
+            frag_msg = " You also salvage a **Rod Fragment**."
+
+        gear_msg = ""
+        if random.random() < 0.10:
+            gear = random.choice(list(self.gear_definitions["lines"].keys()))
+            items.append(gear)
+            gear_msg = f" Your line frees a **{gear}** from tangled junk!"
+
+        await user_conf.items.set(items)
+
+        msg = (
+            f"🪝 You pull successively on rusted chains and net **{coins} {currency}** "
+            f"(new balance: **{new_bal} {currency}**), plus **{bait_found}** bait."
+            f"{frag_msg}{gear_msg}"
+        )
+        return False, msg
+
+
+    async def _event_find_lure(self, ctx, user_conf):
+        """
+        Rare salvage: coins + bait, small chance for Rod Fragment,
+        and an extra chance to fish up a Lure attachment.
+        """
+        await self._inc_stat(ctx.author, "casts", 1)
+
+        coins = random.randint(15, 50)
+        new_bal, currency = await self._deposit(ctx.author, coins, ctx)
+
+        bait_found = random.randint(0, 2)
+        cur_bait = await user_conf.bait()
+        if bait_found > 0:
+            await user_conf.bait.set(cur_bait + bait_found)
+
+        items = await user_conf.items()
+        frag_msg = ""
+        if random.random() < 0.05:
+            items.append("Rod Fragment")
+            frag_msg = " You also discover a **Rod Fragment**."
+
+        gear_msg = ""
+        if random.random() < 0.10:
+            gear = random.choice(list(self.gear_definitions["lures"].keys()))
+            items.append(gear)
+            gear_msg = f" A glint in the mud reveals a **{gear}**!"
+
+        await user_conf.items.set(items)
+
+        bait_text = f", plus **{bait_found}** bait" if bait_found else ""
+        msg = (
+            f"🦤 You dredge through old tackle and earn **{coins} {currency}** "
+            f"(new balance: **{new_bal} {currency}**){bait_text}."
+            f"{frag_msg}{gear_msg}"
+        )
+        return False, msg
+        
      
         
     async def _paginate_embeds(self, ctx, embeds: List[discord.Embed], timeout: float = 120.0):
