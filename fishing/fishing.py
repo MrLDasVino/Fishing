@@ -4050,7 +4050,7 @@ class Fishing(commands.Cog):
             name="🎁 Mystery Box",
             value=f"1000 {currency} — Contains random consumables or gear attachments.",
             inline=True
-                        
+        )                
 
         await ctx.send(embed=embed)
 
