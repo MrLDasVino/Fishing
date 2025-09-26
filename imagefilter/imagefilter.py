@@ -233,6 +233,98 @@ class ImageFilter(BaseCog):
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "ads.gif"))
         
+    @imgmanip.command(name="bayer")
+    async def bayer(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Bayer filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Bayer filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/bayer",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "bayer.gif"))
+
+    @imgmanip.command(name="bevel")
+    async def bevel(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Bevel filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Bevel filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/bevel",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "bevel.gif"))
+
+    @imgmanip.command(name="billboard")
+    async def billboard(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Billboard filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Billboard filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/billboard",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "billboard.gif"))
+
+    @imgmanip.command(name="blocks")
+    async def blocks(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Blocks filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        await ctx.send("🔄 Applying Blocks filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/blocks",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "blocks.gif"))
+
 
         
         
