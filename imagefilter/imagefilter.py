@@ -69,18 +69,31 @@ class ImageFilter(BaseCog):
 
         url = "https://api.jeyy.xyz/v2/image/blur"
         headers = {"Authorization": f"Bearer {api_key}"}
-        params = {"image_url": img_url, "value": intensity}
 
         async with aiohttp.ClientSession() as session:
+            # first try GET
+            params = {"image_url": img_url, "value": intensity}
             async with session.get(url, params=params, headers=headers) as resp:
-                if resp.status != 200:
-                    err = await resp.text()
-                    logger.warning(f"Jeyy GET /v2/image/blur failed: {resp.status} {err}")
-                    return await ctx.send(f"❌ API error {resp.status}: see console for details.")
-                data = await resp.read()
+                if resp.status == 200:
+                    data = await resp.read()
+                    # quick heuristic: if size equals original, it’s probably unmodified
+                    # we don’t know original size here, so skip check—assume GET works
+                    pass
+                else:
+                    # GET failed, try POST
+                    text = await resp.text()
+                    logger.warning(f"Jeyy GET /v2/image/blur failed: {resp.status} {text}")
+                    payload = {"image_url": img_url, "value": intensity}
+                    async with session.post(url, json=payload, headers=headers) as post_resp:
+                        if post_resp.status != 200:
+                            err = await post_resp.text()
+                            logger.warning(f"Jeyy POST /v2/image/blur failed: {post_resp.status} {err}")
+                            return await ctx.send(f"❌ API error {post_resp.status}: see console for details.")
+                        data = await post_resp.read()
 
         fp = io.BytesIO(data)
         await ctx.send(file=discord.File(fp, "blur.png"))
+
 
     @imgmanip.command(name="abstract")
     async def abstract(self, ctx):
