@@ -183,8 +183,11 @@ class ImageFilter(BaseCog):
         name = ctx.author.display_name
         attorneys = ["Jordan Blake", "Alexis Reed", "Taylor Quinn", "Morgan Flynn"]
         prosecutors = ["Casey Vaughn", "Riley Carter", "Jamie Lee", "Dakota Shore"]
+        # pick random roles
         attorney = random.choice(attorneys)
         prosecutor = random.choice(prosecutors)
+        # side tells the API who’s speaking: 'attorney' or 'prosecutor'
+        side = random.choice(["attorney", "prosecutor"])
 
         await ctx.send("🔄 Building Ace GIF…")
         try:
@@ -196,6 +199,7 @@ class ImageFilter(BaseCog):
                     "name": name,
                     "attorney": attorney,
                     "prosecutor": prosecutor,
+                    "side": side,
                     "text": text,
                 },
             )
@@ -205,5 +209,6 @@ class ImageFilter(BaseCog):
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "ace.gif"))
+
         
         
