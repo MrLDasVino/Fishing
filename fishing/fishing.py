@@ -402,13 +402,13 @@ class Fishing(commands.Cog):
             },
         }
         
-            # ─── Dynamically compute base_biomes (accessible without any vessel) ───
-            # 1) collect every biome from fish_definitions
-            all_biomes = {info["biome"] for info in self.fish_definitions.values()}
-            # 2) collect all biomes unlocked by vessels
-            locked_biomes = set().union(*(v["unlock_biomes"] for v in self.vessel_definitions.values()))
-            # 3) everything else is “base” terrain
-            self.base_biomes = sorted(all_biomes - locked_biomes)        
+        # ─── Dynamically compute base_biomes (accessible without any vessel) ───
+        # 1) collect every biome from fish_definitions
+        all_biomes = {info["biome"] for info in self.fish_definitions.values()}
+        # 2) collect all biomes unlocked by vessels
+        locked_biomes = set().union(*(v["unlock_biomes"] for v in self.vessel_definitions.values()))
+        # 3) everything else is “base” terrain
+        self.base_biomes = sorted(all_biomes - locked_biomes)        
 
         # ─── Consumable definitions ───
         # Used by fishshop & fishbuy
