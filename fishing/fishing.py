@@ -375,7 +375,7 @@ class Fishing(commands.Cog):
             "Submersible Pod": {
                 "price": 2000,
                 "unlock_biomes": ["Ocean Floor", "Abyssal Rift", "Titan's Trench",
-+                               "Seagrass", "Coral Gardens", "Treasure Banks"],
+                               "Seagrass", "Coral Gardens", "Treasure Banks"],
                 "description": "Dive into the deepest trenches and ocean floors."
             },
             "Fossil Frigate": {
@@ -399,7 +399,7 @@ class Fishing(commands.Cog):
                     "Ocean Floor", "Abyssal Rift", "Titan's Trench",
                     "Prehistoric", "Magic Brook", "Ethereal Lagoon", "Seagrass",
                     "Coral Gardens","Treasure Banks", "Dusk Lakes", "Celestial Shoal",
-                    "Deep Ocean", "Ancient Reef", "Void Trench", "Tempest Ocean",
+                    "Deep Ocean", "Ancient Reef", "Void Trench", "Tempest Ocean"
                     
                 ],
                 "description": "Ultimate vessel: access every single water biome in the world."
