@@ -3524,7 +3524,7 @@ class Fishing(commands.Cog):
                 "progress":  {},
                 "completed": prev,
             })
-            await ctx.send(f"✅ Quest accepted: **{qdef['title']}**. Use `fishquestquest` to track progress.")
+            await ctx.send(f"✅ Quest accepted: **{qdef['title']}**. Use `fishquest` to track progress.")
         else:
             await ctx.send("❌ Quest acceptance cancelled.")
 
