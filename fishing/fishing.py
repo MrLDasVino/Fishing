@@ -2878,7 +2878,7 @@ class Fishing(commands.Cog):
 
 
     @commands.command()
-    async def achievements(self, ctx):
+    async def fishachievements(self, ctx):
         """Show your earned achievements and progress in an embed (paged if long)."""
         user_conf = self.config.user(ctx.author)
         earned = await user_conf.achievements()
@@ -2918,7 +2918,7 @@ class Fishing(commands.Cog):
         await self._paginate_embeds(ctx, embeds)
 
     @commands.command()
-    async def achievementlist(self, ctx):
+    async def fishachievementlist(self, ctx):
         """Show all achievements and their descriptions in an embed (paged)."""
         items = list(self.achievements.items())
         image_url = "https://files.catbox.moe/6ay32m.png"
