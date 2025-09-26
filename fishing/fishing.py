@@ -367,6 +367,40 @@ class Fishing(commands.Cog):
         }
         # Derived prices
         self.fish_prices = {name: info["price"] for name, info in self.fish_definitions.items()}
+        
+        # ---------- Gear definitions ----------
+        self.gear_definitions = {
+            "reels": {
+                "Precision Reel": {
+                    "hook_speed": 0.20,
+                    "description": "Reel in fish 20% quicker."
+                },
+                "Tangle-Free Reel": {
+                    "durability_boost": 0.30,
+                    "description": "30% reduced rod-break chance."
+                },
+            },
+            "lines": {
+                "Kevlar Line": {
+                    "durability_boost": 0.50,
+                    "description": "Halves rod break events."
+                },
+                "Elastic Line": {
+                    "double_catch_boost": 0.10,
+                    "description": "+10% chance for double catch."
+                },
+            },
+            "lures": {
+                "Glow Lure": {
+                    "rare_fish_boost": 0.15,
+                    "description": "+15% chance of Rare+ fish."
+                },
+                "Storm Lure": {
+                    "mythic_boost": 0.05,
+                    "description": "+5% chance of Mythic catches."
+                },
+            },
+                
 
         # Achievements                
         self.achievements: Dict[str, Tuple[str, str, str]] = {
