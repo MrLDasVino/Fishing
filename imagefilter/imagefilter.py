@@ -66,32 +66,21 @@ class ImageFilter(BaseCog):
 
         img_url = ctx.message.attachments[0].url
         await ctx.send(f"🔄 Blurring (intensity={intensity})…")
-        try:
-            data = await self._fetch(f"blur/{intensity}", img_url, api_key, method="POST")
-        except Exception as e:
-            return await ctx.send(f"❌ Error: {e}")
+
+        url = "https://api.jeyy.xyz/v2/image/blur"
+        headers = {"Authorization": f"Bearer {api_key}"}
+        params = {"image_url": img_url, "value": intensity}
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params, headers=headers) as resp:
+                if resp.status != 200:
+                    err = await resp.text()
+                    logger.warning(f"Jeyy GET /v2/image/blur failed: {resp.status} {err}")
+                    return await ctx.send(f"❌ API error {resp.status}: see console for details.")
+                data = await resp.read()
 
         fp = io.BytesIO(data)
         await ctx.send(file=discord.File(fp, "blur.png"))
-
-    @imgmanip.command(name="grayscale")
-    async def grayscale(self, ctx):
-        """Convert the attached image to grayscale."""
-        api_key = await self.config.user(ctx.author).api_key()
-        if not api_key:
-            return await ctx.send("❌ Set your API key with `[p]imgmanip setkey YOUR_KEY`.")
-        if not ctx.message.attachments:
-            return await ctx.send("❌ Please attach an image.")
-
-        img_url = ctx.message.attachments[0].url
-        await ctx.send("🔄 Converting to grayscale…")
-        try:
-            data = await self._fetch("grayscale", img_url, api_key, method="POST")
-        except Exception as e:
-            return await ctx.send(f"❌ Error: {e}")
-
-        fp = io.BytesIO(data)
-        await ctx.send(file=discord.File(fp, "grayscale.png"))
 
     @imgmanip.command(name="abstract")
     async def abstract(self, ctx):
