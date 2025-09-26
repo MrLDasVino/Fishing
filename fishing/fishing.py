@@ -3920,6 +3920,8 @@ class Fishing(commands.Cog):
         embed.add_field(name="🎣 Reel", value=fmt("rod_reel", "reels"), inline=False)
         embed.add_field(name="🪝 Line", value=fmt("rod_line", "lines"), inline=False)
         embed.add_field(name="🦤 Lure", value=fmt("rod_lure", "lures"), inline=False)
+        vessel = await user_conf.vessel()
+        embed.add_field(name="⛵ Vessel", value=vessel or "None", inline=False)        
 
         await ctx.send(embed=embed)
 
