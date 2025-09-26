@@ -5,7 +5,7 @@ import discord
 
 BaseCog = getattr(commands, "Cog", object)
 
-class ImageFilter(BaseCog):
+class JeyyImage(BaseCog):
     """Apply image effects using the Jeyy Image API."""
 
     def __init__(self, bot):
