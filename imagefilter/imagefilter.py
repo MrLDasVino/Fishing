@@ -72,13 +72,19 @@ class ImageFilter(BaseCog):
             return await ctx.send("❌ Set your API key with `[p]imgmanip setkey YOUR_KEY`.")
         if not ctx.message.attachments:
             return await ctx.send("❌ Please attach an image.")
-
         img_url = ctx.message.attachments[0].url
+
         await ctx.send("🔄 Converting to grayscale…")
-        try:
-            data = await self._fetch("grayscale", img_url, api_key)
-        except Exception as e:
-            return await ctx.send(f"❌ Error: {e}")
+        headers = {"Authorization": api_key}
+        params = {"image": img_url}
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.jeyy.xyz/grayscale", params=params, headers=headers) as resp:
+                text = await resp.text()
+                if resp.status != 200:
+                    logger.warning(f"Jeyy GET /grayscale failed: {resp.status} {text}")
+                    return await ctx.send(f"❌ API error {resp.status}: see console for details.")
+                data = await resp.read()
 
         fp = io.BytesIO(data)
         await ctx.send(file=discord.File(fp, "grayscale.png"))
+
