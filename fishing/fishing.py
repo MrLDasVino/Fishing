@@ -311,7 +311,7 @@ class Fishing(commands.Cog):
             # Inland waters
             "Rowboat": {
                 "price": 100,
-                "unlock_biomes": ["Pond", "Garden Pond", "Lake", "Cold Lake", "Foggy Lake"],
+                "unlock_biomes": ["Sacred Pond", "Lake", "Cold Lake", "Foggy Lake"],
                 "description": "Glide over quiet ponds, gardens and chilly lakes."
             },
             "Canoe": {
@@ -321,31 +321,31 @@ class Fishing(commands.Cog):
             },
             "Icebreaker": {
                 "price": 300,
-                "unlock_biomes": ["Frozen Bay", "Cold Ocean"],
+                "unlock_biomes": ["Frozen Bay", "Cold Ocean", "Crystal River"],
                 "description": "Break through ice to fish in frozen bays and cold seas."
             },
 
             # Coastal & reefs
             "Wooden Dinghy": {
                 "price": 200,
-                "unlock_biomes": ["Mangrove", "Coastal", "Reef", "Volcanic Spring"],
+                "unlock_biomes": ["Mangrove", "Coastal", "Reef", "Swamp" ],
                 "description": "Access mangroves, coasts, reefs and steamy volcanic springs."
             },
             "Glass-Bottom Skiff": {
                 "price": 350,
-                "unlock_biomes": ["Rocky Shore", "Bioluminal Sea", "Bioluminal Cavern"],
+                "unlock_biomes": ["Rocky Shore", "Bioluminal Sea", "Bioluminal Cavern", "Tropical Reef", "Reef"],
                 "description": "Survey rocky shores and glowing bioluminal waters."
             },
 
             # Offshore & open seas
             "Steel Trawler": {
                 "price": 500,
-                "unlock_biomes": ["Tropical Ocean", "Open Ocean"],
+                "unlock_biomes": ["Tropical Ocean", "Open Ocean", "Deep Ocean"],
                 "description": "Venture far offshore to tropical and open seas."
             },
             "Sailboat": {
                 "price": 800,
-                "unlock_biomes": ["Tropical Ocean", "Open Ocean", "Offshore"],
+                "unlock_biomes": ["Tropical Ocean", "Open Ocean", "Offshore", "Tempest Ocean"],
                 "description": "Harness the wind across warm and open waters."
             },
 
@@ -362,24 +362,25 @@ class Fishing(commands.Cog):
             },
             "Dreamboat": {
                 "price": 1000,
-                "unlock_biomes": ["Dreaming Deep", "Nightmare Bloom"],
+                "unlock_biomes": ["Dreaming Deep", "Nightmare Bloom", "Dusk Lakes", "Celestial Shoal"],
                 "description": "Sail the currents of dreams and nightmares."
             },
             "Enchanted Barque": {
                 "price": 1200,
-                "unlock_biomes": ["Magical", "Space"],
+                "unlock_biomes": ["Magical", "Space", "Ethereal Lagoon", "Magic Brook"],
                 "description": "Traverse magical waters and even star-lit shoals."
             },
 
             # Deep & abyssal exploration
             "Submersible Pod": {
                 "price": 2000,
-                "unlock_biomes": ["Ocean Floor", "Abyssal Rift", "Titan's Trench"],
+                "unlock_biomes": ["Ocean Floor", "Abyssal Rift", "Titan's Trench",
++                               "Seagrass", "Coral Gardens", "Treasure Banks"],
                 "description": "Dive into the deepest trenches and ocean floors."
             },
             "Fossil Frigate": {
                 "price": 1500,
-                "unlock_biomes": ["Prehistoric"],
+                "unlock_biomes": ["Prehistoric", "Ancient Reef", "Void Trench"],
                 "description": "Explore ancient currents and prehistoric biomes."
             },
 
@@ -392,11 +393,14 @@ class Fishing(commands.Cog):
                     "Mangrove", "Coastal", "Reef", "Volcanic Spring", "Lava Reef",
                     "Tropical Ocean", "Open Ocean", "Offshore",
                     "Rocky Shore", "Bioluminal Sea", "Bioluminal Cavern",
-                    "Haunted Shoals", "Phantom Tide",
-                    "Dreaming Deep", "Nightmare Bloom",
-                    "Magical", "Space",
+                    "Haunted Shoals", "Phantom Tide", "Sacred Pond",
+                    "Dreaming Deep", "Nightmare Bloom", "Crystal River",
+                    "Magical", "Space", "Swamp", "Tropical Reef", "Reef", 
                     "Ocean Floor", "Abyssal Rift", "Titan's Trench",
-                    "Prehistoric"
+                    "Prehistoric", "Magic Brook", "Ethereal Lagoon", "Seagrass",
+                    "Coral Gardens","Treasure Banks", "Dusk Lakes", "Celestial Shoal",
+                    "Deep Ocean", "Ancient Reef", "Void Trench", "Tempest Ocean",
+                    
                 ],
                 "description": "Ultimate vessel: access every single water biome in the world."
             },
@@ -448,7 +452,7 @@ class Fishing(commands.Cog):
             "rod_master_2": ("Rod Expert", "Upgrade your rod to level 2.", "rod"),
             "rod_master_3": ("Rod Legend", "Upgrade your rod to level 3.", "rod"),
             "double_trouble": ("Double Trouble", "Trigger 5 double catches.", "event"),
-            "net_haul": ("Net Hauler", "Get an event that yields 10+ fish total.", "event"),
+            "net_haul": ("Net Hauler", "Get an event that yields 5+ fish total.", "event"),
             "treasure_collect": ("Treasure Collector", "Find 5 treasure chests.", "event"),
             "pearl_hoarder": ("Pearl Hoarder", "Find 3 pearls.", "event"),
             "map_explorer": ("Map Explorer", "Collect 3 Treasure Maps.", "event"),
@@ -2349,7 +2353,7 @@ class Fishing(commands.Cog):
         """
         Volcanic Spring:
         – 20% chance to uncover a Lava Pearl item
-        – otherwise catch a volcanic fish (Cinderfish or Magma Carp)
+        – otherwise catch a volcanic fish (Cinderfish or Ember Carp)
         """
         await self._inc_stat(ctx.author, "casts", 1)
 
@@ -2363,7 +2367,7 @@ class Fishing(commands.Cog):
                 "Use it or deliver it for special rewards."
             )
 
-        choice = random.choice(["Cinderfish", "Magma Carp"])
+        choice = random.choice(["Cinderfish", "Ember Carp"])
         data = await user_conf.caught()
         data.append(choice)
         await user_conf.caught.set(data)
@@ -4100,7 +4104,7 @@ class Fishing(commands.Cog):
 
         # 4) Validate
         if price is None:
-            return await ctx.send("❌ Item not found in shop. Check `!fishshop`.")
+            return await ctx.send("❌ Item not found in shop. Check `fishshop`.")
         bal = await bank.get_balance(ctx.author)
         if bal < price:
             return await ctx.send(f"❌ You need **{price} {currency}**, but have **{bal} {currency}**.")
