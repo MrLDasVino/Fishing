@@ -3970,38 +3970,53 @@ class Fishing(commands.Cog):
     async def fishshop(self, ctx):
         """
         Display available vessels and gear items for purchase.
-        Use `fishbuy <item>` to buy.
+        Use `!fishbuy <item>` to buy.
         """
         currency = await bank.get_currency_name(ctx.guild)
-        bal      = await bank.get_balance(ctx.author)
+        bal = await bank.get_balance(ctx.author)
 
         embed = discord.Embed(
-            title="🎣 Fishing Shop",
+            title="🎣 Fishing Emporium",
             colour=discord.Colour.gold(),
-            description=f"Your balance: **{bal} {currency}**\nUse `!fishbuy <item>` to purchase."
+            description=f"Your balance: **{bal} {currency}**\nUse `fishbuy <item>` to purchase."
         )
+        # thumbnail (you can replace with your own URL)
+        embed.set_thumbnail(url="https://files.catbox.moe/9r0mzw.png")
 
-        # Vessels section
-        for name, info in self.vessel_definitions.items():
+        # ─── VESSELS ───
+        embed.add_field(name="⛵ Rowboat", value="Price: **100**\nPond, Garden Pond, Lake", inline=True)
+        embed.add_field(name="🛶 Canoe", value="Price: **150**\nRiver, Stream, Estuary", inline=True)
+        embed.add_field(name="🚤 Wooden Dinghy", value="Price: **200**\nCoastal, Reef", inline=True)
+        embed.add_field(name="🔍 Glass-Bottom Skiff", value="Price: **350**\nMangrove, Bioluminal Seas", inline=True)
+        embed.add_field(name="⚙️ Steel Trawler", value="Price: **500**\nTropical & Open Ocean", inline=True)
+        embed.add_field(name="⛵ Sailboat", value="Price: **800**\nOffshore, Tropical & Open Ocean", inline=True)
+        embed.add_field(name="🔥 Magma Dinghy", value="Price: **750**\nVolcanic Spring, Lava Reef", inline=True)
+        embed.add_field(name="👻 Ghost Drifter", value="Price: **900**\nHaunted Shoals, Phantom Tide", inline=True)
+        embed.add_field(name="🌙 Dreamboat", value="Price: **1000**\nDreaming Deep, Nightmare Bloom", inline=True)
+        embed.add_field(name="🔮 Enchanted Barque", value="Price: **1200**\nMagical, Space", inline=True)
+        embed.add_field(name="🧜 Submersible Pod", value="Price: **2000**\nOcean Floor, Abyssal Rift", inline=True)
+        embed.add_field(name="⚓ Fossil Frigate", value="Price: **1500**\nPrehistoric", inline=True)
+        embed.add_field(name="🚢 Fishing Yacht", value="Price: **10000**\nAll Biomes", inline=True)
+
+        # ─── GEAR ───
+        # assume self.gear_definitions items have a 'price' key
+        for category, icon in [("reels", "⚙️"), ("lines", "🧵"), ("lures", "🪝")]:
+            # header for each gear category
             embed.add_field(
-                name=f"🚤 {name} — {info['price']} {currency}",
-                value=info["description"],
+                name=f"\u200b", 
+                value=f"**{category.capitalize()}**", 
                 inline=False
             )
-
-        # Gear section (reels, lines, lures)
-        for category, items in self.gear_definitions.items():
-            for gname, ginfo in items.items():
-                price = ginfo.get("price", None)
-                if price:
-                    emoji = "🎣" if category=="lures" else "⚙️" if category=="reels" else "🪝"
-                    embed.add_field(
-                        name=f"{emoji} {gname} — {price} {currency}",
-                        value=ginfo["description"],
-                        inline=False
-                    )
+            for name, info in self.gear_definitions[category].items():
+                price = info.get("price", "—")
+                embed.add_field(
+                    name=f"{icon} {name}", 
+                    value=f"Price: **{price}**\n{info['description']}", 
+                    inline=True
+                )
 
         await ctx.send(embed=embed)
+
 
 
     @commands.command(name="fishbuy")
@@ -4031,7 +4046,7 @@ class Fishing(commands.Cog):
                     break
 
         if price is None:
-            return await ctx.send("❌ Item not found in shop. Check `!fishshop`.")
+            return await ctx.send("❌ Item not found in shop. Check `fishshop`.")
         bal = await bank.get_balance(ctx.author)
         if bal < price:
             return await ctx.send(f"❌ You need **{price} {currency}**, but have **{bal} {currency}**.")
