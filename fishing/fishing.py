@@ -3011,7 +3011,7 @@ class Fishing(commands.Cog):
                 # field title shows the human name and exact command
                 field_name = (
                     f"{info.get('name')} — Usage: "
-                    f"`{ctx.clean_prefix}craft {recipe_id}`"
+                    f"`{ctx.clean_prefix}fishcraft {recipe_id}`"
                 )
                 # field value shows description, requirements and result
                 field_value = (
@@ -3373,7 +3373,7 @@ class Fishing(commands.Cog):
             emb = discord.Embed(title="Known NPCs", colour=discord.Colour.green())
             emb.set_image(url="https://files.catbox.moe/jgohga.png")
             for key, info in chunk:
-                emb.add_field(name=info.get("display", key), value=f"{info.get('greeting','')}\nQuests: {', '.join(info.get('quests',[])) or 'None'}\nCommand: `{ctx.clean_prefix}talknpc {key}`", inline=False)
+                emb.add_field(name=info.get("display", key), value=f"{info.get('greeting','')}\nQuests: {', '.join(info.get('quests',[])) or 'None'}\nCommand: `{ctx.clean_prefix}fishtalknpc {key}`", inline=False)
             emb.set_footer(text=f"NPCs {i//items_per+1}/{(len(entries)-1)//items_per+1}")
             embeds.append(emb)
         await self._paginate_embeds(ctx, embeds)
@@ -3416,12 +3416,12 @@ class Fishing(commands.Cog):
         if quest_list:
             for title, qid, available in quest_list:
                 status = "Available" if available else "Unavailable"
-                emb.add_field(name=title, value=f"ID: `{qid}` — {status}\nUse `{ctx.clean_prefix}acceptquest {qid}` to accept", inline=False)
+                emb.add_field(name=title, value=f"ID: `{qid}` — {status}\nUse `{ctx.clean_prefix}fishacceptquest {qid}` to accept", inline=False)
         else:
             emb.add_field(name="Quests", value="No quests available right now.", inline=False)
 
         # Footer with quick usage hint
-        emb.set_footer(text=f"Use {ctx.clean_prefix}acceptquest <id> to accept. Use {ctx.clean_prefix}npcs to list NPCs.")
+        emb.set_footer(text=f"Use {ctx.clean_prefix}fishacceptquest <id> to accept. Use {ctx.clean_prefix}fishnpcs to list NPCs.")
 
         await ctx.send(embed=emb)
 
