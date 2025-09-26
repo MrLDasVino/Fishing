@@ -74,43 +74,107 @@ class Fishing(commands.Cog):
                 "rod_reel": None,
                 "rod_line": None,
                 "rod_lure": None,
-            },            
+            },
+            # ─── New: vessel unlocks ───
+            "vessel": None,            # name of the boat the user owns            
         }
         self.config.register_user(**default_user)
         
-        # Gear stats definitions
-        self.gear_definitions = {
-            "reels": {
-                "Precision Reel": {
-                    "hook_speed": 0.20,
-                    "description": "Reel in fish 20% quicker.",
-                },
-                "Tangle-Free Reel": {
-                    "durability_boost": 0.30,
-                    "description": "30% reduced rod-break chance.",
-                },
+        # ─── Vessel definitions ───
+        self.vessel_definitions = {
+            # Inland waters
+            "Rowboat": {
+                "price": 100,
+                "unlock_biomes": ["Pond", "Garden Pond", "Lake", "Cold Lake", "Foggy Lake"],
+                "description": "Glide over quiet ponds, gardens and chilly lakes."
             },
-            "lines": {
-                "Kevlar Line": {
-                    "durability_boost": 0.50,
-                    "description": "Halves rod break events.",
-                },
-                "Elastic Line": {
-                    "double_catch_boost": 0.10,
-                    "description": "+10% chance for double catch.",
-                },
+            "Canoe": {
+                "price": 150,
+                "unlock_biomes": ["River", "Stream", "Estuary", "Enchanted Marsh"],
+                "description": "Paddle through rivers, streams, estuaries and misty marshes."
             },
-            "lures": {
-                "Glow Lure": {
-                    "rare_fish_boost": 0.15,
-                    "description": "+15% chance of Rare+ fish.",
-                },
-                "Storm Lure": {
-                    "mythic_boost": 0.05,
-                    "description": "+5% chance of Mythic catches.",
-                },
+            "Icebreaker": {
+                "price": 300,
+                "unlock_biomes": ["Frozen Bay", "Cold Ocean"],
+                "description": "Break through ice to fish in frozen bays and cold seas."
             },
-        }        
+
+            # Coastal & reefs
+            "Wooden Dinghy": {
+                "price": 200,
+                "unlock_biomes": ["Mangrove", "Coastal", "Reef", "Volcanic Spring"],
+                "description": "Access mangroves, coasts, reefs and steamy volcanic springs."
+            },
+            "Glass-Bottom Skiff": {
+                "price": 350,
+                "unlock_biomes": ["Rocky Shore", "Bioluminal Sea", "Bioluminal Cavern"],
+                "description": "Survey rocky shores and glowing bioluminal waters."
+            },
+
+            # Offshore & open seas
+            "Steel Trawler": {
+                "price": 500,
+                "unlock_biomes": ["Tropical Ocean", "Open Ocean"],
+                "description": "Venture far offshore to tropical and open seas."
+            },
+            "Sailboat": {
+                "price": 800,
+                "unlock_biomes": ["Tropical Ocean", "Open Ocean", "Offshore"],
+                "description": "Harness the wind across warm and open waters."
+            },
+
+            # Themed special vessels
+            "Magma Dinghy": {
+                "price": 750,
+                "unlock_biomes": ["Volcanic Spring", "Lava Reef"],
+                "description": "Brave lava reefs and boiling springs in a heatproof craft."
+            },
+            "Ghost Drifter": {
+                "price": 900,
+                "unlock_biomes": ["Haunted Shoals", "Phantom Tide"],
+                "description": "Drift under moonlit halls where specters swim."
+            },
+            "Dreamboat": {
+                "price": 1000,
+                "unlock_biomes": ["Dreaming Deep", "Nightmare Bloom"],
+                "description": "Sail the currents of dreams and nightmares."
+            },
+            "Enchanted Barque": {
+                "price": 1200,
+                "unlock_biomes": ["Magical", "Space"],
+                "description": "Traverse magical waters and even star-lit shoals."
+            },
+
+            # Deep & abyssal exploration
+            "Submersible Pod": {
+                "price": 2000,
+                "unlock_biomes": ["Ocean Floor", "Abyssal Rift", "Titan's Trench"],
+                "description": "Dive into the deepest trenches and ocean floors."
+            },
+            "Fossil Frigate": {
+                "price": 1500,
+                "unlock_biomes": ["Prehistoric"],
+                "description": "Explore ancient currents and prehistoric biomes."
+            },
+
+            # Ultimate all-access craft
+            "Fishing Yacht": {
+                "price": 10000,
+                "unlock_biomes": [
+                    "Pond", "Garden Pond", "Lake", "Cold Lake", "Foggy Lake",
+                    "River", "Stream", "Estuary", "Enchanted Marsh",
+                    "Mangrove", "Coastal", "Reef", "Volcanic Spring", "Lava Reef",
+                    "Tropical Ocean", "Open Ocean", "Offshore",
+                    "Rocky Shore", "Bioluminal Sea", "Bioluminal Cavern",
+                    "Haunted Shoals", "Phantom Tide",
+                    "Dreaming Deep", "Nightmare Bloom",
+                    "Magical", "Space",
+                    "Ocean Floor", "Abyssal Rift", "Titan's Trench",
+                    "Prehistoric"
+                ],
+                "description": "Ultimate vessel: access every single water biome in the world."
+            },
+        }       
         
         # ─── Flavor texts for casting ───
         self.cast_flavor = [
@@ -1374,6 +1438,29 @@ class Fishing(commands.Cog):
         stats["highest_value_catch"] = max(stats.get("highest_value_catch", 0), price)
         stats["consecutive_catches"] = stats.get("consecutive_catches", 0) + 1
         await conf.stats.set(stats)
+        
+    async def _random_fish_for_user(self, user) -> str:
+        """
+        Choose a fish weighted by the biomes the player can access
+        (on-foot + any unlocked by their vessel).
+        """
+        # base biomes
+        allowed = set(self.base_biomes)
+        vessel = await self.config.user(user).vessel()
+        if vessel and vessel in self.vessel_definitions:
+            allowed |= set(self.vessel_definitions[vessel]["unlock_biomes"])
+
+        # build lists of fish that match allowed biomes
+        names, weights = [], []
+        for name, info in self.fish_definitions.items():
+            if info.get("biome") in allowed:
+                names.append(name)
+                weights.append(info.get("weight", 1))
+
+        # fallback if somehow empty
+        if not names:
+            return self._random_fish()
+        return random.choices(names, weights=weights, k=1)[0]
 
            
     # ---------- Event handlers ----------
@@ -1399,7 +1486,7 @@ class Fishing(commands.Cog):
         return False, f"👎 You pulled up {item}. Better luck next time!"
 
     async def _event_fish(self, ctx, user_conf):
-        catch = self._random_fish()
+        catch = await self._random_fish_for_user(ctx.author)
         data = await user_conf.caught()
         data.append(catch)
         await user_conf.caught.set(data)
@@ -1423,8 +1510,8 @@ class Fishing(commands.Cog):
         return False, base
 
     async def _event_double(self, ctx, user_conf):
-        catch1 = self._random_fish()
-        catch2 = self._random_fish()
+        catch1 = await self._random_fish_for_user(ctx.author)
+        catch2 = await self._random_fish_for_user(ctx.author)
         data = await user_conf.caught()
         data.extend([catch1, catch2])
         await user_conf.caught.set(data)
@@ -3843,7 +3930,92 @@ class Fishing(commands.Cog):
         eq[cfg_key] = item_name
         await user_conf.equipment.set(eq)
 
-        await ctx.send(f"✨ You equipped **{item_name}** to your {slot} slot!")        
+        await ctx.send(f"✨ You equipped **{item_name}** to your {slot} slot!")
+
+    @commands.command(name="fishshop")
+    async def fishshop(self, ctx):
+        """
+        Display available vessels and gear items for purchase.
+        Use `fishbuy <item>` to buy.
+        """
+        currency = await bank.get_currency_name(ctx.guild)
+        bal      = await bank.get_balance(ctx.author)
+
+        embed = discord.Embed(
+            title="🎣 Fishing Shop",
+            colour=discord.Colour.gold(),
+            description=f"Your balance: **{bal} {currency}**\nUse `!fishbuy <item>` to purchase."
+        )
+
+        # Vessels section
+        for name, info in self.vessel_definitions.items():
+            embed.add_field(
+                name=f"🚤 {name} — {info['price']} {currency}",
+                value=info["description"],
+                inline=False
+            )
+
+        # Gear section (reels, lines, lures)
+        for category, items in self.gear_definitions.items():
+            for gname, ginfo in items.items():
+                price = ginfo.get("price", None)
+                if price:
+                    emoji = "🎣" if category=="lures" else "⚙️" if category=="reels" else "🪝"
+                    embed.add_field(
+                        name=f"{emoji} {gname} — {price} {currency}",
+                        value=ginfo["description"],
+                        inline=False
+                    )
+
+        await ctx.send(embed=embed)
+
+
+    @commands.command(name="fishbuy")
+    async def fishbuy(self, ctx, *, item_name: str):
+        """
+        Buy a vessel or gear item from the shop.
+        Vessel unlocks new biomes; gear goes to your items.
+        """
+        user_conf = self.config.user(ctx.author)
+        currency  = await bank.get_currency_name(ctx.guild)
+
+        # normalize lookup
+        name = item_name.strip()
+        price = None
+        # check vessel
+        if name in self.vessel_definitions:
+            price = self.vessel_definitions[name]["price"]
+            # ensure not already owned
+            current = await user_conf.vessel()
+            if current == name:
+                return await ctx.send(f"❌ You already own the **{name}**.")
+        # check gear
+        else:
+            for cat in ("reels","lines","lures"):
+                if name in self.gear_definitions.get(cat, {}):
+                    price = self.gear_definitions[cat][name].get("price")
+                    break
+
+        if price is None:
+            return await ctx.send("❌ Item not found in shop. Check `!fishshop`.")
+        bal = await bank.get_balance(ctx.author)
+        if bal < price:
+            return await ctx.send(f"❌ You need **{price} {currency}**, but have **{bal} {currency}**.")
+
+        # deduct cost
+        await bank.withdraw_credits(ctx.author, price)
+
+        # deliver purchase
+        if name in self.vessel_definitions:
+            await user_conf.vessel.set(name)
+            return await ctx.send(f"🚤 You bought the **{name}**! New waters await you.")
+        else:
+            # gear goes into items list
+            items = await user_conf.items()
+            items.append(name)
+            await user_conf.items.set(items)
+            return await ctx.send(f"⚙️ You bought **{name}**, it’s been added to your items.")
+        
 
 
     async def cog_unload(self):
