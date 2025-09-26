@@ -840,6 +840,7 @@ class ImageFilter(BaseCog):
 
         img_url = self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Equations filter…")
+
         try:
             data = await self._fetch(
                 endpoint="v2/image/equations",
@@ -848,11 +849,51 @@ class ImageFilter(BaseCog):
                 params={"image_url": img_url},
             )
         except Exception as e:
-            return await ctx.send(f"❌ Error: {e}")
+            return await ctx.send(f"❌ Error fetching filter: {e}")
 
+        # Check Discord’s upload cap for this channel/guild
+        max_size = getattr(ctx.guild, "filesize_limit", 8 * 1024 * 1024)  # default 8MB
+
+        # If the payload is too big, try to downscale the GIF
+        if len(data) > max_size:
+            try:
+                from PIL import Image, ImageSequence
+
+                orig = Image.open(io.BytesIO(data))
+                frames = [frame.copy().convert("RGBA") for frame in ImageSequence.Iterator(orig)]
+                w, h = frames[0].size
+
+                # Compute a simple scale factor based on size ratio
+                scale = (max_size / len(data)) ** 0.5
+                new_size = (max(1, int(w * scale)), max(1, int(h * scale)))
+
+                out = io.BytesIO()
+                frames[0].save(
+                    out,
+                    format="GIF",
+                    save_all=True,
+                    append_images=frames[1:],
+                    loop=0,
+                    optimize=True,
+                    duration=orig.info.get("duration", 100),
+                )
+                data = out.getvalue()
+            except Exception:
+                pass  # if resizing fails, we'll catch on send
+
+        # Final send (may still error if resizing didn’t shrink enough)
         fp = io.BytesIO(data)
         fp.seek(0)
-        await ctx.send(file=discord.File(fp, "equations.gif"))
+        try:
+            await ctx.send(file=discord.File(fp, "equations.gif"))
+        except discord.HTTPException as exc:
+            if exc.code == 40005:  # Payload Too Large
+                return await ctx.send(
+                    "❌ The resulting GIF is too large to upload. "
+                    "Try with a smaller image or lower resolution."
+                )
+            raise
+
 
     @imgmanip.command(name="explicit")
     async def explicit(self, ctx, target: Optional[Union[discord.Member, str]] = None):
