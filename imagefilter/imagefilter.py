@@ -114,15 +114,12 @@ class ImageFilter(BaseCog):
         
     @imgmanip.command(name="balls")
     async def balls(self, ctx, intensity: int = 5):
-        """Apply the Balls v2 filter to the attached image. Intensity 1–20."""
-        # 1) API key check
+        """Apply the Balls v2 filter to the attached image, returns a GIF."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key with `[p]imgmanip setkey YOUR_KEY`.")
-        # 2) Attachment check
         if not ctx.message.attachments:
             return await ctx.send("❌ Please attach an image.")
-        # 3) Intensity bounds
         if not 1 <= intensity <= 20:
             return await ctx.send("❌ Intensity must be between 1 and 20.")
 
@@ -142,5 +139,8 @@ class ImageFilter(BaseCog):
                 data = await resp.read()
 
         fp = io.BytesIO(data)
-        await ctx.send(file=discord.File(fp, "balls.png"))
+        fp.seek(0)
+        # send as .gif so Discord plays it
+        await ctx.send(file=discord.File(fp, "balls.gif"))
+
         
