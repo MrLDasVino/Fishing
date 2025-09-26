@@ -1,5 +1,6 @@
 import io
 import logging
+import random
 from typing import Optional, Union
 
 from redbot.core import commands, Config
@@ -166,4 +167,43 @@ class ImageFilter(BaseCog):
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "3d.gif"))
+        
+
+    @imgmanip.command(name="ace")
+    async def ace(self, ctx, *, text: str):
+        """
+        Generate an 'Ace' courtroom GIF.
+        
+        text        The line of dialogue to show in the speech bubble.
+        """
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        name = ctx.author.display_name
+        attorneys = ["Jordan Blake", "Alexis Reed", "Taylor Quinn", "Morgan Flynn"]
+        prosecutors = ["Casey Vaughn", "Riley Carter", "Jamie Lee", "Dakota Shore"]
+        attorney = random.choice(attorneys)
+        prosecutor = random.choice(prosecutors)
+
+        await ctx.send("🔄 Building Ace GIF…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/ace",
+                api_key=api_key,
+                method="GET",
+                params={
+                    "name": name,
+                    "attorney": attorney,
+                    "prosecutor": prosecutor,
+                    "text": text,
+                },
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "ace.gif"))
+        
         
