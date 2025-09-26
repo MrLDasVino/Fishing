@@ -400,7 +400,19 @@ class Fishing(commands.Cog):
                 ],
                 "description": "Ultimate vessel: access every single water biome in the world."
             },
-        }                   
+        }
+
+        # ─── Consumable definitions ───
+        # Used by fishshop & fishbuy
+        self.consumable_definitions = {
+            "Bait":    {"price": 150,  "emoji": "🪱", "description": "Adds 5 bait to your tackle box."},
+            "Chum":    {"price": 100,  "emoji": "🦐", "description": "Increases rare catch chance by 5% for next 3 casts."},
+            "Stew":    {"price": 300,  "emoji": "🍲", "description": "Restores rod durability; grants +1 luck."},
+            "Fragment":{"price":1500, "emoji": "🧩", "description": "Salvage to repair rods or unlock upgrades."},
+            "Journal": {"price": 500,  "emoji": "📔", "description": "Logs biomes; +10% catch bonus in unexplored areas."},
+            "Pack":    {"price": 300,  "emoji": "🥫", "description": "Boosts bait effectiveness by 15% for 5 casts."},
+            "Mystery": {"price":1000,  "emoji": "🎁", "description": "Contains random consumables or gear."}
+        }        
 
         # Achievements                
         self.achievements: Dict[str, Tuple[str, str, str]] = {
@@ -3971,16 +3983,13 @@ class Fishing(commands.Cog):
     @commands.command(name="fishshop")
     async def fishshop(self, ctx):
         """
-        Shop split across 3 pages:
-        1) Vessels
-        2) Gear Attachments
-        3) Consumables
-        Navigate with ⬅️/➡️/⏹️.
+        Shop split in 3 pages: Vessels, Gear, Consumables.
+        Navigate with ⬅️/➡️, stop with ⏹️.
         """
         currency = await bank.get_currency_name(ctx.guild)
         bal = await bank.get_balance(ctx.author)
 
-        # ─── Page 1: Vessels ───
+        # Page 1: Vessels
         page1 = discord.Embed(
             title="🎣 Fishing Shop — Page 1/3: Vessels",
             colour=discord.Colour.gold(),
@@ -3988,7 +3997,6 @@ class Fishing(commands.Cog):
         )
         page1.set_thumbnail(url="https://files.catbox.moe/9r0mzw.png")
 
-        # map each vessel name to an emoji
         emoji_map = {
             "Rowboat":"⛵","Canoe":"🛶","Wooden Dinghy":"🚤",
             "Glass-Bottom Skiff":"🔍","Steel Trawler":"⚙️","Sailboat":"⛵",
@@ -3998,16 +4006,16 @@ class Fishing(commands.Cog):
         }
         for name, info in self.vessel_definitions.items():
             icon = emoji_map.get(name, "⛵")
+            # show “All Biomes” for the Yacht
+            biome_text = "All Biomes" if name == "Fishing Yacht" \
+                         else ", ".join(info["unlock_biomes"])
             page1.add_field(
                 name=f"{icon} {name}",
-                value=(
-                    f"**{info['price']} {currency}**\n"
-                    f"Unlocks: {', '.join(info['unlock_biomes'])}"
-                ),
+                value=f"**{info['price']} {currency}**\n{biome_text}",
                 inline=True
             )
 
-        # ─── Page 2: Gear Attachments ───
+        # Page 2: Gear Attachments
         page2 = discord.Embed(
             title="🎣 Fishing Shop — Page 2/3: Gear",
             colour=discord.Colour.blue(),
@@ -4016,30 +4024,17 @@ class Fishing(commands.Cog):
         page2.set_thumbnail(url="https://files.catbox.moe/9r0mzw.png")
 
         for category, icon in [("reels","⚙️"), ("lines","🧵"), ("lures","🪝")]:
-            # category header
             page2.add_field(name=f"{icon} {category.capitalize()}",
                             value="\u200b", inline=False)
             for gname, ginfo in self.gear_definitions[category].items():
                 price = ginfo.get("price", "—")
                 page2.add_field(
                     name=f"{icon} {gname}",
-                    value=(
-                        f"**{price} {currency}**\n"
-                        f"{ginfo['description']}"
-                    ),
+                    value=f"**{price} {currency}**\n{ginfo['description']}",
                     inline=True
                 )
 
-        # ─── Page 3: Consumables ───
-        cons = {
-            "Bait":    ("🪱",  150,  "Adds 5 bait to your tackle box."),
-            "Chum":    ("🦐",  100,  "Increases rare catch chance by 5% for next 3 casts."),
-            "Stew":    ("🍲", 300,  "Restores rod durability; grants +1 luck."),
-            "Fragment":("🧩", 1500, "Salvage to repair rods or unlock upgrades."),
-            "Journal": ("📔", 500,  "Logs new biomes; +10% catch bonus in unexplored areas."),
-            "Pack":    ("🥫", 300,  "Boosts bait effectiveness by 15% for 5 casts."),
-            "Mystery": ("🎁",1000,  "Contains random consumables or gear."),
-        }
+        # Page 3: Consumables
         page3 = discord.Embed(
             title="🎣 Fishing Shop — Page 3/3: Consumables",
             colour=discord.Colour.green(),
@@ -4047,15 +4042,16 @@ class Fishing(commands.Cog):
         )
         page3.set_thumbnail(url="https://files.catbox.moe/9r0mzw.png")
 
-        for name, (emoji, price, desc) in cons.items():
+        for name, info in self.consumable_definitions.items():
             page3.add_field(
-                name=f"{emoji} {name}",
-                value=f"**{price} {currency}**\n{desc}",
+                name=f"{info['emoji']} {name}",
+                value=f"**{info['price']} {currency}**\n{info['description']}",
                 inline=True
             )
 
-        # paginate the three pages
+        # Use your paginator helper
         await self._paginate_embeds(ctx, [page1, page2, page3])
+
 
 
 
@@ -4063,48 +4059,58 @@ class Fishing(commands.Cog):
     @commands.command(name="fishbuy")
     async def fishbuy(self, ctx, *, item_name: str):
         """
-        Buy a vessel or gear item from the shop.
-        Vessel unlocks new biomes; gear goes to your items.
+        Buy a vessel, gear attachment, or consumable from the shop.
+        Vessels unlock new biomes; gear & consumables go into your items.
         """
         user_conf = self.config.user(ctx.author)
-        currency  = await bank.get_currency_name(ctx.guild)
-
-        # normalize lookup
+        currency = await bank.get_currency_name(ctx.guild)
         name = item_name.strip()
         price = None
-        # check vessel
+        buy_type = None
+
+        # 1) Vessel?
         if name in self.vessel_definitions:
             price = self.vessel_definitions[name]["price"]
-            # ensure not already owned
+            buy_type = "vessel"
             current = await user_conf.vessel()
             if current == name:
                 return await ctx.send(f"❌ You already own the **{name}**.")
-        # check gear
+
+        # 2) Gear?
         else:
-            for cat in ("reels","lines","lures"):
+            for cat in ("reels", "lines", "lures"):
                 if name in self.gear_definitions.get(cat, {}):
                     price = self.gear_definitions[cat][name].get("price")
+                    buy_type = "gear"
                     break
 
+        # 3) Consumable?
+        if price is None and name in self.consumable_definitions:
+            info = self.consumable_definitions[name]
+            price = info["price"]
+            buy_type = "consumable"
+
+        # 4) Validate
         if price is None:
-            return await ctx.send("❌ Item not found in shop. Check `fishshop`.")
+            return await ctx.send("❌ Item not found in shop. Check `!fishshop`.")
         bal = await bank.get_balance(ctx.author)
         if bal < price:
             return await ctx.send(f"❌ You need **{price} {currency}**, but have **{bal} {currency}**.")
 
-        # deduct cost
+        # 5) Deduct cost
         await bank.withdraw_credits(ctx.author, price)
 
-        # deliver purchase
-        if name in self.vessel_definitions:
+        # 6) Deliver purchase
+        if buy_type == "vessel":
             await user_conf.vessel.set(name)
             return await ctx.send(f"🚤 You bought the **{name}**! New waters await you.")
         else:
-            # gear goes into items list
             items = await user_conf.items()
             items.append(name)
             await user_conf.items.set(items)
-            return await ctx.send(f"⚙️ You bought **{name}**, it’s been added to your items.")
+            emoji = "⚙️" if buy_type == "gear" else "🧪"
+            return await ctx.send(f"{emoji} You bought **{name}**, it’s been added to your items.")
+
         
 
 
