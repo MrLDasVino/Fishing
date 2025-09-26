@@ -105,11 +105,19 @@ class ImageFilter(BaseCog):
 
         img_url = ctx.message.attachments[0].url
         await ctx.send("🔄 Applying Abstract v2 filter…")
-        try:
-            # GET against the v2 abstract endpoint
-            data = await self._fetch("v2/image/abstract", img_url, api_key, method="GET")
-        except Exception as e:
-            return await ctx.send(f"❌ Error: {e}")
+
+        url = "https://api.jeyy.xyz/v2/image/abstract"
+        headers = {"Authorization": f"Bearer {api_key}"}
+        params = {"image_url": img_url}
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params, headers=headers) as resp:
+                body = await resp.text()
+                if resp.status != 200:
+                    logger.warning(f"Jeyy GET /v2/image/abstract failed: {resp.status} {body}")
+                    return await ctx.send(f"❌ API error {resp.status}: see console for details.")
+                data = await resp.read()
 
         fp = io.BytesIO(data)
         await ctx.send(file=discord.File(fp, "abstract.png"))
+
