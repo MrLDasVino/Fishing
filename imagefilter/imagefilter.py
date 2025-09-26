@@ -1,7 +1,12 @@
 import io
+import logging
+
 from redbot.core import commands, Config
 import aiohttp
 import discord
+
+# logger for this cog
+logger = logging.getLogger("red.cogs.imagefilter")
 
 BaseCog = getattr(commands, "Cog", object)
 
@@ -11,7 +16,8 @@ class ImageFilter(BaseCog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890)
-        self.config.register_user(api_key=None)
+        default_user = {"api_key": None}
+        self.config.register_user(**default_user)
 
     @commands.group(name="imgmanip", invoke_without_command=True)
     async def imgmanip(self, ctx):
@@ -25,14 +31,15 @@ class ImageFilter(BaseCog):
         await ctx.send("✅ Your Jeyy API key has been saved.")
 
     async def _fetch(self, endpoint: str, img_url: str, api_key: str) -> bytes:
+        """Internal helper: call Jeyy API and return raw image bytes."""
         url = f"https://api.jeyy.xyz/{endpoint}"
         headers = {"Authorization": api_key}
-        payload = {"image": img_url}  # if the API wants “url” instead of “image”, change this key
+        payload = {"image": img_url}  # if API wants {"url": img_url}, swap the key here
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload, headers=headers) as resp:
                 text = await resp.text()
                 if resp.status != 200:
-                    self.bot.log.warning(f"Jeyy `{endpoint}` failed: {resp.status} {text}")
+                    logger.warning(f"Jeyy `{endpoint}` failed: {resp.status} {text}")
                     raise RuntimeError(f"HTTP {resp.status}")
                 return await resp.read()
 
@@ -41,12 +48,11 @@ class ImageFilter(BaseCog):
         """Blur the attached image. Intensity 1–20."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
-            return await ctx.send("❌ Set your API key with `[p]imgmanip setkey YOUR_KEY`")
-
+            return await ctx.send("❌ Set your API key with `[p]imgmanip setkey YOUR_KEY`.")
         if not ctx.message.attachments:
             return await ctx.send("❌ Please attach an image.")
         if not 1 <= intensity <= 20:
-            return await ctx.send("❌ Intensity must be 1–20.")
+            return await ctx.send("❌ Intensity must be between 1 and 20.")
 
         img_url = ctx.message.attachments[0].url
         await ctx.send(f"🔄 Blurring (intensity={intensity})…")
@@ -63,8 +69,7 @@ class ImageFilter(BaseCog):
         """Convert the attached image to grayscale."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
-            return await ctx.send("❌ Set your API key with `[p]imgmanip setkey YOUR_KEY`")
-
+            return await ctx.send("❌ Set your API key with `[p]imgmanip setkey YOUR_KEY`.")
         if not ctx.message.attachments:
             return await ctx.send("❌ Please attach an image.")
 
