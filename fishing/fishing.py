@@ -79,102 +79,7 @@ class Fishing(commands.Cog):
             "vessel": None,            # name of the boat the user owns            
         }
         self.config.register_user(**default_user)
-        
-        # ─── Vessel definitions ───
-        self.vessel_definitions = {
-            # Inland waters
-            "Rowboat": {
-                "price": 100,
-                "unlock_biomes": ["Pond", "Garden Pond", "Lake", "Cold Lake", "Foggy Lake"],
-                "description": "Glide over quiet ponds, gardens and chilly lakes."
-            },
-            "Canoe": {
-                "price": 150,
-                "unlock_biomes": ["River", "Stream", "Estuary", "Enchanted Marsh"],
-                "description": "Paddle through rivers, streams, estuaries and misty marshes."
-            },
-            "Icebreaker": {
-                "price": 300,
-                "unlock_biomes": ["Frozen Bay", "Cold Ocean"],
-                "description": "Break through ice to fish in frozen bays and cold seas."
-            },
-
-            # Coastal & reefs
-            "Wooden Dinghy": {
-                "price": 200,
-                "unlock_biomes": ["Mangrove", "Coastal", "Reef", "Volcanic Spring"],
-                "description": "Access mangroves, coasts, reefs and steamy volcanic springs."
-            },
-            "Glass-Bottom Skiff": {
-                "price": 350,
-                "unlock_biomes": ["Rocky Shore", "Bioluminal Sea", "Bioluminal Cavern"],
-                "description": "Survey rocky shores and glowing bioluminal waters."
-            },
-
-            # Offshore & open seas
-            "Steel Trawler": {
-                "price": 500,
-                "unlock_biomes": ["Tropical Ocean", "Open Ocean"],
-                "description": "Venture far offshore to tropical and open seas."
-            },
-            "Sailboat": {
-                "price": 800,
-                "unlock_biomes": ["Tropical Ocean", "Open Ocean", "Offshore"],
-                "description": "Harness the wind across warm and open waters."
-            },
-
-            # Themed special vessels
-            "Magma Dinghy": {
-                "price": 750,
-                "unlock_biomes": ["Volcanic Spring", "Lava Reef"],
-                "description": "Brave lava reefs and boiling springs in a heatproof craft."
-            },
-            "Ghost Drifter": {
-                "price": 900,
-                "unlock_biomes": ["Haunted Shoals", "Phantom Tide"],
-                "description": "Drift under moonlit halls where specters swim."
-            },
-            "Dreamboat": {
-                "price": 1000,
-                "unlock_biomes": ["Dreaming Deep", "Nightmare Bloom"],
-                "description": "Sail the currents of dreams and nightmares."
-            },
-            "Enchanted Barque": {
-                "price": 1200,
-                "unlock_biomes": ["Magical", "Space"],
-                "description": "Traverse magical waters and even star-lit shoals."
-            },
-
-            # Deep & abyssal exploration
-            "Submersible Pod": {
-                "price": 2000,
-                "unlock_biomes": ["Ocean Floor", "Abyssal Rift", "Titan's Trench"],
-                "description": "Dive into the deepest trenches and ocean floors."
-            },
-            "Fossil Frigate": {
-                "price": 1500,
-                "unlock_biomes": ["Prehistoric"],
-                "description": "Explore ancient currents and prehistoric biomes."
-            },
-
-            # Ultimate all-access craft
-            "Fishing Yacht": {
-                "price": 10000,
-                "unlock_biomes": [
-                    "Pond", "Garden Pond", "Lake", "Cold Lake", "Foggy Lake",
-                    "River", "Stream", "Estuary", "Enchanted Marsh",
-                    "Mangrove", "Coastal", "Reef", "Volcanic Spring", "Lava Reef",
-                    "Tropical Ocean", "Open Ocean", "Offshore",
-                    "Rocky Shore", "Bioluminal Sea", "Bioluminal Cavern",
-                    "Haunted Shoals", "Phantom Tide",
-                    "Dreaming Deep", "Nightmare Bloom",
-                    "Magical", "Space",
-                    "Ocean Floor", "Abyssal Rift", "Titan's Trench",
-                    "Prehistoric"
-                ],
-                "description": "Ultimate vessel: access every single water biome in the world."
-            },
-        }       
+             
         
         # ─── Flavor texts for casting ───
         self.cast_flavor = [
@@ -400,7 +305,102 @@ class Fishing(commands.Cog):
                     "description": "+5% chance of Mythic catches."
                 },
             },
-                
+            
+        # ─── Vessel definitions ───
+        self.vessel_definitions = {
+            # Inland waters
+            "Rowboat": {
+                "price": 100,
+                "unlock_biomes": ["Pond", "Garden Pond", "Lake", "Cold Lake", "Foggy Lake"],
+                "description": "Glide over quiet ponds, gardens and chilly lakes."
+            },
+            "Canoe": {
+                "price": 150,
+                "unlock_biomes": ["River", "Stream", "Estuary", "Enchanted Marsh"],
+                "description": "Paddle through rivers, streams, estuaries and misty marshes."
+            },
+            "Icebreaker": {
+                "price": 300,
+                "unlock_biomes": ["Frozen Bay", "Cold Ocean"],
+                "description": "Break through ice to fish in frozen bays and cold seas."
+            },
+
+            # Coastal & reefs
+            "Wooden Dinghy": {
+                "price": 200,
+                "unlock_biomes": ["Mangrove", "Coastal", "Reef", "Volcanic Spring"],
+                "description": "Access mangroves, coasts, reefs and steamy volcanic springs."
+            },
+            "Glass-Bottom Skiff": {
+                "price": 350,
+                "unlock_biomes": ["Rocky Shore", "Bioluminal Sea", "Bioluminal Cavern"],
+                "description": "Survey rocky shores and glowing bioluminal waters."
+            },
+
+            # Offshore & open seas
+            "Steel Trawler": {
+                "price": 500,
+                "unlock_biomes": ["Tropical Ocean", "Open Ocean"],
+                "description": "Venture far offshore to tropical and open seas."
+            },
+            "Sailboat": {
+                "price": 800,
+                "unlock_biomes": ["Tropical Ocean", "Open Ocean", "Offshore"],
+                "description": "Harness the wind across warm and open waters."
+            },
+
+            # Themed special vessels
+            "Magma Dinghy": {
+                "price": 750,
+                "unlock_biomes": ["Volcanic Spring", "Lava Reef"],
+                "description": "Brave lava reefs and boiling springs in a heatproof craft."
+            },
+            "Ghost Drifter": {
+                "price": 900,
+                "unlock_biomes": ["Haunted Shoals", "Phantom Tide"],
+                "description": "Drift under moonlit halls where specters swim."
+            },
+            "Dreamboat": {
+                "price": 1000,
+                "unlock_biomes": ["Dreaming Deep", "Nightmare Bloom"],
+                "description": "Sail the currents of dreams and nightmares."
+            },
+            "Enchanted Barque": {
+                "price": 1200,
+                "unlock_biomes": ["Magical", "Space"],
+                "description": "Traverse magical waters and even star-lit shoals."
+            },
+
+            # Deep & abyssal exploration
+            "Submersible Pod": {
+                "price": 2000,
+                "unlock_biomes": ["Ocean Floor", "Abyssal Rift", "Titan's Trench"],
+                "description": "Dive into the deepest trenches and ocean floors."
+            },
+            "Fossil Frigate": {
+                "price": 1500,
+                "unlock_biomes": ["Prehistoric"],
+                "description": "Explore ancient currents and prehistoric biomes."
+            },
+
+            # Ultimate all-access craft
+            "Fishing Yacht": {
+                "price": 10000,
+                "unlock_biomes": [
+                    "Pond", "Garden Pond", "Lake", "Cold Lake", "Foggy Lake",
+                    "River", "Stream", "Estuary", "Enchanted Marsh",
+                    "Mangrove", "Coastal", "Reef", "Volcanic Spring", "Lava Reef",
+                    "Tropical Ocean", "Open Ocean", "Offshore",
+                    "Rocky Shore", "Bioluminal Sea", "Bioluminal Cavern",
+                    "Haunted Shoals", "Phantom Tide",
+                    "Dreaming Deep", "Nightmare Bloom",
+                    "Magical", "Space",
+                    "Ocean Floor", "Abyssal Rift", "Titan's Trench",
+                    "Prehistoric"
+                ],
+                "description": "Ultimate vessel: access every single water biome in the world."
+            },
+        }                   
 
         # Achievements                
         self.achievements: Dict[str, Tuple[str, str, str]] = {
