@@ -30,26 +30,26 @@ class ImageFilter(BaseCog):
         await ctx.send("✅ Your Jeyy API key has been saved.")
 
     async def _fetch(self, endpoint: str, img_url: str, api_key: str, method: str = "POST") -> bytes:
-        """Internal helper: call Jeyy API and return raw image bytes."""
+        """Internal: call Jeyy API and return raw image bytes."""
         url = f"https://api.jeyy.xyz/{endpoint}"
-        # Prefix the key as a Bearer token
         headers = {"Authorization": f"Bearer {api_key}"}
 
         async with aiohttp.ClientSession() as session:
             if method == "GET":
-                params = {"image": img_url}
+                params = {"image_url": img_url}
                 async with session.get(url, params=params, headers=headers) as resp:
-                    text = await resp.text()
                     if resp.status != 200:
-                        logger.warning(f"Jeyy GET /{endpoint} failed: {resp.status} {text}")
+                        # only read text on errors
+                        err = await resp.text()
+                        logger.warning(f"Jeyy GET /{endpoint} failed: {resp.status} {err}")
                         raise RuntimeError(f"HTTP {resp.status}")
                     return await resp.read()
             else:  # POST
                 payload = {"image": img_url}
                 async with session.post(url, json=payload, headers=headers) as resp:
-                    text = await resp.text()
                     if resp.status != 200:
-                        logger.warning(f"Jeyy POST /{endpoint} failed: {resp.status} {text}")
+                        err = await resp.text()
+                        logger.warning(f"Jeyy POST /{endpoint} failed: {resp.status} {err}")
                         raise RuntimeError(f"HTTP {resp.status}")
                     return await resp.read()
 
@@ -86,7 +86,6 @@ class ImageFilter(BaseCog):
         img_url = ctx.message.attachments[0].url
         await ctx.send("🔄 Converting to grayscale…")
         try:
-            # still POST since grayscale lives here
             data = await self._fetch("grayscale", img_url, api_key, method="POST")
         except Exception as e:
             return await ctx.send(f"❌ Error: {e}")
@@ -105,19 +104,10 @@ class ImageFilter(BaseCog):
 
         img_url = ctx.message.attachments[0].url
         await ctx.send("🔄 Applying Abstract v2 filter…")
-
-        url = "https://api.jeyy.xyz/v2/image/abstract"
-        headers = {"Authorization": f"Bearer {api_key}"}
-        params = {"image_url": img_url}
-
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, headers=headers) as resp:
-                body = await resp.text()
-                if resp.status != 200:
-                    logger.warning(f"Jeyy GET /v2/image/abstract failed: {resp.status} {body}")
-                    return await ctx.send(f"❌ API error {resp.status}: see console for details.")
-                data = await resp.read()
+        try:
+            data = await self._fetch("v2/image/abstract", img_url, api_key, method="GET")
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
 
         fp = io.BytesIO(data)
         await ctx.send(file=discord.File(fp, "abstract.png"))
-
