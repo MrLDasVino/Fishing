@@ -46,35 +46,65 @@ class ImageFilter(BaseCog):
     @imgmanip.command(name="blur")
     async def blur(self, ctx, intensity: int = 5):
         """Blur the attached image. Intensity 1–20."""
+        # 1) Key check
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
-            return await ctx.send("❌ You need to set your API key with `[p]imgmanip setkey`.")
+            return await ctx.send("❌ You need to set your API key: `[p]imgmanip setkey YOUR_KEY`")
+
+        # 2) Attachment check
+        if not ctx.message.attachments:
+            return await ctx.send("❌ Please attach an image to blur.")
+        img_url = ctx.message.attachments[0].url
+
+        # 3) Intensity bounds
         if not 1 <= intensity <= 20:
             return await ctx.send("❌ Intensity must be between 1 and 20.")
 
-        try:
-            url = await self._get_attachment_url(ctx)
-            data = await self._fetch_processed_image(f"blur/{intensity}", url, api_key)
-        except Exception as e:
-            return await ctx.send(f"❌ Failed to process image: {e}")
+        await ctx.send(f"🔄 Blurring at intensity {intensity}…")  # Feedback
 
+        # 4) Call API
+        endpoint = f"blur/{intensity}"
+        # If the API expects a different key name, swap "image" → "url" here.
+        payload = {"image": img_url}
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(f"https://api.jeyy.xyz/{endpoint}", json=payload, headers={"Authorization": api_key}) as resp:
+                body = await resp.text()
+                if resp.status != 200:
+                    # Log for you
+                    self.bot.log.warning(f"Jeyy blur failed {resp.status} {body}")
+                    return await ctx.send(f"❌ API error {resp.status}: see console log for details.")
+                data = await resp.read()
+
+        # 5) Send the result
         fp = io.BytesIO(data)
         fp.seek(0)
-        await ctx.send(file=discord.File(fp, filename="blur.png"))
+        await ctx.send("✅ Here’s your blurred image:", file=discord.File(fp, "blur.png"))
+
 
     @imgmanip.command(name="grayscale")
     async def grayscale(self, ctx):
         """Convert the attached image to grayscale."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
-            return await ctx.send("❌ You need to set your API key with `[p]imgmanip setkey`.")
+            return await ctx.send("❌ You need to set your API key: `[p]imgmanip setkey YOUR_KEY`")
 
-        try:
-            url = await self._get_attachment_url(ctx)
-            data = await self._fetch_processed_image("grayscale", url, api_key)
-        except Exception as e:
-            return await ctx.send(f"❌ Failed to process image: {e}")
+        if not ctx.message.attachments:
+            return await ctx.send("❌ Please attach an image to convert.")
+        img_url = ctx.message.attachments[0].url
+
+        await ctx.send("🔄 Converting to grayscale…")
+
+        payload = {"image": img_url}
+        async with aiohttp.ClientSession() as session:
+            async with session.post("https://api.jeyy.xyz/grayscale", json=payload, headers={"Authorization": api_key}) as resp:
+                body = await resp.text()
+                if resp.status != 200:
+                    self.bot.log.warning(f"Jeyy grayscale failed {resp.status} {body}")
+                    return await ctx.send(f"❌ API error {resp.status}: see console log for details.")
+                data = await resp.read()
 
         fp = io.BytesIO(data)
         fp.seek(0)
-        await ctx.send(file=discord.File(fp, filename="grayscale.png"))
+        await ctx.send("✅ Here’s your grayscale image:", file=discord.File(fp, "grayscale.png"))
+
