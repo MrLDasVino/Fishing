@@ -91,3 +91,23 @@ class ImageFilter(BaseCog):
 
         fp = io.BytesIO(data)
         await ctx.send(file=discord.File(fp, "grayscale.png"))
+
+    @imgmanip.command(name="abstract")
+    async def abstract(self, ctx):
+        """Apply the Abstract v2 filter to the attached image."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key with `[p]imgmanip setkey YOUR_KEY`.")
+        if not ctx.message.attachments:
+            return await ctx.send("❌ Please attach an image.")
+
+        img_url = ctx.message.attachments[0].url
+        await ctx.send("🔄 Applying Abstract v2 filter…")
+        try:
+            # Assumes the GET endpoint is /v2/image/abstract with ?image=...
+            data = await self._fetch("v2/image/abstract", img_url, api_key, method="GET")
+        except Exception as e:
+            return await ctx.send(f"❌ Error: {e}")
+
+        fp = io.BytesIO(data)
+        await ctx.send(file=discord.File(fp, "abstract.png"))
