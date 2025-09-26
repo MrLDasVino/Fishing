@@ -2959,7 +2959,7 @@ class Fishing(commands.Cog):
             await ctx.send("🔧 Your rod is repaired! Time to cast again.")
 
     @commands.command()
-    async def sell(self, ctx, amount: int, *, fish_name: str):
+    async def fishsell(self, ctx, amount: int, *, fish_name: str):
         """Sell a number of fish for your server currency."""
         user_conf = self.config.user(ctx.author)
         inventory = await user_conf.caught()
@@ -2987,7 +2987,7 @@ class Fishing(commands.Cog):
 
     # ---------- Crafting (fish fusion) ----------
     @commands.command()
-    async def craftlist(self, ctx):
+    async def fishcraftlist(self, ctx):
         """List available crafting recipes in embeds (paged), showing the full command to use."""
         image_url = "https://files.catbox.moe/dt1sh1.png"
         items = list(self.crafting_recipes.items())
@@ -3030,7 +3030,7 @@ class Fishing(commands.Cog):
 
 
     @commands.command()
-    async def craft(self, ctx, recipe_id: str):
+    async def fishcraft(self, ctx, recipe_id: str):
         """Craft an item using a recipe id. Use `craftlist` to see available recipes."""
         recipe_id = recipe_id.lower()
         if recipe_id not in self.crafting_recipes:
@@ -3148,7 +3148,7 @@ class Fishing(commands.Cog):
         await ctx.send("\n".join(messages))
 
     @commands.command()
-    async def useitem(self, ctx, *, item_name: str):
+    async def fishuseitem(self, ctx, *, item_name: str):
         """Use a consumable item from your items list (e.g., Chum, Stew Bowl, Mystery Box)."""
         user_conf = self.config.user(ctx.author)
         items = await user_conf.items()
@@ -3363,7 +3363,7 @@ class Fishing(commands.Cog):
 
     # ---------- NPC and Quest Commands ----------
     @commands.command()
-    async def npcs(self, ctx):
+    async def fishnpcs(self, ctx):
         """List known NPCs in the world (paged embed)."""
         embeds: List[discord.Embed] = []
         items_per = 6
@@ -3380,7 +3380,7 @@ class Fishing(commands.Cog):
 
 
     @commands.command()
-    async def talknpc(self, ctx, npc_key: str):
+    async def fishtalknpc(self, ctx, npc_key: str):
         npc = self.npcs.get(npc_key.lower())
         if not npc:
             return await ctx.send("❌ Unknown NPC. Use `npcs` to see available NPCs.")
@@ -3427,7 +3427,7 @@ class Fishing(commands.Cog):
 
 
     @commands.command()
-    async def acceptquest(self, ctx, quest_id: str):
+    async def fishacceptquest(self, ctx, quest_id: str):
         """
         Preview then accept a quest by ID with an embed banner + NPC thumbnail.
         React ✅ to accept or ❌ to cancel.
@@ -3532,7 +3532,7 @@ class Fishing(commands.Cog):
    
 
     @commands.command()
-    async def quest(self, ctx):
+    async def fishquest(self, ctx):
         """Show your current quest and progress (embed + static image)."""
         user_conf = self.config.user(ctx.author)
         qstate    = await user_conf.quests()
@@ -3614,7 +3614,7 @@ class Fishing(commands.Cog):
 
 
     @commands.command()
-    async def abandonquest(self, ctx):
+    async def fishabandonquest(self, ctx):
         """Abandon your current active quest."""
         user_conf = self.config.user(ctx.author)
         qstate = await user_conf.quests()
@@ -3773,7 +3773,7 @@ class Fishing(commands.Cog):
         return "Quest complete! " + " ".join(messages)
 
     @commands.command()
-    async def completequest(self, ctx):
+    async def fishcompletequest(self, ctx):
         """Attempt to complete and claim rewards for your active quest."""
         user_conf = self.config.user(ctx.author)
         qstate    = await user_conf.quests()
@@ -3806,7 +3806,7 @@ class Fishing(commands.Cog):
             await ctx.send(result)
 
     @commands.command()
-    async def visitnpc(self, ctx, npc_key: str):
+    async def fishvisitnpc(self, ctx, npc_key: str):
         """Visit an NPC to advance a quest step or just chat. Shows a banner embed."""
         npc = self.npcs.get(npc_key.lower())
         if not npc:
