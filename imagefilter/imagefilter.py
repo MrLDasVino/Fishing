@@ -111,3 +111,36 @@ class ImageFilter(BaseCog):
 
         fp = io.BytesIO(data)
         await ctx.send(file=discord.File(fp, "abstract.png"))
+        
+    @imgmanip.command(name="balls")
+    async def balls(self, ctx, intensity: int = 5):
+        """Apply the Balls v2 filter to the attached image. Intensity 1–20."""
+        # 1) API key check
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key with `[p]imgmanip setkey YOUR_KEY`.")
+        # 2) Attachment check
+        if not ctx.message.attachments:
+            return await ctx.send("❌ Please attach an image.")
+        # 3) Intensity bounds
+        if not 1 <= intensity <= 20:
+            return await ctx.send("❌ Intensity must be between 1 and 20.")
+
+        img_url = ctx.message.attachments[0].url
+        await ctx.send(f"🔄 Applying Balls v2 filter (intensity={intensity})…")
+
+        url = "https://api.jeyy.xyz/v2/image/balls"
+        headers = {"Authorization": f"Bearer {api_key}"}
+        params = {"image_url": img_url, "value": intensity}
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params, headers=headers) as resp:
+                if resp.status != 200:
+                    err = await resp.text()
+                    logger.warning(f"Jeyy GET /v2/image/balls failed: {resp.status} {err}")
+                    return await ctx.send(f"❌ API error {resp.status}: see console for details.")
+                data = await resp.read()
+
+        fp = io.BytesIO(data)
+        await ctx.send(file=discord.File(fp, "balls.png"))
+        
