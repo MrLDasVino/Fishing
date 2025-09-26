@@ -305,7 +305,7 @@ class Fishing(commands.Cog):
                     "description": "+5% chance of Mythic catches."
                 },
             },
-            
+        }    
         # ─── Vessel definitions ───
         self.vessel_definitions = {
             # Inland waters
