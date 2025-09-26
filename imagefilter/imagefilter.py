@@ -55,7 +55,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="blur")
     async def blur(self, ctx, intensity: int = 5):
-        """Blur the attached image via Jeyy v2 (tries GET first, then POST)."""
+        """Blur the attached image via Jeyy v2 (tries GET then POST; returns a GIF)."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key with `[p]imgmanip setkey YOUR_KEY`.")
@@ -71,7 +71,7 @@ class ImageFilter(BaseCog):
         headers = {"Authorization": f"Bearer {api_key}"}
 
         async with aiohttp.ClientSession() as session:
-            # 1) Try GET
+            # 1) try GET
             params = {"image_url": img_url, "value": intensity}
             async with session.get(url, params=params, headers=headers) as resp:
                 if resp.status == 200:
@@ -79,17 +79,20 @@ class ImageFilter(BaseCog):
                 else:
                     err = await resp.text()
                     logger.warning(f"GET v2 blur failed: {resp.status} {err}")
-                    # 2) Fallback to POST
+                    # 2) fallback to POST
                     payload = {"image_url": img_url, "value": intensity}
                     async with session.post(url, json=payload, headers=headers) as post_resp:
                         if post_resp.status != 200:
                             err2 = await post_resp.text()
                             logger.warning(f"POST v2 blur failed: {post_resp.status} {err2}")
-                            return await ctx.send(f"❌ API error {post_resp.status}: see console log")
+                            return await ctx.send(f"❌ API error {post_resp.status}: see console for details.")
                         data = await post_resp.read()
 
         fp = io.BytesIO(data)
-        await ctx.send(file=discord.File(fp, "blur.png"))
+        fp.seek(0)
+        # send as .gif so Discord animates it
+        await ctx.send(file=discord.File(fp, "blur.gif"))
+
 
 
 
