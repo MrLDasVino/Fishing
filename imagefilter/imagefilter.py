@@ -32,7 +32,8 @@ class ImageFilter(BaseCog):
     async def _fetch(self, endpoint: str, img_url: str, api_key: str, method: str = "POST") -> bytes:
         """Internal helper: call Jeyy API and return raw image bytes."""
         url = f"https://api.jeyy.xyz/{endpoint}"
-        headers = {"Authorization": api_key}
+        # Prefix the key as a Bearer token
+        headers = {"Authorization": f"Bearer {api_key}"}
 
         async with aiohttp.ClientSession() as session:
             if method == "GET":
@@ -85,7 +86,8 @@ class ImageFilter(BaseCog):
         img_url = ctx.message.attachments[0].url
         await ctx.send("🔄 Converting to grayscale…")
         try:
-            data = await self._fetch("filters/grayscale", img_url, api_key, method="GET")
+            # still POST since grayscale lives here
+            data = await self._fetch("grayscale", img_url, api_key, method="POST")
         except Exception as e:
             return await ctx.send(f"❌ Error: {e}")
 
@@ -104,7 +106,7 @@ class ImageFilter(BaseCog):
         img_url = ctx.message.attachments[0].url
         await ctx.send("🔄 Applying Abstract v2 filter…")
         try:
-            # Assumes the GET endpoint is /v2/image/abstract with ?image=...
+            # GET against the v2 abstract endpoint
             data = await self._fetch("v2/image/abstract", img_url, api_key, method="GET")
         except Exception as e:
             return await ctx.send(f"❌ Error: {e}")
