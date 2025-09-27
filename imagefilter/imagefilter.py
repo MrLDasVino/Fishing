@@ -1183,17 +1183,20 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        # 1) Gather attachments if no explicit args
-        attach_urls = [att.url for att in ctx.message.attachments]
-        if not first and not second and len(attach_urls) >= 2:
-            img_url1, img_url2 = attach_urls[:2]
+        # 1) Collect two attachments if no args provided
+        attachments = [att.url for att in ctx.message.attachments]
+        if not first and not second and len(attachments) >= 2:
+            img1, img2 = attachments[:2]
         else:
-            img_url1 = self._resolve_image_url(ctx, first)
-            img_url2 = self._resolve_image_url(ctx, second)
+            img1 = self._resolve_image_url(ctx, first)
+            img2 = self._resolve_image_url(ctx, second)
 
         # 2) Validate both URLs
-        if not img_url1 or not img_url2:
+        if not img1 or not img2:
             return await ctx.send("❌ Please provide two images (mention, URL, or attachment).")
+
+        params = {"image_url": img1, "image_url2": img2}
+        ctx.log.info("Heart Locket params → %r", params)
 
         await ctx.send("🔄 Applying Heart Locket filter…")
         try:
@@ -1201,10 +1204,7 @@ class ImageFilter(BaseCog):
                 endpoint="v2/image/heart_locket",
                 api_key=api_key,
                 method="GET",
-                params={
-                    "image_url1": img_url1,
-                    "image_url2": img_url2,
-                },
+                params=params,
             )
         except Exception as e:
             return await ctx.send(f"❌ Error fetching filter: {e}")
@@ -1212,6 +1212,7 @@ class ImageFilter(BaseCog):
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "heart_locket.gif"))
+
 
 
 
