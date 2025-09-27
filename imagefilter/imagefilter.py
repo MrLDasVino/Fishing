@@ -1447,5 +1447,320 @@ class ImageFilter(BaseCog):
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "letters.gif"))
 
+    @imgmanip.command(name="lines")
+    async def lines(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Lines filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Lines filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/lines",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "lines.gif"))
+
+    @imgmanip.command(name="liquefy")
+    async def liquefy(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Liquefy filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Liquefy filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/liquefy",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "liquefy.gif"))
+
+    @imgmanip.command(name="logoff")
+    async def logoff(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Logoff filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Logoff filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/logoff",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "logoff.gif"))
+
+    @imgmanip.command(name="lsd")
+    async def lsd(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply LSD filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying LSD filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/lsd",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "lsd.gif"))
+
+    @imgmanip.command(name="magnify")
+    async def magnify(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Magnify filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Magnify filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/magnify",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "magnify.gif"))
+
+    @imgmanip.command(name="matrix")
+    async def matrix(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Matrix filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Matrix filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/matrix",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "matrix.gif"))
+
+    @imgmanip.command(name="melt")
+    async def melt(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Melt filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Melt filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/melt",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "melt.gif"))
+
+    @imgmanip.command(name="minecraft")
+    async def minecraft(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Minecraft filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Minecraft filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/minecraft",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "minecraft.gif"))
+
+    @imgmanip.command(name="neon")
+    async def neon(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Neon filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Neon filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/neon",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "neon.gif"))
+
+    @imgmanip.command(name="optics")
+    async def optics(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Optics filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Optics filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/optics",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "optics.gif"))
+
+    @imgmanip.command(name="painting")
+    async def painting(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Painting filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Painting filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/painting",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "painting.gif"))
+
+    @imgmanip.command(name="paparazzi")
+    async def paparazzi(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Paparazzi filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Paparazzi filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/paparazzi",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "paparazzi.gif"))
+
+
+
+
 
 
