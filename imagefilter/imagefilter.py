@@ -1195,16 +1195,13 @@ class ImageFilter(BaseCog):
         if not img1 or not img2:
             return await ctx.send("❌ Please provide two images (mention, URL, or attachment).")
 
-        params = {"image_url": img1, "image_url2": img2}
-        ctx.log.info("Heart Locket params → %r", params)
-
         await ctx.send("🔄 Applying Heart Locket filter…")
         try:
             data = await self._fetch(
                 endpoint="v2/image/heart_locket",
                 api_key=api_key,
                 method="GET",
-                params=params,
+                params={"image_url": img1, "image_url2": img2},
             )
         except Exception as e:
             return await ctx.send(f"❌ Error fetching filter: {e}")
@@ -1212,6 +1209,7 @@ class ImageFilter(BaseCog):
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "heart_locket.gif"))
+
 
 
 
