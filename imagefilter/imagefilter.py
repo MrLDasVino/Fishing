@@ -125,7 +125,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="blur")
     async def blur(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Blur an image (attachment, @mention, URL or your avatar)."""
+        """Blur an image."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -148,7 +148,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="balls")
     async def balls(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Balls filter (attachment, @mention, URL or your avatar)."""
+        """Apply Balls filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -171,7 +171,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="abstract")
     async def abstract(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Abstract v2 filter (attachment, @mention, URL or your avatar)."""
+        """Apply Abstract v2 filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -194,7 +194,7 @@ class ImageFilter(BaseCog):
         
     @imgmanip.command(name="3d")
     async def three_d(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply 3D filter (attachment, @mention, URL or your avatar)."""
+        """Apply 3D filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -259,7 +259,7 @@ class ImageFilter(BaseCog):
         
     @imgmanip.command(name="ads")
     async def ads(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Ads filter (attachment, @mention, URL or your avatar)."""
+        """Apply Ads filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -282,7 +282,7 @@ class ImageFilter(BaseCog):
         
     @imgmanip.command(name="bayer")
     async def bayer(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Bayer filter (attachment, @mention, URL or your avatar)."""
+        """Apply Bayer filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -305,7 +305,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="bevel")
     async def bevel(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Bevel filter with a random level (attachment, @mention, URL or your avatar)."""
+        """Apply Bevel filter with a random level."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -338,7 +338,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="billboard")
     async def billboard(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Billboard filter (attachment, @mention, URL or your avatar)."""
+        """Apply Billboard filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -361,7 +361,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="blocks")
     async def blocks(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Blocks filter (attachment, @mention, URL or your avatar)."""
+        """Apply Blocks filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -384,7 +384,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="boil")
     async def boil(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Boil filter with a random level (attachment, @mention, URL or your avatar)."""
+        """Apply Boil filter with a random level."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -417,7 +417,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="bomb")
     async def bomb(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Bomb filter (attachment, @mention, URL or your avatar)."""
+        """Apply Bomb filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -440,7 +440,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="bonks")
     async def bonks(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Bonks filter (attachment, @mention, URL or your avatar)."""
+        """Apply Bonks filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -463,7 +463,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="bubble")
     async def bubble(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Bubble filter (attachment, @mention, URL or your avatar)."""
+        """Apply Bubble filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -486,7 +486,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="burn")
     async def burn(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Burn filter (attachment, @mention, URL or your avatar)."""
+        """Apply Burn filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -509,7 +509,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="canny")
     async def canny(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Canny edge-detection filter (attachment, @mention, URL or your avatar)."""
+        """Apply Canny edge-detection filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -532,7 +532,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="cartoon")
     async def cartoon(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Cartoon filter (attachment, @mention, URL or your avatar)."""
+        """Apply Cartoon filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -555,7 +555,7 @@ class ImageFilter(BaseCog):
         
     @imgmanip.command(name="cinema")
     async def cinema(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Cinema filter (attachment, @mention, URL or your avatar)."""
+        """Apply Cinema filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -578,7 +578,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="clock")
     async def clock(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Clock filter (attachment, @mention, URL or your avatar)."""
+        """Apply Clock filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -601,7 +601,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="cloth")
     async def cloth(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Cloth filter (attachment, @mention, URL or your avatar)."""
+        """Apply Cloth filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -624,7 +624,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="console")
     async def console(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Console filter (attachment, @mention, URL or your avatar)."""
+        """Apply Console filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -647,7 +647,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="contour")
     async def contour(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Contour filter (attachment, @mention, URL or your avatar)."""
+        """Apply Contour filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -670,7 +670,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="cow")
     async def cow(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Cow filter (attachment, @mention, URL or your avatar)."""
+        """Apply Cow filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -693,7 +693,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="cracks")
     async def cracks(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Cracks filter (attachment, @mention, URL or your avatar)."""
+        """Apply Cracks filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -716,7 +716,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="cube")
     async def cube(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Cube filter (attachment, @mention, URL or your avatar)."""
+        """Apply Cube filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -739,7 +739,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="dilate")
     async def dilate(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Dilate filter (attachment, @mention, URL or your avatar)."""
+        """Apply Dilate filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -762,7 +762,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="dither")
     async def dither(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Dither filter (attachment, @mention, URL or your avatar)."""
+        """Apply Dither filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -785,7 +785,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="dizzy")
     async def dizzy(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Dizzy filter (attachment, @mention, URL or your avatar)."""
+        """Apply Dizzy filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -808,7 +808,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="dots")
     async def dots(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Dots filter (attachment, @mention, URL or your avatar)."""
+        """Apply Dots filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -831,7 +831,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="earthquake")
     async def earthquake(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Earthquake filter with a random level (attachment, @mention, URL or your avatar)."""
+        """Apply Earthquake filter with a random level."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -864,7 +864,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="emojify")
     async def emojify(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Emojify filter with a random size (attachment, @mention, URL or your avatar)."""
+        """Apply Emojify filter with a random size."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -897,7 +897,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="endless")
     async def endless(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Endless filter (attachment, @mention, URL or your avatar)."""
+        """Apply Endless filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -920,7 +920,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="equations")
     async def equations(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Equations filter (attachment, @mention, URL or your avatar)."""
+        """Apply Equations filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -984,7 +984,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="explicit")
     async def explicit(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Explicit filter (attachment, @mention, URL or your avatar)."""
+        """Apply Explicit filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1007,7 +1007,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="fall")
     async def fall(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Fall filter (attachment, @mention, URL or your avatar)."""
+        """Apply Fall filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1030,7 +1030,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="fan")
     async def fan(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Fan filter (attachment, @mention, URL or your avatar)."""
+        """Apply Fan filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1053,7 +1053,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="fire")
     async def fire(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Fire filter (attachment, @mention, URL or your avatar)."""
+        """Apply Fire filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1076,7 +1076,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="flag")
     async def flag(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Flag filter (attachment, @mention, URL or your avatar)."""
+        """Apply Flag filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1099,7 +1099,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="flush")
     async def flush(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Flush filter (attachment, @mention, URL or your avatar)."""
+        """Apply Flush filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1122,7 +1122,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="gallery")
     async def gallery(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Gallery filter (attachment, @mention, URL or your avatar)."""
+        """Apply Gallery filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1145,7 +1145,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="gameboy_camera")
     async def gameboy_camera(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Gameboy Camera filter (attachment, @mention, URL or your avatar)."""
+        """Apply Gameboy Camera filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1168,7 +1168,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="glitch")
     async def glitch(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Glitch filter with a random level (attachment, @mention, URL or your avatar)."""
+        """Apply Glitch filter with a random level."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1201,7 +1201,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="globe")
     async def globe(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Globe filter (attachment, @mention, URL or your avatar)."""
+        """Apply Globe filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1224,7 +1224,7 @@ class ImageFilter(BaseCog):
         
     @imgmanip.command(name="half_invert")
     async def half_invert(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Half Invert filter (attachment, @mention, URL or your avatar)."""
+        """Apply Half Invert filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1247,7 +1247,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="heart_diffraction")
     async def heart_diffraction(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Heart Diffraction filter (attachment, @mention, URL or your avatar)."""
+        """Apply Heart Diffraction filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1275,7 +1275,7 @@ class ImageFilter(BaseCog):
         first: Optional[Union[discord.Member, str]] = None,
         second: Optional[Union[discord.Member, str]] = None,
     ):
-        """Apply Heart Locket filter with two images (attachments, mentions, URLs, or avatars)."""
+        """Apply Heart Locket filter with two images."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1312,7 +1312,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="hearts")
     async def hearts(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Hearts filter with random Rainbow value (attachment, @mention, URL or your avatar)."""
+        """Apply Hearts filter with random Rainbow value."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1345,7 +1345,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="infinity")
     async def infinity(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Infinity filter (attachment, @mention, URL or your avatar)."""
+        """Apply Infinity filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1371,7 +1371,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="ipcam")
     async def ipcam(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Ipcam filter (attachment, @mention, URL or your avatar)."""
+        """Apply Ipcam filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1397,7 +1397,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="kanye")
     async def kanye(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Kanye filter (attachment, @mention, URL or your avatar)."""
+        """Apply Kanye filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1423,7 +1423,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="knit")
     async def knit(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Knit filter (attachment, @mention, URL or your avatar)."""
+        """Apply Knit filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1449,7 +1449,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="lamp")
     async def lamp(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Lamp filter (attachment, @mention, URL or your avatar)."""
+        """Apply Lamp filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1475,7 +1475,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="laundry")
     async def laundry(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Laundry filter (attachment, @mention, URL or your avatar)."""
+        """Apply Laundry filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1501,7 +1501,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="layers")
     async def layers(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Layers filter (attachment, @mention, URL or your avatar)."""
+        """Apply Layers filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1527,7 +1527,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="letters")
     async def letters(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Letters filter (attachment, @mention, URL or your avatar)."""
+        """Apply Letters filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1553,7 +1553,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="lines")
     async def lines(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Lines filter (attachment, @mention, URL or your avatar)."""
+        """Apply Lines filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1579,7 +1579,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="liquefy")
     async def liquefy(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Liquefy filter (attachment, @mention, URL or your avatar)."""
+        """Apply Liquefy filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1605,7 +1605,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="logoff")
     async def logoff(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Logoff filter (attachment, @mention, URL or your avatar)."""
+        """Apply Logoff filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1631,7 +1631,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="lsd")
     async def lsd(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply LSD filter (attachment, @mention, URL or your avatar)."""
+        """Apply LSD filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1657,7 +1657,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="magnify")
     async def magnify(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Magnify filter (attachment, @mention, URL or your avatar)."""
+        """Apply Magnify filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1683,7 +1683,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="matrix")
     async def matrix(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Matrix filter (attachment, @mention, URL or your avatar)."""
+        """Apply Matrix filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1709,7 +1709,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="melt")
     async def melt(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Melt filter (attachment, @mention, URL or your avatar)."""
+        """Apply Melt filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1735,7 +1735,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="minecraft")
     async def minecraft(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Minecraft filter with a random size (attachment, @mention, URL or your avatar)."""
+        """Apply Minecraft filter with a random size."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1768,7 +1768,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="neon")
     async def neon(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Neon filter (attachment, @mention, URL or your avatar)."""
+        """Apply Neon filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1794,7 +1794,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="optics")
     async def optics(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Optics filter (attachment, @mention, URL or your avatar)."""
+        """Apply Optics filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1820,7 +1820,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="painting")
     async def painting(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Painting filter (attachment, @mention, URL or your avatar)."""
+        """Apply Painting filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1846,7 +1846,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="paparazzi")
     async def paparazzi(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Paparazzi filter (attachment, @mention, URL or your avatar)."""
+        """Apply Paparazzi filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1872,7 +1872,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="patpat")
     async def patpat(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Patpat filter (attachment, @mention, URL or your avatar)."""
+        """Apply Patpat filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1898,7 +1898,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="pattern")
     async def pattern(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Pattern filter (attachment, @mention, URL or your avatar)."""
+        """Apply Pattern filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1924,7 +1924,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="phase")
     async def phase(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Phase filter (attachment, @mention, URL or your avatar)."""
+        """Apply Phase filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1950,7 +1950,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="phone")
     async def phone(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Phone filter (attachment, @mention, URL or your avatar)."""
+        """Apply Phone filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1976,7 +1976,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="pizza")
     async def pizza(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Pizza filter (attachment, @mention, URL or your avatar)."""
+        """Apply Pizza filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2002,7 +2002,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="plank")
     async def plank(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Plank filter (attachment, @mention, URL or your avatar)."""
+        """Apply Plank filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2028,7 +2028,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="plates")
     async def plates(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Plates filter (attachment, @mention, URL or your avatar)."""
+        """Apply Plates filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2054,7 +2054,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="poly")
     async def poly(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Poly filter (attachment, @mention, URL or your avatar)."""
+        """Apply Poly filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2080,7 +2080,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="print")
     async def print(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Print filter (attachment, @mention, URL or your avatar)."""
+        """Apply Print filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2106,7 +2106,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="pyramid")
     async def pyramid(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Pyramid filter (attachment, @mention, URL or your avatar)."""
+        """Apply Pyramid filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2132,7 +2132,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="quarter")
     async def quarter(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Quarter filter using the API default size (attachment, @mention, URL or your avatar)."""
+        """Apply Quarter filter using the API default size."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2161,7 +2161,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="radiate")
     async def radiate(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Radiate filter (attachment, @mention, URL or your avatar)."""
+        """Apply Radiate filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2187,7 +2187,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="rain")
     async def rain(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Rain filter (attachment, @mention, URL or your avatar)."""
+        """Apply Rain filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2213,7 +2213,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="reflection")
     async def reflection(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Reflection filter (attachment, @mention, URL or your avatar)."""
+        """Apply Reflection filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2239,7 +2239,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="ripped")
     async def ripped(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Ripped filter (attachment, @mention, URL or your avatar)."""
+        """Apply Ripped filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2265,7 +2265,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="ripple")
     async def ripple(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Ripple filter (attachment, @mention, URL or your avatar)."""
+        """Apply Ripple filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2291,7 +2291,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="roll")
     async def roll(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Roll filter (attachment, @mention, URL or your avatar)."""
+        """Apply Roll filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2342,7 +2342,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="sensitive")
     async def sensitive(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Sensitive filter (attachment, @mention, URL or your avatar)."""
+        """Apply Sensitive filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2368,7 +2368,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="shear")
     async def shear(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Shear filter with random axis and offsets (attachment, @mention, URL or your avatar)."""
+        """Apply Shear filter with random axis and offsets."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2404,7 +2404,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="shine")
     async def shine(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Shine filter (attachment, @mention, URL or your avatar)."""
+        """Apply Shine filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2430,7 +2430,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="shock")
     async def shock(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Shock filter (attachment, @mention, URL or your avatar)."""
+        """Apply Shock filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2456,7 +2456,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="shoot")
     async def shoot(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Shoot filter (attachment, @mention, URL or your avatar)."""
+        """Apply Shoot filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2482,7 +2482,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="shred")
     async def shred(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Shred filter (attachment, @mention, URL or your avatar)."""
+        """Apply Shred filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2508,7 +2508,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="slice")
     async def slice(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Slice filter (attachment, @mention, URL or your avatar)."""
+        """Apply Slice filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2534,7 +2534,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="soap")
     async def soap(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Soap filter (attachment, @mention, URL or your avatar)."""
+        """Apply Soap filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2560,7 +2560,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="spikes")
     async def spikes(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Spikes filter (attachment, @mention, URL or your avatar)."""
+        """Apply Spikes filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2586,7 +2586,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="spin")
     async def spin(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Spin filter (attachment, @mention, URL or your avatar)."""
+        """Apply Spin filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2612,7 +2612,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="stereo")
     async def stereo(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Stereo filter (attachment, @mention, URL or your avatar)."""
+        """Apply Stereo filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2638,7 +2638,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="stretch")
     async def stretch(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Stretch filter (attachment, @mention, URL or your avatar)."""
+        """Apply Stretch filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2664,7 +2664,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="tiles")
     async def tiles(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Tiles filter with a random n_edges (attachment, @mention, URL or your avatar)."""
+        """Apply Tiles filter with a random n_edges."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2696,7 +2696,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="tunnel")
     async def tunnel(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Tunnel filter with a random direction (attachment, @mention, URL or your avatar)."""
+        """Apply Tunnel filter with a random direction."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2728,7 +2728,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="tv")
     async def tv(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Tv filter (attachment, @mention, URL or your avatar)."""
+        """Apply Tv filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2754,7 +2754,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="wall")
     async def wall(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Wall filter (attachment, @mention, URL or your avatar)."""
+        """Apply Wall filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2780,7 +2780,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="warp")
     async def warp(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Warp filter (attachment, @mention, URL or your avatar)."""
+        """Apply Warp filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2806,7 +2806,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="wave")
     async def wave(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Wave filter with random frequency and amplitude (attachment, @mention, URL or your avatar)."""
+        """Apply Wave filter with random frequency and amplitude."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2840,7 +2840,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="wiggle")
     async def wiggle(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Wiggle filter (attachment, @mention, URL or your avatar)."""
+        """Apply Wiggle filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2866,7 +2866,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="zonk")
     async def zonk(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Zonk filter (attachment, @mention, URL or your avatar)."""
+        """Apply Zonk filter."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
