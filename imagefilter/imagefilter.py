@@ -2085,7 +2085,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="quarter")
     async def quarter(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Quarter filter with a random size (attachment, @mention, URL or your avatar)."""
+        """Apply Quarter filter with a random allowed size."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2094,26 +2094,39 @@ class ImageFilter(BaseCog):
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
-        # Choose a random size from the allowed values
-        size = random.choice([2, 4, 5, 10, 15, 30])
+        choices = [2, 4, 5, 10, 15, 30]
+        max_attempts = 5
+        last_exc = None
 
-        await ctx.send(f"🔄 Applying Quarter filter… (size={size})")
-        try:
-            data = await self._fetch(
-                endpoint="v2/image/quarter",
-                api_key=api_key,
-                method="GET",
-                params={
-                    "image_url": img_url,
-                    "size": size,
-                },
-            )
-        except Exception as e:
-            return await ctx.send(f"❌ Error fetching filter: {e}")
+        for attempt in range(1, max_attempts + 1):
+            size = int(random.choice(choices))
+            try:
+                await ctx.send(f"🔄 Applying Quarter filter… (size={size})")
+                data = await self._fetch(
+                    endpoint="v2/image/quarter",
+                    api_key=api_key,
+                    method="GET",
+                    params={
+                        "image_url": img_url,
+                        "size": size,
+                    },
+                )
+                break
+            except Exception as e:
+                last_exc = e
+                msg = str(e)
+                if "422" in msg or "value_error.const" in msg:
+                    if attempt == max_attempts:
+                        return await ctx.send("❌ API rejected all sampled size values.")
+                    continue
+                return await ctx.send(f"❌ Error fetching filter: {e}")
+        else:
+            return await ctx.send("❌ Failed to get a valid response from the API.")
 
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "quarter.gif"))
+
 
 
     @imgmanip.command(name="radiate")
