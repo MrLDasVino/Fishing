@@ -130,7 +130,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Blurring image…")
         try:
             data = await self._fetch(
@@ -153,7 +153,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Balls filter…")
         try:
             data = await self._fetch(
@@ -176,7 +176,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Abstract v2 filter…")
         try:
             data = await self._fetch(
@@ -199,7 +199,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying 3D filter…")
         try:
             data = await self._fetch(
@@ -264,7 +264,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Ads filter…")
         try:
             data = await self._fetch(
@@ -287,7 +287,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Bayer filter…")
         try:
             data = await self._fetch(
@@ -310,7 +310,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -343,7 +343,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Billboard filter…")
         try:
             data = await self._fetch(
@@ -366,7 +366,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Blocks filter…")
         try:
             data = await self._fetch(
@@ -389,7 +389,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -422,7 +422,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Bomb filter…")
         try:
             data = await self._fetch(
@@ -445,7 +445,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Bonks filter…")
         try:
             data = await self._fetch(
@@ -468,7 +468,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Bubble filter…")
         try:
             data = await self._fetch(
@@ -491,7 +491,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Burn filter…")
         try:
             data = await self._fetch(
@@ -514,7 +514,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Canny filter…")
         try:
             data = await self._fetch(
@@ -537,7 +537,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Cartoon filter…")
         try:
             data = await self._fetch(
@@ -560,7 +560,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Cinema filter…")
         try:
             data = await self._fetch(
@@ -583,7 +583,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Clock filter…")
         try:
             data = await self._fetch(
@@ -606,7 +606,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Cloth filter…")
         try:
             data = await self._fetch(
@@ -629,7 +629,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Console filter…")
         try:
             data = await self._fetch(
@@ -652,7 +652,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Contour filter…")
         try:
             data = await self._fetch(
@@ -675,7 +675,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Cow filter…")
         try:
             data = await self._fetch(
@@ -698,7 +698,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Cracks filter…")
         try:
             data = await self._fetch(
@@ -721,7 +721,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Cube filter…")
         try:
             data = await self._fetch(
@@ -744,7 +744,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Dilate filter…")
         try:
             data = await self._fetch(
@@ -767,7 +767,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Dither filter…")
         try:
             data = await self._fetch(
@@ -790,7 +790,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Dizzy filter…")
         try:
             data = await self._fetch(
@@ -813,7 +813,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Dots filter…")
         try:
             data = await self._fetch(
@@ -836,7 +836,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -869,7 +869,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -902,7 +902,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Endless filter…")
         try:
             data = await self._fetch(
@@ -925,7 +925,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Equations filter…")
 
         try:
@@ -989,7 +989,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Explicit filter…")
         try:
             data = await self._fetch(
@@ -1012,7 +1012,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Fall filter…")
         try:
             data = await self._fetch(
@@ -1035,7 +1035,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Fan filter…")
         try:
             data = await self._fetch(
@@ -1058,7 +1058,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Fire filter…")
         try:
             data = await self._fetch(
@@ -1081,7 +1081,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Flag filter…")
         try:
             data = await self._fetch(
@@ -1104,7 +1104,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Flush filter…")
         try:
             data = await self._fetch(
@@ -1127,7 +1127,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Gallery filter…")
         try:
             data = await self._fetch(
@@ -1150,7 +1150,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Gameboy Camera filter…")
         try:
             data = await self._fetch(
@@ -1173,7 +1173,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1206,7 +1206,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Globe filter…")
         try:
             data = await self._fetch(
@@ -1229,7 +1229,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Half Invert filter…")
         try:
             data = await self._fetch(
@@ -1252,7 +1252,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         await ctx.send("🔄 Applying Heart Diffraction filter…")
         try:
             data = await self._fetch(
@@ -1285,8 +1285,8 @@ class ImageFilter(BaseCog):
         if not first and not second and len(attachment_urls) >= 2:
             img1, img2 = attachment_urls[:2]
         else:
-            img1 = self._resolve_image_url(ctx, first)
-            img2 = self._resolve_image_url(ctx, second)
+            img1 = await self._resolve_image_url(ctx, first)
+            img2 = await self._resolve_image_url(ctx, second)
 
         # 2) Ensure both images are provided
         if not img1 or not img2:
@@ -1317,7 +1317,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1350,7 +1350,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1376,7 +1376,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1402,7 +1402,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1428,7 +1428,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1454,7 +1454,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1480,7 +1480,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1506,7 +1506,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1532,7 +1532,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1558,7 +1558,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1584,7 +1584,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1610,7 +1610,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1636,7 +1636,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1662,7 +1662,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1688,7 +1688,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1714,7 +1714,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1740,7 +1740,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1773,7 +1773,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1799,7 +1799,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1825,7 +1825,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1851,7 +1851,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1877,7 +1877,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1903,7 +1903,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1929,7 +1929,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1955,7 +1955,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -1981,7 +1981,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2007,7 +2007,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2033,7 +2033,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2059,7 +2059,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2085,7 +2085,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2111,7 +2111,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2137,7 +2137,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2166,7 +2166,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2192,7 +2192,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2218,7 +2218,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2244,7 +2244,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2270,7 +2270,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2296,7 +2296,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2347,7 +2347,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2373,7 +2373,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2409,7 +2409,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2435,7 +2435,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2461,7 +2461,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2487,7 +2487,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2513,7 +2513,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2539,7 +2539,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2565,7 +2565,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2591,7 +2591,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2617,7 +2617,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2643,7 +2643,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2669,7 +2669,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2701,7 +2701,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2733,7 +2733,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2759,7 +2759,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2785,7 +2785,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2811,7 +2811,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2845,7 +2845,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
@@ -2871,7 +2871,7 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        img_url = self._resolve_image_url(ctx, target)
+        img_url = await self._resolve_image_url(ctx, target)
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
