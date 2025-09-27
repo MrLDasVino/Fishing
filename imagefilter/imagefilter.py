@@ -2224,7 +2224,7 @@ class ImageFilter(BaseCog):
 
         fp = io.BytesIO(data)
         fp.seek(0)
-        await ctx.send(file=discord.File(fp, "scrapbook.png"))
+        await ctx.send(file=discord.File(fp, "scrapbook.gif"))
 
 
 
