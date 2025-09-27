@@ -2892,19 +2892,10 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="wheel")
     async def wheel(self, ctx, *words: str):
-        """
-        Spin a wheel from 2, 3, 4 or 6 different words.
-        Usage examples:
-          [p]imgmanip wheel apple banana
-          [p]imgmanip wheel a b c
-          [p]imgmanip wheel one two three four
-          [p]imgmanip wheel a b c d e f
-        """
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        # normalize and validate
         words = [w.strip() for w in words if w and w.strip()]
         n = len(words)
         if n not in (2, 3, 4, 6):
@@ -2912,10 +2903,11 @@ class ImageFilter(BaseCog):
 
         await ctx.send("🔄 Spinning the wheel…")
 
-        # Prepare params: numbered keys w1..wN plus a fallback comma-joined 'words'
         params = {f"w{i+1}": words[i] for i in range(n)}
         params["words"] = ",".join(words)
+        params["count"] = n
 
+        # Try GET first
         try:
             data = await self._fetch(
                 endpoint="v2/discord/wheel",
@@ -2924,23 +2916,33 @@ class ImageFilter(BaseCog):
                 params=params,
             )
         except Exception as e:
-            # If the API returned a non-200 error, include the message for debugging
-            return await ctx.send(f"❌ Error fetching wheel: {e}")
+            err = str(e)
+            # If API explicitly sent a 400 with a helpful message, try POST fallback
+            if err.startswith("HTTP 400"):
+                try:
+                    payload = {f"w{i+1}": words[i] for i in range(n)}
+                    payload["words"] = ",".join(words)
+                    payload["count"] = n
+                    data = await self._fetch(
+                        endpoint="v2/discord/wheel",
+                        api_key=api_key,
+                        method="POST",
+                        payload=payload,
+                    )
+                except Exception as e2:
+                    # Return the detailed API error (POST attempt) back to user
+                    text = str(e2)
+                    # Show trimmed API message
+                    return await ctx.send(f"❌ Wheel failed: {text}")
+            else:
+                return await ctx.send(f"❌ Wheel failed: {err}")
 
-        # Try to send as a file; fall back to showing text if it's not binary image data
+        # Try to send image bytes, if not binary image show returned text
         try:
             fp = io.BytesIO(data)
             fp.seek(0)
             await ctx.send(file=discord.File(fp, "wheel.gif"))
-        except discord.HTTPException as exc:
-            # Discord upload problems (too large, etc.)
-            if getattr(exc, "code", None) == 40005:
-                return await ctx.send(
-                    "❌ The resulting file is too large to upload. Try using shorter words or fewer options."
-                )
-            # If it's not a file at all, show the returned text (helpful for debugging)
-            try:
-                text = data.decode("utf-8", errors="replace")
-                return await ctx.send(f"❌ Wheel returned unexpected text: {text}")
-            except Exception:
-                raise
+        except Exception:
+            text = data.decode("utf-8", errors="replace")
+            await ctx.send(f"❌ Wheel returned text: {text}")
+
