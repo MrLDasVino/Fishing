@@ -1183,15 +1183,15 @@ class ImageFilter(BaseCog):
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
-        # 1) Collect two attachments if no args provided
-        attachments = [att.url for att in ctx.message.attachments]
-        if not first and not second and len(attachments) >= 2:
-            img1, img2 = attachments[:2]
+        # 1) Gather attachments if no explicit args
+        attachment_urls = [att.url for att in ctx.message.attachments]
+        if not first and not second and len(attachment_urls) >= 2:
+            img1, img2 = attachment_urls[:2]
         else:
             img1 = self._resolve_image_url(ctx, first)
             img2 = self._resolve_image_url(ctx, second)
 
-        # 2) Validate both URLs
+        # 2) Ensure both images are provided
         if not img1 or not img2:
             return await ctx.send("❌ Please provide two images (mention, URL, or attachment).")
 
@@ -1201,7 +1201,10 @@ class ImageFilter(BaseCog):
                 endpoint="v2/image/heart_locket",
                 api_key=api_key,
                 method="GET",
-                params={"image_url": img1, "image_url2": img2},
+                params={
+                    "image_url": img1,
+                    "image_url_2": img2,
+                },
             )
         except Exception as e:
             return await ctx.send(f"❌ Error fetching filter: {e}")
@@ -1209,6 +1212,7 @@ class ImageFilter(BaseCog):
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "heart_locket.gif"))
+
 
 
 
