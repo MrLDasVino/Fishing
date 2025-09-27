@@ -2902,47 +2902,67 @@ class ImageFilter(BaseCog):
             return await ctx.send("❌ Wheel requires exactly 2, 3, 4 or 6 words. Provide them space-separated.")
 
         await ctx.send("🔄 Spinning the wheel…")
+        tries = []
 
+        # Prepare a list of GET param variants to try (most-likely first)
+        param_variants = []
+
+        # 1) numbered w1..wN + words CSV
         params = {f"w{i+1}": words[i] for i in range(n)}
         params["words"] = ",".join(words)
-        params["count"] = n
+        param_variants.append(params)
 
-        # Try GET first
-        try:
-            data = await self._fetch(
-                endpoint="v2/discord/wheel",
-                api_key=api_key,
-                method="GET",
-                params=params,
-            )
-        except Exception as e:
-            err = str(e)
-            # If API explicitly sent a 400 with a helpful message, try POST fallback
-            if err.startswith("HTTP 400"):
-                try:
-                    payload = {f"w{i+1}": words[i] for i in range(n)}
-                    payload["words"] = ",".join(words)
-                    payload["count"] = n
-                    data = await self._fetch(
-                        endpoint="v2/discord/wheel",
-                        api_key=api_key,
-                        method="POST",
-                        payload=payload,
-                    )
-                except Exception as e2:
-                    # Return the detailed API error (POST attempt) back to user
-                    text = str(e2)
-                    # Show trimmed API message
-                    return await ctx.send(f"❌ Wheel failed: {text}")
+        # 2) words CSV only
+        param_variants.append({"words": ",".join(words)})
+
+        # 3) repeated 'w' keys (w=one&w=two...)
+        repeated_w = []
+        for w in words:
+            repeated_w.append(("w", w))
+        param_variants.append(repeated_w)
+
+        # 4) array style w[] (w[]=one&w[]=two...)
+        w_array = [(f"w[]", w) for w in words]
+        param_variants.append(w_array)
+
+        # 5) numbered as strings (some APIs are picky about types)
+        params_str = {f"w{i+1}": str(words[i]) for i in range(n)}
+        params_str["words"] = ",".join(words)
+        param_variants.append(params_str)
+
+        # Try each variant as a GET. Record the API error text for debugging.
+        last_error = None
+        for idx, params in enumerate(param_variants, start=1):
+            try:
+                # If params is a list of tuples, pass directly; aiohttp accepts that form
+                data = await self._fetch(
+                    endpoint="v2/discord/wheel",
+                    api_key=api_key,
+                    method="GET",
+                    params=params,
+                )
+                # Success: send file
+                fp = io.BytesIO(data)
+                fp.seek(0)
+                return await ctx.send(file=discord.File(fp, "wheel.gif"))
+            except Exception as e:
+                last_error = str(e)
+                tries.append({"attempt": idx, "params": params, "error": last_error})
+                # If the API explicitly returned 405, do not try POST; just move to next GET variant
+                continue
+
+        # All GET attempts failed, present the collected diagnostics to the user
+        diag_lines = []
+        for t in tries:
+            p = t["params"]
+            # Convert param list to short string for readability
+            if isinstance(p, list):
+                pstr = ", ".join(f"{k}={v}" for k, v in p)
             else:
-                return await ctx.send(f"❌ Wheel failed: {err}")
+                pstr = ", ".join(f"{k}={v}" for k, v in p.items())
+            diag_lines.append(f"Attempt {t['attempt']}: {pstr} -> {t['error']}")
 
-        # Try to send image bytes, if not binary image show returned text
-        try:
-            fp = io.BytesIO(data)
-            fp.seek(0)
-            await ctx.send(file=discord.File(fp, "wheel.gif"))
-        except Exception:
-            text = data.decode("utf-8", errors="replace")
-            await ctx.send(f"❌ Wheel returned text: {text}")
+        diag_text = "\n".join(diag_lines)[:1900]
+        await ctx.send(f"❌ Wheel failed. Attempts:\n{diag_text}")
+
 
