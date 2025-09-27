@@ -2890,3 +2890,57 @@ class ImageFilter(BaseCog):
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "zonk.gif"))
 
+    @imgmanip.command(name="wheel")
+    async def wheel(self, ctx, *words: str):
+        """
+        Spin a wheel from 2, 3, 4 or 6 different words.
+        Usage examples:
+          [p]imgmanip wheel apple banana
+          [p]imgmanip wheel a b c
+          [p]imgmanip wheel one two three four
+          [p]imgmanip wheel a b c d e f
+        """
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        # normalize and validate
+        words = [w.strip() for w in words if w and w.strip()]
+        n = len(words)
+        if n not in (2, 3, 4, 6):
+            return await ctx.send("❌ Wheel requires exactly 2, 3, 4 or 6 words. Provide them space-separated.")
+
+        await ctx.send("🔄 Spinning the wheel…")
+
+        # Prepare params: numbered keys w1..wN plus a fallback comma-joined 'words'
+        params = {f"w{i+1}": words[i] for i in range(n)}
+        params["words"] = ",".join(words)
+
+        try:
+            data = await self._fetch(
+                endpoint="v2/discord/wheel",
+                api_key=api_key,
+                method="GET",
+                params=params,
+            )
+        except Exception as e:
+            # If the API returned a non-200 error, include the message for debugging
+            return await ctx.send(f"❌ Error fetching wheel: {e}")
+
+        # Try to send as a file; fall back to showing text if it's not binary image data
+        try:
+            fp = io.BytesIO(data)
+            fp.seek(0)
+            await ctx.send(file=discord.File(fp, "wheel.gif"))
+        except discord.HTTPException as exc:
+            # Discord upload problems (too large, etc.)
+            if getattr(exc, "code", None) == 40005:
+                return await ctx.send(
+                    "❌ The resulting file is too large to upload. Try using shorter words or fewer options."
+                )
+            # If it's not a file at all, show the returned text (helpful for debugging)
+            try:
+                text = data.decode("utf-8", errors="replace")
+                return await ctx.send(f"❌ Wheel returned unexpected text: {text}")
+            except Exception:
+                raise
