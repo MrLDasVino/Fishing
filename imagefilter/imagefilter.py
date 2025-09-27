@@ -56,25 +56,72 @@ class ImageFilter(BaseCog):
                         raise RuntimeError(f"HTTP {resp.status}")
                     return await resp.read()
 
-    def _resolve_image_url(
-        self, 
-        ctx: commands.Context, 
+    async def _resolve_image_url(
+        self,
+        ctx: commands.Context,
         target: Optional[Union[discord.Member, str]]
-    ) -> str:
+    ) -> Optional[str]:
         """
-        Determine which image to process:
-        1) If target is Member → avatar
-        2) If target is str and starts with http → use that URL
-        3) If there's an attachment → use it
-        4) Otherwise → use ctx.author's avatar
+        Resolve an image URL from:
+        - Member or User object -> avatar
+        - pasted numeric user id or mention -> avatar
+        - http(s) URL string -> the URL itself
+        - message attachments -> first attachment
+        - fallback -> ctx.author avatar
+        Returns None only if no avatar or attachment can be resolved.
         """
-        if isinstance(target, discord.Member):
-            return target.avatar.url
-        if isinstance(target, str) and target.lower().startswith("http"):
-            return target
-        if ctx.message.attachments:
+        # Direct Member/User
+        if isinstance(target, (discord.Member, discord.User)):
+            user = target
+            try:
+                return user.display_avatar.url
+            except Exception:
+                return None
+
+        # If target is a string, try URL, mention, or user id
+        if isinstance(target, str):
+            s = target.strip()
+
+            # direct http(s) url
+            if s.lower().startswith("http"):
+                return s
+
+            # mention like <@123...> or <@!123...>
+            if s.startswith("<@") and s.endswith(">"):
+                s = s.strip("<@!>")
+
+            # numeric id: try to resolve user
+            if s.isdigit():
+                user_id = int(s)
+                member = None
+                # try guild member first
+                if ctx.guild:
+                    member = ctx.guild.get_member(user_id)
+                # try cache
+                if not member:
+                    member = self.bot.get_user(user_id)
+                # fetch from API as last resort
+                if not member:
+                    try:
+                        member = await self.bot.fetch_user(user_id)
+                    except Exception:
+                        member = None
+                if member:
+                    try:
+                        return member.display_avatar.url
+                    except Exception:
+                        return None
+
+        # attachments present
+        if ctx.message and ctx.message.attachments:
             return ctx.message.attachments[0].url
-        return ctx.author.avatar.url
+
+        # fallback to invoking user avatar
+        try:
+            return ctx.author.display_avatar.url
+        except Exception:
+            return None
+
 
     @imgmanip.command(name="blur")
     async def blur(self, ctx, target: Optional[Union[discord.Member, str]] = None):
