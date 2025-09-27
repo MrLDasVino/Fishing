@@ -258,26 +258,36 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="bevel")
     async def bevel(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Bevel filter (attachment, @mention, URL or your avatar)."""
+        """Apply Bevel filter with a random level (attachment, @mention, URL or your avatar)."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
         img_url = self._resolve_image_url(ctx, target)
-        await ctx.send("🔄 Applying Bevel filter…")
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        # Choose a random level between 10 and 30 inclusive
+        level = random.randint(10, 30)
+
+        await ctx.send(f"🔄 Applying Bevel filter… (level={level})")
         try:
             data = await self._fetch(
                 endpoint="v2/image/bevel",
                 api_key=api_key,
                 method="GET",
-                params={"image_url": img_url},
+                params={
+                    "image_url": img_url,
+                    "level": level,
+                },
             )
         except Exception as e:
-            return await ctx.send(f"❌ Error: {e}")
+            return await ctx.send(f"❌ Error fetching filter: {e}")
 
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "bevel.gif"))
+
 
     @imgmanip.command(name="billboard")
     async def billboard(self, ctx, target: Optional[Union[discord.Member, str]] = None):
@@ -327,26 +337,36 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="boil")
     async def boil(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Boil filter (attachment, @mention, URL or your avatar)."""
+        """Apply Boil filter with a random level (attachment, @mention, URL or your avatar)."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
         img_url = self._resolve_image_url(ctx, target)
-        await ctx.send("🔄 Applying Boil filter…")
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        # Choose a random level between 1 and 5 inclusive
+        level = random.randint(1, 5)
+
+        await ctx.send(f"🔄 Applying Boil filter… (level={level})")
         try:
             data = await self._fetch(
                 endpoint="v2/image/boil",
                 api_key=api_key,
                 method="GET",
-                params={"image_url": img_url},
+                params={
+                    "image_url": img_url,
+                    "level": level,
+                },
             )
         except Exception as e:
-            return await ctx.send(f"❌ Error: {e}")
+            return await ctx.send(f"❌ Error fetching filter: {e}")
 
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "boil.gif"))
+
 
     @imgmanip.command(name="bomb")
     async def bomb(self, ctx, target: Optional[Union[discord.Member, str]] = None):
@@ -764,49 +784,69 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="earthquake")
     async def earthquake(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Earthquake filter (attachment, @mention, URL or your avatar)."""
+        """Apply Earthquake filter with a random level (attachment, @mention, URL or your avatar)."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
         img_url = self._resolve_image_url(ctx, target)
-        await ctx.send("🔄 Applying Earthquake filter…")
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        # Choose a random level between 1 and 10 inclusive
+        level = random.randint(1, 10)
+
+        await ctx.send(f"🔄 Applying Earthquake filter… (level={level})")
         try:
             data = await self._fetch(
                 endpoint="v2/image/earthquake",
                 api_key=api_key,
                 method="GET",
-                params={"image_url": img_url},
+                params={
+                    "image_url": img_url,
+                    "level": level,
+                },
             )
         except Exception as e:
-            return await ctx.send(f"❌ Error: {e}")
+            return await ctx.send(f"❌ Error fetching filter: {e}")
 
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "earthquake.gif"))
 
+
     @imgmanip.command(name="emojify")
     async def emojify(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Emojify filter (attachment, @mention, URL or your avatar)."""
+        """Apply Emojify filter with a random size (attachment, @mention, URL or your avatar)."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
         img_url = self._resolve_image_url(ctx, target)
-        await ctx.send("🔄 Applying Emojify filter…")
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        # Choose a random size between 16 and 64 inclusive
+        size = random.randint(16, 64)
+
+        await ctx.send(f"🔄 Applying Emojify filter… (size={size})")
         try:
             data = await self._fetch(
                 endpoint="v2/image/emojify",
                 api_key=api_key,
                 method="GET",
-                params={"image_url": img_url},
+                params={
+                    "image_url": img_url,
+                    "size": size,
+                },
             )
         except Exception as e:
-            return await ctx.send(f"❌ Error: {e}")
+            return await ctx.send(f"❌ Error fetching filter: {e}")
 
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "emojify.gif"))
+
 
     @imgmanip.command(name="endless")
     async def endless(self, ctx, target: Optional[Union[discord.Member, str]] = None):
@@ -1081,26 +1121,36 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="glitch")
     async def glitch(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Glitch filter (attachment, @mention, URL or your avatar)."""
+        """Apply Glitch filter with a random level (attachment, @mention, URL or your avatar)."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
         img_url = self._resolve_image_url(ctx, target)
-        await ctx.send("🔄 Applying Glitch filter…")
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        # Choose a random level between 1 and 10 inclusive
+        level = random.randint(1, 10)
+
+        await ctx.send(f"🔄 Applying Glitch filter… (level={level})")
         try:
             data = await self._fetch(
                 endpoint="v2/image/glitch",
                 api_key=api_key,
                 method="GET",
-                params={"image_url": img_url},
+                params={
+                    "image_url": img_url,
+                    "level": level,
+                },
             )
         except Exception as e:
-            return await ctx.send(f"❌ Error: {e}")
+            return await ctx.send(f"❌ Error fetching filter: {e}")
 
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "glitch.gif"))
+
 
     @imgmanip.command(name="globe")
     async def globe(self, ctx, target: Optional[Union[discord.Member, str]] = None):
@@ -1215,7 +1265,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="hearts")
     async def hearts(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Hearts filter (attachment, @mention, URL or your avatar)."""
+        """Apply Hearts filter with random Rainbow value (attachment, @mention, URL or your avatar)."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1224,13 +1274,19 @@ class ImageFilter(BaseCog):
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
-        await ctx.send("🔄 Applying Hearts filter…")
+        # Pick a random rainbow value
+        rainbow = random.choice(['true', 'false'])
+
+        await ctx.send(f"🔄 Applying Hearts filter… (rainbow={rainbow})")
         try:
             data = await self._fetch(
                 endpoint="v2/image/hearts",
                 api_key=api_key,
                 method="GET",
-                params={"image_url": img_url},
+                params={
+                    "image_url": img_url,
+                    "rainbow": rainbow,
+                },
             )
         except Exception as e:
             return await ctx.send(f"❌ Error fetching filter: {e}")
@@ -1238,6 +1294,7 @@ class ImageFilter(BaseCog):
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "hearts.gif"))
+
 
     @imgmanip.command(name="infinity")
     async def infinity(self, ctx, target: Optional[Union[discord.Member, str]] = None):
@@ -1631,7 +1688,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="minecraft")
     async def minecraft(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Minecraft filter (attachment, @mention, URL or your avatar)."""
+        """Apply Minecraft filter with a random size (attachment, @mention, URL or your avatar)."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -1640,13 +1697,19 @@ class ImageFilter(BaseCog):
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
-        await ctx.send("🔄 Applying Minecraft filter…")
+        # Choose a random size between 10 and 100 inclusive
+        size = random.randint(10, 100)
+
+        await ctx.send(f"🔄 Applying Minecraft filter… (size={size})")
         try:
             data = await self._fetch(
                 endpoint="v2/image/minecraft",
                 api_key=api_key,
                 method="GET",
-                params={"image_url": img_url},
+                params={
+                    "image_url": img_url,
+                    "size": size,
+                },
             )
         except Exception as e:
             return await ctx.send(f"❌ Error fetching filter: {e}")
@@ -1654,6 +1717,7 @@ class ImageFilter(BaseCog):
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "minecraft.gif"))
+
 
     @imgmanip.command(name="neon")
     async def neon(self, ctx, target: Optional[Union[discord.Member, str]] = None):
@@ -2021,7 +2085,7 @@ class ImageFilter(BaseCog):
 
     @imgmanip.command(name="quarter")
     async def quarter(self, ctx, target: Optional[Union[discord.Member, str]] = None):
-        """Apply Quarter filter (attachment, @mention, URL or your avatar)."""
+        """Apply Quarter filter with a random size (attachment, @mention, URL or your avatar)."""
         api_key = await self.config.user(ctx.author).api_key()
         if not api_key:
             return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
@@ -2030,13 +2094,19 @@ class ImageFilter(BaseCog):
         if not img_url:
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
-        await ctx.send("🔄 Applying Quarter filter…")
+        # Choose a random size from the allowed values
+        size = random.choice([2, 4, 5, 10, 15, 30])
+
+        await ctx.send(f"🔄 Applying Quarter filter… (size={size})")
         try:
             data = await self._fetch(
                 endpoint="v2/image/quarter",
                 api_key=api_key,
                 method="GET",
-                params={"image_url": img_url},
+                params={
+                    "image_url": img_url,
+                    "size": size,
+                },
             )
         except Exception as e:
             return await ctx.send(f"❌ Error fetching filter: {e}")
@@ -2044,6 +2114,7 @@ class ImageFilter(BaseCog):
         fp = io.BytesIO(data)
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "quarter.gif"))
+
 
     @imgmanip.command(name="radiate")
     async def radiate(self, ctx, target: Optional[Union[discord.Member, str]] = None):
@@ -2592,7 +2663,7 @@ class ImageFilter(BaseCog):
             return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
 
         # Pick a random direction from the allowed values
-        direction = random.choice(['h', 'horizontal', 'v', 'vertical', 'c', 'circle', 'r', 'rotate'])
+        direction = random.choice(['h', 'v', 'c', 'r'])
 
         await ctx.send(f"🔄 Applying Tunnel filter… (direction={direction})")
         try:
