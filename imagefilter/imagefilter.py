@@ -2548,8 +2548,6 @@ class ImageFilter(BaseCog):
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "stretch.gif"))
 
-import random
-
     @imgmanip.command(name="tiles")
     async def tiles(self, ctx, target: Optional[Union[discord.Member, str]] = None):
         """Apply Tiles filter with a random n_edges (attachment, @mention, URL or your avatar)."""
