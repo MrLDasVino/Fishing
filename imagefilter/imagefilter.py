@@ -2226,7 +2226,67 @@ class ImageFilter(BaseCog):
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "scrapbook.gif"))
 
+    @imgmanip.command(name="sensitive")
+    async def sensitive(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Sensitive filter (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
 
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        await ctx.send("🔄 Applying Sensitive filter…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/sensitive",
+                api_key=api_key,
+                method="GET",
+                params={"image_url": img_url},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "sensitive.gif"))
+
+    @imgmanip.command(name="shear")
+    async def shear(self, ctx, target: Optional[Union[discord.Member, str]] = None):
+        """Apply Shear filter with random axis and offsets (attachment, @mention, URL or your avatar)."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        img_url = self._resolve_image_url(ctx, target)
+        if not img_url:
+            return await ctx.send("❌ Please provide an image (mention, URL, or attachment).")
+
+        # Pick a random axis and offsets
+        axis = random.choice(['x', 'X', 'y', 'Y'])
+        x_offset = round(random.uniform(-1.0, 1.0), 2)
+        y_offset = round(random.uniform(-1.0, 1.0), 2)
+
+        await ctx.send(f"🔄 Applying Shear filter… (axis={axis}, x={x_offset}, y={y_offset})")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/shear",
+                api_key=api_key,
+                method="GET",
+                params={
+                    "image_url": img_url,
+                    "axis": axis,
+                    "x": x_offset,
+                    "y": y_offset,
+                },
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error fetching filter: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "shear.gif"))
 
 
 
