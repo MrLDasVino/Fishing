@@ -2201,6 +2201,30 @@ class ImageFilter(BaseCog):
         fp.seek(0)
         await ctx.send(file=discord.File(fp, "roll.gif"))
 
+    @imgmanip.command(name="scrapbook")
+    async def scrapbook(self, ctx, *, text: str):
+        """Generate a scrapbook-style image from your text."""
+        api_key = await self.config.user(ctx.author).api_key()
+        if not api_key:
+            return await ctx.send("❌ Set your API key: `[p]imgmanip setkey YOUR_KEY`.")
+
+        if not text:
+            return await ctx.send("❌ Please provide some text to generate the scrapbook image.")
+
+        await ctx.send("🔄 Generating Scrapbook image…")
+        try:
+            data = await self._fetch(
+                endpoint="v2/image/scrapbook",
+                api_key=api_key,
+                method="GET",
+                params={"text": text},
+            )
+        except Exception as e:
+            return await ctx.send(f"❌ Error generating scrapbook: {e}")
+
+        fp = io.BytesIO(data)
+        fp.seek(0)
+        await ctx.send(file=discord.File(fp, "scrapbook.png"))
 
 
 
