@@ -3,9 +3,11 @@ import discord
 from redbot.core import commands
 from typing import Optional
 
-from ..core.registry import regions, enemies
+from ..core.registry import regions, enemies, items
 from ..managers.combat import run_combat
 from ..managers.xp import apply_xp
+from ..managers.healing import apply_heal
+
 
 class PlayerCommands(commands.Cog):
     def __init__(self, parent):
@@ -91,4 +93,52 @@ class PlayerCommands(commands.Cog):
                 embed.add_field(name="Level Up", value=", ".join(str(l) for l in leveled), inline=False)
         
         await ctx.send(embed=embed)
+
+    @rpg.command()
+    async def useitem(self, ctx, item_id: str):
+        """Use an item from your inventory (e.g., a healing potion)."""
+        user = ctx.author
+        state = await self.parent.ensure_player_state(user)
+        inv = state.setdefault("inventory", {})
+
+        qty = inv.get(item_id, 0)
+        if qty <= 0:
+            await ctx.send("You don't have that item.")
+            return
+
+        # look up item definition to see if it heals
+        item_def = items.get(item_id)
+        heal_amount = 0
+        if item_def and getattr(item_def, "stats", None):
+            heal_amount = int(item_def.stats.get("heal", 0))
+
+        if heal_amount <= 0:
+            await ctx.send("This item can't be used to heal right now.")
+            return
+
+        # consume item
+        if qty == 1:
+            inv.pop(item_id, None)
+        else:
+            inv[item_id] = qty - 1
+
+        # apply heal and persist
+        state = apply_heal(state, heal_amount)
+        await self.parent.config.user(user).set(state)
+        await ctx.send(f"You used **{item_id}** and recovered **{heal_amount} HP**. Current HP: **{state['hp']}/{state['max_hp']}**.")
+
+    @rpg.command()
+    async def rest(self, ctx, cost: int = 0):
+        """Rest to restore to full HP. Optionally cost gold: rpg rest <cost>."""
+        user = ctx.author
+        state = await self.parent.ensure_player_state(user)
+        gold = state.get("gold", 0)
+        if cost > 0 and gold < cost:
+            await ctx.send("You don't have enough gold to rest.")
+            return
+        if cost > 0:
+            state["gold"] = gold - cost
+        state["hp"] = state.get("max_hp", 20)
+        await self.parent.config.user(user).set(state)
+        await ctx.send(f"You rested and recovered to full HP: **{state['hp']}/{state['max_hp']}**. Gold remaining: **{state.get('gold',0)}**.")
 
