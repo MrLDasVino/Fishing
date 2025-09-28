@@ -58,12 +58,22 @@ class PlayerCommands(commands.Cog):
         # 4) Run your existing combat routine
         result = run_combat(player, eid)
 
-        # 5) Send the battle log + summary
-        transcript = list(result.log)
-        transcript.append(
-            f"🏆 Winner: {result.winner} | XP: {result.xp} | Gold: {result.gold}"
+        # 5) Retrieve the enemy definition for banner & name
+        enemy_def = enemies.get(eid)
+
+        # 6) Build an embed with the enemy’s image and combat summary
+        embed = discord.Embed(
+            title=f"{ctx.author.display_name} vs {enemy_def.name}",
+            description="\n".join(result.log),
+            color=discord.Color.blurple()
         )
-        await ctx.send("```\n" + "\n".join(transcript) + "\n```")
+        if getattr(enemy_def, "image_url", None):
+            embed.set_thumbnail(url=enemy_def.image_url)
+        embed.add_field(name="Winner", value=result.winner, inline=True)
+        embed.add_field(name="XP Gained", value=str(result.xp), inline=True)
+        embed.add_field(name="Gold Gained", value=str(result.gold), inline=True)
+
+        await ctx.send(embed=embed)
 
 
     @rpg.command()
