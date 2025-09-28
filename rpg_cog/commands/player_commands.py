@@ -18,8 +18,8 @@ class PlayerCommands(commands.Cog):
         """
         Base RPG command group. Use `!rpg explore <region>`.
         """
-        # registry.regions supports iteration over IDs
-        region_ids = list(regions)
+        # List all registered region IDs
+        region_ids = regions.keys()
         await ctx.send(
             "Try `!rpg explore <region>`.\n"
             "Available regions: " + ", ".join(region_ids)
@@ -33,13 +33,13 @@ class PlayerCommands(commands.Cog):
         """
         # 1) lookup region by id or human name
         match = None
-        for rid in regions:
-            rdef = regions[rid]
+        for rid in regions.keys():
+            rdef = regions.get(rid)
             if rid.lower() == region.lower() or rdef.get("name", "").lower() == region.lower():
                 match = rdef
                 break
         if not match:
-            region_ids = list(regions)
+            region_ids = regions.keys()
             return await ctx.send(
                 f"Unknown region `{region}`. Try: {', '.join(region_ids)}"
             )
