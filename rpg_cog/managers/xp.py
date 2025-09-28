@@ -1,6 +1,6 @@
 # managers/xp.py
+from typing import Dict
 import math
-from dataclasses import dataclass
 
 def xp_to_next(level: int) -> int:
     return int(math.floor(100 * (1.15 ** (level - 1))))
