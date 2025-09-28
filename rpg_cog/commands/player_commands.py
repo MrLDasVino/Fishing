@@ -54,26 +54,30 @@ class PlayerCommands(commands.Cog):
 
         await self.parent.config.user(user).set(state)
 
-        # build embed
+        # build embed (replace previous embed creation)
         def _truncate(s: str, limit: int = 900) -> str:
             return s if len(s) <= limit else s[: limit - 3] + "..."
-
+        
         color = discord.Colour.red() if result.winner == "enemy" else discord.Colour.green()
         title = f"{enemy_def.name} — Battle" if enemy_def else f"Enemy {enemy_id} — Battle"
         embed = discord.Embed(title=title, color=color)
+        
+        # use large image instead of thumbnail
         if enemy_def and getattr(enemy_def, "image_url", None):
-            embed.set_thumbnail(url=enemy_def.image_url)
+            # show large image under embed content
+            embed.set_image(url=enemy_def.image_url)
+        
         # basic enemy stats
         if enemy_def:
             embed.add_field(name="HP", value=str(enemy_def.hp), inline=True)
             embed.add_field(name="Attack", value=str(enemy_def.attack), inline=True)
             embed.add_field(name="Defense", value=str(enemy_def.defense), inline=True)
             embed.add_field(name="Level", value=str(getattr(enemy_def, "level", 1)), inline=True)
-
+        
         # combat log (first 10 lines)
         log_text = "\n".join(result.log[:10]) if result.log else "No combat log."
         embed.add_field(name="Combat Log", value=_truncate(log_text), inline=False)
-
+        
         # outcome and rewards
         outcome = "Victory" if result.winner == "player" else "Defeat"
         embed.add_field(name="Outcome", value=outcome, inline=True)
@@ -85,6 +89,6 @@ class PlayerCommands(commands.Cog):
             embed.add_field(name="Loot", value=_truncate(loot_text, 300), inline=False)
             if leveled:
                 embed.add_field(name="Level Up", value=", ".join(str(l) for l in leveled), inline=False)
-
-        # final send
+        
         await ctx.send(embed=embed)
+
