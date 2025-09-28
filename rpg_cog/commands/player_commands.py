@@ -5,9 +5,9 @@ import random
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import humanize_list
 
-from core.registry import regions, enemies
-from managers.combat import run_combat
-from managers.xp import apply_xp
+from ..core.registry import regions, enemies
+from ..managers.combat import run_combat
+from ..managers.xp import apply_xp
 
 
 class PlayerCommands(commands.Cog):

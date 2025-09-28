@@ -2,7 +2,7 @@
 import random
 from dataclasses import dataclass
 from typing import Dict, List
-from core.registry import enemies
+from ..core.registry import enemies
 
 CRIT_CHANCE = 0.06
 CRIT_MULT = 1.75

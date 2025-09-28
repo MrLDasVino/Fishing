@@ -1,10 +1,10 @@
 # rpg_cog.py
 from redbot.core import commands, Config
 from pathlib import Path
-from core.loader import load_world
-from core.registry import items, enemies, regions
-from commands.player_commands import PlayerCommands
-from commands.admin_commands import AdminCommands
+from .core.loader import load_world
+from .core.registry import items, enemies, regions
+from .commands.player_commands import PlayerCommands
+from .commands.admin_commands import AdminCommands
 
 class RPGCog(commands.Cog):
     def __init__(self, bot):
