@@ -61,24 +61,29 @@ class PlayerCommands(commands.Cog):
         # 5) Retrieve the enemy definition for banner & name
         enemy_def = enemies.get(eid)
 
-        # 6) Build a rich embed: banner image + enemy stats + combat outcome
+        # 6) Build a rich embed: full banner, reordered stats, combat log
         embed = discord.Embed(
-            title=f"{ctx.author.display_name} vs {enemy_def.name}",
+            title=f"{enemy_def.name} — Battle",
             description="\n".join(result.log),
             color=discord.Color.blurple()
         )
-        # Full‐width banner
+
+        # full‐width banner image
         if getattr(enemy_def, "image_url", None):
             embed.set_image(url=enemy_def.image_url)
-        # Enemy stats
+
+        # stats: Level above HP, Attack, Defense
         embed.add_field(name="Level", value=str(enemy_def.level), inline=True)
         embed.add_field(name="HP", value=str(enemy_def.hp), inline=True)
         embed.add_field(name="Attack", value=str(enemy_def.attack), inline=True)
         embed.add_field(name="Defense", value=str(enemy_def.defense), inline=True)
-        # Combat results
-        embed.add_field(name="Winner", value=result.winner, inline=True)
+
+        # XP and gold
         embed.add_field(name="XP Gained", value=str(result.xp), inline=True)
         embed.add_field(name="Gold Gained", value=str(result.gold), inline=True)
+
+        # footer for winner/outcome (you can extend this for rounds if you track them)
+        embed.set_footer(text=f"🏆 Outcome: {result.winner}")
 
         await ctx.send(embed=embed)
 
