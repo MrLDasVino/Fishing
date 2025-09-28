@@ -10,6 +10,7 @@ from ..managers.xp import apply_xp
 from ..managers.healing import apply_heal
 
 
+
 class PlayerCommands(commands.Cog):
     def __init__(self, parent):
         self.parent = parent
@@ -54,14 +55,28 @@ class PlayerCommands(commands.Cog):
         # 4) Run your existing combat routine
         result = run_combat(player, eid)
 
-        # ─── Persist XP & Gold ───
+        # ─── Apply XP (with level‐ups & stat gains) ───
         user_conf = self.parent.config.user(ctx.author)
-        # Add XP
-        old_xp = await user_conf.xp()
-        await user_conf.xp.set(old_xp + result.xp)
-        # Add Gold
+        data = await user_conf.all()                  # fetch xp, level, hp, attack, etc.
+        out = apply_xp(data, result.xp)               # returns {"player": new_dict, "leveled": [levels]}
+        new_player = out["player"]
+        leveled = out["leveled"]
+
+        # write back every modified stat
+        await user_conf.xp.set(new_player["xp"])
+        await user_conf.level.set(new_player["level"])
+        await user_conf.max_hp.set(new_player["max_hp"])
+        await user_conf.hp.set(new_player["hp"])
+        await user_conf.attack.set(new_player["attack"])
+        await user_conf.defense.set(new_player["defense"])
+
+        # persist gold on top of XP flow
         old_gold = await user_conf.gold()
         await user_conf.gold.set(old_gold + result.gold)
+
+        # notify about levels gained
+        for lvl in leveled:
+            await ctx.send(f"🎉 You reached level {lvl}! (+5 HP, +1 Atk, +1 Def)")
 
         # 5) Retrieve the enemy definition for banner & name
         enemy_def = enemies.get(eid)
@@ -242,5 +257,59 @@ class PlayerCommands(commands.Cog):
                 embed.add_field(name=item_id, value=str(qty), inline=False)
         else:
             embed.description = "Your inventory is empty."
+        await ctx.send(embed=embed)    
+
+    @rpg.command(name="stats", help="Show your current RPG stats and level progress.")
+    async def rpg_stats(self, ctx: commands.Context):
+        """
+        Display the calling user's stats: level, XP, HP, attack, defense, etc.,
+        plus how much XP is needed for the next level.
+        """
+        user = ctx.author
+        # load all fields from config in one go
+        data = await self.parent.config.user(user).all()
+
+        lvl = data["level"]
+        xp = data["xp"]
+        next_xp = xp_for_next_level(lvl)
+
+        embed = discord.Embed(
+            title=f"{user.display_name}'s RPG Stats",
+            color=discord.Color.random()
+        )
+        # Level & XP
+        embed.add_field(name="Level", value=str(lvl), inline=True)
+        embed.add_field(name="XP", value=f"{xp} / {next_xp}", inline=True)
+
+        # Core attributes
+        embed.add_field(
+            name="HP",
+            value=f"{data['hp']} / {data['max_hp']}",
+            inline=True
+        )
+        embed.add_field(name="Attack", value=str(data["attack"]), inline=True)
+        embed.add_field(name="Defense", value=str(data["defense"]), inline=True)
+
+        # Other stats
+        embed.add_field(
+            name="Accuracy",
+            value=f"{data['accuracy']:.2f}",
+            inline=True
+        )
+        embed.add_field(
+            name="Evasion",
+            value=f"{data['evasion']:.2f}",
+            inline=True
+        )
+
+        # Currency & inventory size
+        inv = data.get("inventory", {})
+        embed.add_field(name="Gold", value=str(data["gold"]), inline=True)
+        embed.add_field(
+            name="Items in Inventory",
+            value=str(sum(inv.values())),
+            inline=True
+        )
+
         await ctx.send(embed=embed)        
 
