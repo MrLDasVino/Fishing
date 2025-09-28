@@ -6,26 +6,38 @@ from .commands.admin_commands import AdminCommands
 
 async def setup(bot):
     """
-    Async setup for Red. Adds main cog and subcogs using bot.add_cog.
-    Works with both coroutine and synchronous add_cog implementations.
+    Add main cog and subcogs, but only if they are not already loaded.
     """
-    main_cog = RPGCog(bot)
     add_cog = getattr(bot, "add_cog", None)
     if add_cog is None:
         raise RuntimeError("Bot does not support add_cog")
 
-    # add main cog
-    if inspect.iscoroutinefunction(add_cog):
-        await add_cog(main_cog)
-    else:
-        add_cog(main_cog)
+    # add or reuse main cog
+    main = bot.get_cog("RPGCog")
+    if main is None:
+        main = RPGCog(bot)
+        if inspect.iscoroutinefunction(add_cog):
+            await add_cog(main)
+        else:
+            add_cog(main)
 
-    # add subcogs
-    player = PlayerCommands(main_cog)
-    admin = AdminCommands(main_cog)
+    # helper to add subcogs only if not already present
+    def _ensure_add(cog_instance):
+        name = cog_instance.__class__.__name__
+        if bot.get_cog(name) is not None:
+            return None
+        if inspect.iscoroutinefunction(add_cog):
+            return add_cog(cog_instance)
+        return add_cog(cog_instance)
+
+    # add player and admin subcogs
+    player = PlayerCommands(main)
+    admin = AdminCommands(main)
     if inspect.iscoroutinefunction(add_cog):
-        await add_cog(player)
-        await add_cog(admin)
+        if bot.get_cog(player.__class__.__name__) is None:
+            await add_cog(player)
+        if bot.get_cog(admin.__class__.__name__) is None:
+            await add_cog(admin)
     else:
-        add_cog(player)
-        add_cog(admin)
+        _ensure_add(player)
+        _ensure_add(admin)
