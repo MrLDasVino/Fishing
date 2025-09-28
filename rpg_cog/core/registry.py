@@ -14,8 +14,12 @@ class Registry:
     def all(self):
         return list(self._data.values())
 
+    def keys(self):
+        return list(self._data.keys())
+
     def clear(self):
         self._data.clear()
+
 
 # singletons
 items = Registry()
