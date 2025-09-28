@@ -54,6 +54,15 @@ class PlayerCommands(commands.Cog):
         # 4) Run your existing combat routine
         result = run_combat(player, eid)
 
+        # ─── Persist XP & Gold ───
+        user_conf = self.parent.config.user(ctx.author)
+        # Add XP
+        old_xp = await user_conf.xp()
+        await user_conf.xp.set(old_xp + result.xp)
+        # Add Gold
+        old_gold = await user_conf.gold()
+        await user_conf.gold.set(old_gold + result.gold)
+
         # 5) Retrieve the enemy definition for banner & name
         enemy_def = enemies.get(eid)
 
