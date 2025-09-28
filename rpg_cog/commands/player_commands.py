@@ -1,5 +1,6 @@
 # commands/player_commands.py (fight command excerpt)
 import discord
+import random
 from redbot.core import commands
 from typing import Optional
 
