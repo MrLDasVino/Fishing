@@ -1,0 +1,41 @@
+# core/loader.py
+import yaml
+from pathlib import Path
+from typing import Dict
+from .registry import items, enemies, regions, shops, quests, dungeons
+from .base import ItemDef, EnemyDef, RegionDef, ShopDef, QuestDef, DungeonDef
+
+def _validate_unique(ids: Dict[str, str], section: str):
+    dupes = [k for k, v in ids.items() if list(ids.values()).count(v) > 1]
+    if dupes:
+        raise ValueError(f"Duplicate ids in {section}: {set(dupes)}")
+
+def load_world(path: Path, *, replace: bool = True):
+    doc = yaml.safe_load(path.read_text())
+    if replace:
+        items.clear(); enemies.clear(); regions.clear()
+        shops.clear(); quests.clear(); dungeons.clear()
+
+    for itm in doc.get("items", []):
+        obj = ItemDef(**itm)
+        items.register(obj.id, obj)
+
+    for en in doc.get("enemies", []):
+        obj = EnemyDef(**en)
+        enemies.register(obj.id, obj)
+
+    for reg in doc.get("regions", []):
+        obj = RegionDef(**reg)
+        regions.register(obj.id, obj)
+
+    for sh in doc.get("shops", []):
+        obj = ShopDef(**sh)
+        shops.register(obj.id, obj)
+
+    for q in doc.get("quests", []):
+        obj = QuestDef(**q)
+        quests.register(obj.id, obj)
+
+    for d in doc.get("dungeons", []):
+        obj = DungeonDef(**d)
+        dungeons.register(obj.id, obj)

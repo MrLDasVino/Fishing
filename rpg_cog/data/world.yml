@@ -1,0 +1,61 @@
+version: 1
+meta:
+  world_name: Ebonreach
+items:
+  - id: potion_common
+    name: Healing Potion
+    description: Restores 50 HP
+    rarity: common
+    stats:
+      heal: 50
+
+enemies:
+  - id: goblin_scout
+    name: Goblin Scout
+    hp: 30
+    attack: 6
+    defense: 1
+    base_xp: 25
+    gold_range: [5, 15]
+    loot_table:
+      - item_id: potion_common
+        weight: 70
+        min_qty: 1
+        max_qty: 1
+        drop_chance: 0.6
+      - item_id: rusty_dagger
+        weight: 30
+        min_qty: 1
+        max_qty: 1
+        drop_chance: 0.15
+    level: 1
+
+regions:
+  - id: old_mill
+    name: Old Mill
+    level_range: [1, 3]
+    enemies:
+      - goblin_scout
+
+shops:
+  - id: mill_trader
+    region: old_mill
+    inventory:
+      potion_common: 10
+
+quests:
+  - id: quest_save_farm
+    title: Save the Farm
+    description: Clear goblins from Old Mill
+    requirements:
+      kill: goblin_scout:3
+    rewards:
+      xp: 100
+      gold: 25
+
+dungeons:
+  - id: mill_basement
+    region: old_mill
+    floors: 3
+    monsters:
+      - goblin_scout
