@@ -23,8 +23,54 @@ enemies:
         min_qty: 1
         max_qty: 1
         drop_chance: 0.6
-    image_url: "https://files.catbox.moe/n33t77.png"
+    image_url: "https://files.catbox.moe/biepf4.png"
+    level: 2
+    
+  - id: rat
+    name: Rat
+    hp: 12
+    attack: 2
+    defense: 0
+    base_xp: 5
+    gold_range: [1, 3]
+    loot_table:
+      - item_id: rat_tail
+        weight: 50
+        min_qty: 1
+        max_qty: 2
+        drop_chance: 0.3
+    image_url: "https://files.catbox.moe/incs7z.png"
     level: 1
+  - id: chicken
+    name: Chicken
+    hp: 8
+    attack: 1
+    defense: 0
+    base_xp: 3
+    gold_range: [0, 2]
+    loot_table:
+      - item_id: chicken_feather
+        weight: 70
+        min_qty: 1
+        max_qty: 2
+        drop_chance: 0.5
+    image_url: "https://files.catbox.moe/2oborf.png"
+    level: 1
+  - id: raccoon
+    name: Raccoon
+    hp: 15
+    attack: 3
+    defense: 1
+    base_xp: 10
+    gold_range: [2, 5]
+    loot_table:
+      - item_id: raccoon_pelt
+        weight: 60
+        min_qty: 1
+        max_qty: 1
+        drop_chance: 0.4
+    image_url: "https://files.catbox.moe/rkynn1.png"
+    level: 1    
 
 
 regions:
@@ -33,6 +79,9 @@ regions:
     level_range: [1, 3]
     enemies:
       - goblin_scout
+      - rat
+      - chicken
+      - raccoon
 
 shops:
   - id: mill_trader
