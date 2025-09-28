@@ -35,7 +35,8 @@ class PlayerCommands(commands.Cog):
         match = None
         for rid in regions.keys():
             rdef = regions.get(rid)
-            if rid.lower() == region.lower() or rdef.get("name", "").lower() == region.lower():
+            # compare against the region's ID or its .name attribute
+            if rid.lower() == region.lower() or rdef.name.lower() == region.lower():
                 match = rdef
                 break
         if not match:
@@ -45,9 +46,9 @@ class PlayerCommands(commands.Cog):
             )
 
         # 2) Pick a random enemy ID from that region
-        pool = match.get("enemies", [])
+        pool = match.enemies
         if not pool:
-            return await ctx.send(f"No enemies in region `{match.get('name')}`")
+            return await ctx.send(f"No enemies in region `{match.name}`")
         eid = random.choice(pool)
 
         # 3) Ensure the player state via your RPGCog
