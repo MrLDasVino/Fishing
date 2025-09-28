@@ -1,7 +1,7 @@
 # commands/admin_commands.py
-from redbot.core import commands
 from pathlib import Path
-from core.loader import load_world
+from redbot.core import commands
+from ..core.loader import load_world
 
 class AdminCommands(commands.Cog):
     def __init__(self, parent):
