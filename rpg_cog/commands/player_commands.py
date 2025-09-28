@@ -6,7 +6,7 @@ from typing import Optional
 
 from ..core.registry import regions, enemies, items
 from ..managers.combat import run_combat
-from ..managers.xp import apply_xp
+from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
 
 
@@ -271,7 +271,7 @@ class PlayerCommands(commands.Cog):
 
         lvl = data["level"]
         xp = data["xp"]
-        next_xp = xp_for_next_level(lvl)
+        next_xp = xp_to_next(lvl)
 
         embed = discord.Embed(
             title=f"{user.display_name}'s RPG Stats",
