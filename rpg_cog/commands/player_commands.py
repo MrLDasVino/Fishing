@@ -17,14 +17,14 @@ class PlayerCommands(commands.Cog):
     @commands.group(name="rpg", invoke_without_command=True)
     async def rpg(self, ctx: commands.Context):
         """
-        Base RPG command group. Use `!rpg explore <region>`.
+        Base RPG command group. Lists available subcommands.
         """
-        # List all registered region IDs
-        region_ids = regions.keys()
-        await ctx.send(
-            "Try `!rpg explore <region>`.\n"
-            "Available regions: " + ", ".join(region_ids)
-        )
+        lines = ["Available commands:"]
+        for cmd in self.rpg.commands:
+            usage = f"{ctx.prefix}rpg {cmd.name}"
+            summary = cmd.help.splitlines()[0] if cmd.help else ""
+            lines.append(f"• `{usage}`: {summary}")
+        await ctx.send("\n".join(lines))
 
     @rpg.command(name="explore")
     async def rpg_explore(self, ctx: commands.Context, *, region: str):
@@ -219,4 +219,23 @@ class PlayerCommands(commands.Cog):
         state["hp"] = state.get("max_hp", 20)
         await self.parent.config.user(user).set(state)
         await ctx.send(f"You rested and recovered to full HP: **{state['hp']}/{state['max_hp']}**. Gold remaining: **{state.get('gold',0)}**.")
+        
+    @rpg.command(name="inventory", help="Show your inventory.")
+    async def rpg_inventory(self, ctx: commands.Context):
+        """
+        Show the calling user's inventory.
+        """
+        user = ctx.author
+        # Pull the 'inventory' dict from Config
+        inventory = await self.parent.config.user(user).inventory()
+        embed = discord.Embed(
+            title=f"{user.display_name}'s Inventory",
+            color=discord.Color.random()
+        )
+        if inventory:
+            for item_id, qty in inventory.items():
+                embed.add_field(name=item_id, value=str(qty), inline=False)
+        else:
+            embed.description = "Your inventory is empty."
+        await ctx.send(embed=embed)        
 
