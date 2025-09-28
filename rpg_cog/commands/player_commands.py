@@ -14,17 +14,13 @@ class PlayerCommands(commands.Cog):
     def __init__(self, parent):
         self.parent = parent
 
-    @commands.group(name="rpg", invoke_without_command=True)
+    @commands.group(name="rpg")
     async def rpg(self, ctx: commands.Context):
         """
-        Base RPG command group. Lists available subcommands.
+        Main RPG command group. Shows default help if no subcommand is used.
         """
-        lines = ["Available commands:"]
-        for cmd in self.rpg.commands:
-            usage = f"{ctx.prefix}rpg {cmd.name}"
-            summary = cmd.help.splitlines()[0] if cmd.help else ""
-            lines.append(f"• `{usage}`: {summary}")
-        await ctx.send("\n".join(lines))
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
 
     @rpg.command(name="explore")
     async def rpg_explore(self, ctx: commands.Context, *, region: str):
