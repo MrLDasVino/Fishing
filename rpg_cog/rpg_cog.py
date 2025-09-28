@@ -32,7 +32,7 @@ class RPGCog(commands.Cog):
 
         # load world data (data/world.yml relative to this file)
         data_path = Path(__file__).parent / "data" / "world.yml"
-        load_world(data_path)
+        self.world = load_world(data_path)
 
     async def ensure_player_state(self, user):
         """

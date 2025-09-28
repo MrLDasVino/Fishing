@@ -13,9 +13,52 @@ class PlayerCommands(commands.Cog):
     def __init__(self, parent):
         self.parent = parent
 
-    @commands.group()
-    async def rpg(self, ctx):
-        pass
+    @commands.group(name="rpg", invoke_without_command=True)
+    async def rpg(self, ctx: commands.Context):
+        """
+        Base RPG command group. Use `!rpg explore <region>`.
+        """
+        await ctx.send(
+            "Try `!rpg explore <region>`.\n"
+            "Available regions: " + ", ".join(regions.keys())
+        )
+
+    @rpg.command(name="explore")
+    async def rpg_explore(self, ctx: commands.Context, *, region: str):
+        """
+        Explore a region to fight a random enemy in it.
+        Example: !rpg explore old_mill
+        """
+        # 1) Lookup region by id or human name
+        match = None
+        for rid, rdef in regions.items():
+            if rid.lower() == region.lower() or rdef.get("name", "").lower() == region.lower():
+                match = rdef
+                break
+        if not match:
+            return await ctx.send(
+                f"Unknown region `{region}`. Try: {', '.join(regions.keys())}"
+            )
+
+        # 2) Pick a random enemy ID from that region
+        pool = match.get("enemies", [])
+        if not pool:
+            return await ctx.send(f"No enemies in region `{match.get('name')}`")
+        eid = random.choice(pool)
+
+        # 3) Ensure the player state via your RPGCog
+        player = await self.parent.ensure_player_state(ctx.author)
+
+        # 4) Run your existing combat routine
+        result = run_combat(player, eid)
+
+        # 5) Send the battle log + summary
+        transcript = list(result.log)
+        transcript.append(
+            f"🏆 Winner: {result.winner} | XP: {result.xp} | Gold: {result.gold}"
+        )
+        await ctx.send("```\n" + "\n".join(transcript) + "\n```")
+
 
     @rpg.command()
     async def fight(self, ctx, enemy_id: str):
