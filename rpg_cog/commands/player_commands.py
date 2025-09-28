@@ -63,8 +63,8 @@ class PlayerCommands(commands.Cog):
 
         # 6) Build a “Combat Log” embed with stats above the log
         embed = discord.Embed(
-            title="Combat Log",
-            color=discord.Color.blurple()
+            title=f"{enemy_def.name} - Battle",
+            color=discord.Color.random()
         )
 
         # full‐width banner
