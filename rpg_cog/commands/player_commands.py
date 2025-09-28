@@ -61,29 +61,36 @@ class PlayerCommands(commands.Cog):
         # 5) Retrieve the enemy definition for banner & name
         enemy_def = enemies.get(eid)
 
-        # 6) Build a rich embed: full banner, reordered stats, combat log
+        # 6) Build a “Combat Log” embed with stats above the log
         embed = discord.Embed(
-            title=f"{enemy_def.name} — Battle",
-            description="\n".join(result.log),
+            title="Combat Log",
             color=discord.Color.blurple()
         )
 
-        # full‐width banner image
+        # full‐width banner
         if getattr(enemy_def, "image_url", None):
             embed.set_image(url=enemy_def.image_url)
 
-        # stats: Level above HP, Attack, Defense
-        embed.add_field(name="Level", value=str(enemy_def.level), inline=True)
-        embed.add_field(name="HP", value=str(enemy_def.hp), inline=True)
-        embed.add_field(name="Attack", value=str(enemy_def.attack), inline=True)
-        embed.add_field(name="Defense", value=str(enemy_def.defense), inline=True)
+        # stats in the description: Level on its own, then HP|Attack|Defense
+        embed.description = (
+            f"**Level:** {enemy_def.level}\n"
+            f"**HP:** {enemy_def.hp} | **Attack:** {enemy_def.attack} | **Defense:** {enemy_def.defense}"
+        )
 
-        # XP and gold
+        # combat transcript
+        embed.add_field(
+            name="Combat Log",
+            value="\n".join(result.log),
+            inline=False
+        )
+
+        # round counter + rewards
+        embed.add_field(name="Rounds", value=str(result.rounds), inline=True)
         embed.add_field(name="XP Gained", value=str(result.xp), inline=True)
         embed.add_field(name="Gold Gained", value=str(result.gold), inline=True)
 
-        # footer for winner/outcome (you can extend this for rounds if you track them)
-        embed.set_footer(text=f"🏆 Outcome: {result.winner}")
+        # outcome in footer
+        embed.set_footer(text=f"🏆 Winner: {result.winner}")
 
         await ctx.send(embed=embed)
 
