@@ -18,9 +18,11 @@ class PlayerCommands(commands.Cog):
         """
         Base RPG command group. Use `!rpg explore <region>`.
         """
+        # registry.regions is a Registry without .keys(), so pull IDs via .items()
+        region_ids = [rid for rid, _ in regions.items()]
         await ctx.send(
             "Try `!rpg explore <region>`.\n"
-            "Available regions: " + ", ".join(regions.keys())
+            "Available regions: " + ", ".join(region_ids)
         )
 
     @rpg.command(name="explore")
@@ -36,8 +38,9 @@ class PlayerCommands(commands.Cog):
                 match = rdef
                 break
         if not match:
+            region_ids = [rid for rid, _ in regions.items()]
             return await ctx.send(
-                f"Unknown region `{region}`. Try: {', '.join(regions.keys())}"
+                f"Unknown region `{region}`. Try: {', '.join(region_ids)}"
             )
 
         # 2) Pick a random enemy ID from that region
