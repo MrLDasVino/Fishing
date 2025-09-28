@@ -17,10 +17,10 @@ class EnemyDef:
     hp: int
     attack: int
     defense: int
-    # new fields for rewards and drops
     base_xp: int = 0
     gold_range: List[int] = field(default_factory=lambda: [0, 0])
     loot_table: List[Dict[str, Any]] = field(default_factory=list)
+    image_url: Optional[str] = None
     level: int = 1
 
 @dataclass

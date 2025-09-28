@@ -23,12 +23,9 @@ enemies:
         min_qty: 1
         max_qty: 1
         drop_chance: 0.6
-      - item_id: rusty_dagger
-        weight: 30
-        min_qty: 1
-        max_qty: 1
-        drop_chance: 0.15
+    image_url: "https://files.catbox.moe/n33t77.png"
     level: 1
+
 
 regions:
   - id: old_mill
