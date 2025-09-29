@@ -225,39 +225,58 @@ class PlayerCommands(commands.Cog):
         await self.parent.config.user(user).set(state)
         await ctx.send(f"You used **{item_id}** and recovered **{heal_amount} HP**. Current HP: **{state['hp']}/{state['max_hp']}**.")
 
-    @rpg.command()
-    async def rest(self, ctx, cost: int = 0):
-        """Rest to restore to full HP. Optionally cost gold: rpg rest <cost>."""
+    @rpg.command(name="rest", help="Rest to restore your HP completely.")
+    async def rest(self, ctx):
+        """Rest to restore to full HP."""
         user = ctx.author
         state = await self.parent.ensure_player_state(user)
-        gold = state.get("gold", 0)
-        if cost > 0 and gold < cost:
-            await ctx.send("You don't have enough gold to rest.")
-            return
-        if cost > 0:
-            state["gold"] = gold - cost
+
+        # Fully heal the player (no cost)
         state["hp"] = state.get("max_hp", 20)
         await self.parent.config.user(user).set(state)
-        await ctx.send(f"You rested and recovered to full HP: **{state['hp']}/{state['max_hp']}**. Gold remaining: **{state.get('gold',0)}**.")
+
+        # Build and send a rich embed
+        embed = discord.Embed(
+            title=f"{user.display_name} Rests",
+            description="You feel completely refreshed and your wounds are healed.",
+            color=discord.Color.random()
+        )
+        # Full-width banner image (replace with your own URL)
+        embed.set_image(url="https://files.catbox.moe/v8f5vk.png")
+        embed.add_field(
+            name="HP",
+            value=f"{state['hp']}/{state['max_hp']}",
+            inline=False
+        )
+        await ctx.send(embed=embed)
         
     @rpg.command(name="inventory", help="Show your inventory.")
     async def rpg_inventory(self, ctx: commands.Context):
         """
-        Show the calling user's inventory.
+        Show the calling user's inventory with a banner image.
         """
         user = ctx.author
-        # Pull the 'inventory' dict from Config
+        # Pull inventory from Config
         inventory = await self.parent.config.user(user).inventory()
+
+        # Build rich embed with banner
         embed = discord.Embed(
             title=f"{user.display_name}'s Inventory",
+            description="Here are your current items:",
             color=discord.Color.random()
         )
+        # Full-width banner (replace with your image URL)
+        embed.set_image(url="https://files.catbox.moe/k7lnux.png")
+
         if inventory:
             for item_id, qty in inventory.items():
-                embed.add_field(name=item_id, value=str(qty), inline=False)
+                # Use registry to get a friendly item name if available
+                item_def = items.get(item_id)
+                display_name = getattr(item_def, "name", item_id)
+                embed.add_field(name=display_name, value=str(qty), inline=True)
         else:
-            embed.description = "Your inventory is empty."
-        await ctx.send(embed=embed)    
+            embed.add_field(name="Inventory Empty", value="You have no items.", inline=False)
+   
 
     @rpg.command(name="stats", help="Show your current RPG stats and level progress.")
     async def rpg_stats(self, ctx: commands.Context):
@@ -277,6 +296,8 @@ class PlayerCommands(commands.Cog):
             title=f"{user.display_name}'s RPG Stats",
             color=discord.Color.random()
         )
+        # Full-width banner image for stats (replace with your own URL)
+        embed.set_image(url="https://files.catbox.moe/eu2ad8.png")
         # Level & XP
         embed.add_field(name="Level", value=str(lvl), inline=True)
         embed.add_field(name="XP", value=f"{xp} / {next_xp}", inline=True)
