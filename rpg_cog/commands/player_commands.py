@@ -256,8 +256,9 @@ class PlayerCommands(commands.Cog):
         Show the calling user's inventory with a banner image.
         """
         user = ctx.author
-        # Pull inventory from Config
-        inventory = await self.parent.config.user(user).inventory()
+        # Ensure we fetch defaults and existing state
+        state = await self.parent.ensure_player_state(user)
+        inventory = state.get("inventory", {})
 
         # Build rich embed with banner
         embed = discord.Embed(
@@ -265,17 +266,18 @@ class PlayerCommands(commands.Cog):
             description="Here are your current items:",
             color=discord.Color.random()
         )
-        # Full-width banner (replace with your image URL)
         embed.set_image(url="https://files.catbox.moe/k7lnux.png")
 
         if inventory:
             for item_id, qty in inventory.items():
-                # Use registry to get a friendly item name if available
                 item_def = items.get(item_id)
                 display_name = getattr(item_def, "name", item_id)
                 embed.add_field(name=display_name, value=str(qty), inline=True)
         else:
             embed.add_field(name="Inventory Empty", value="You have no items.", inline=False)
+
+        await ctx.send(embed=embed)
+
    
 
     @rpg.command(name="stats", help="Show your current RPG stats and level progress.")
