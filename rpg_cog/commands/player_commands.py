@@ -43,7 +43,8 @@ class CombatView(View):
         self.winner: str | None = None
         self.log: list[str] = []
         
-        self.add_item(SpellChoiceButton(self, known_spells))       
+        self.add_item(SpellChoiceButton(self, known_spells))
+        
         
     # helper to append and trim log to last 5 entries
     def push_log(self, entry: str):
@@ -282,15 +283,25 @@ class SpellChoiceButton(discord.ui.Button):
         self.known_spells = known_spells
 
     async def callback(self, interaction: discord.Interaction):
-        if interaction.user != self.view_ref.player:
-            return await interaction.response.send_message("Not your battle!", ephemeral=True)
+        view = self.view_ref
+        # 1) Ownership check
+        if interaction.user != view.player:
+            return await interaction.response.send_message(
+                "Not your battle!", ephemeral=True
+            )
 
-        # send an ephemeral view with the dropdown
+        # 2) Guard against no spells known
+        if not self.known_spells:
+            return await interaction.response.send_message(
+                "You haven't learned any spells yet!", ephemeral=True
+            )
+
+        # 3) Send the dropdown view
         await interaction.response.send_message(
             "Choose a spell to cast:",
-            view=SpellSelectView(self.view_ref, self.known_spells),
+            view=SpellSelectView(view, self.known_spells),
             ephemeral=True
-        )    
+        )  
 
 class SpellSelect(discord.ui.Select):
     def __init__(self, view_ref: CombatView, known_spells: list[str]):
