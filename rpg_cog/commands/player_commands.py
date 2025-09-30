@@ -16,6 +16,79 @@ def humanize(item_id: str) -> str:
     or 'super_elixir_of_life' → 'Super Elixir Of Life'.
     """
     return item_id.replace("_", " ").title()
+    
+class SpellChoiceButton(discord.ui.Button):
+    def __init__(self, view_ref: CombatView, known_spells: list[str]):
+        super().__init__(label="Spell", style=discord.ButtonStyle.primary)
+        self.view_ref = view_ref
+        self.known_spells = known_spells
+
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.user != self.view_ref.player:
+            return await interaction.response.send_message("Not your battle!", ephemeral=True)
+
+        # send an ephemeral view with the dropdown
+        await interaction.response.send_message(
+            "Choose a spell to cast:",
+            view=SpellSelectView(self.view_ref, self.known_spells),
+            ephemeral=True
+        )    
+
+class SpellSelect(discord.ui.Select):
+    def __init__(self, view_ref: CombatView, known_spells: list[str]):
+        # build options from spell defs
+        options = []
+        for spell_id in known_spells:
+            sp = spells.get(spell_id)
+            if sp:
+                options.append(discord.SelectOption(label=sp.name, value=spell_id))
+
+        super().__init__(
+            placeholder="Select a spell…",
+            min_values=1, max_values=1,
+            options=options
+        )
+        self.view_ref = view_ref
+
+    async def callback(self, interaction: discord.Interaction):
+        view = self.view_ref
+        spell_id = self.values[0]
+        spell_def = spells.get(spell_id)
+
+        # MP check
+        if view.player_stats["mp"] < spell_def.cost:
+            return await interaction.response.edit_message(
+                content="Not enough MP!", view=None, embed=view.build_embed()
+            )
+
+        # Deduct MP and roll
+        view.player_stats["mp"] -= spell_def.cost
+        hit = _roll_hit(view.player_stats["accuracy"], view.enemy_def.magic_defense)
+        if hit:
+            dmg = calc_magic(
+                view.player_stats["magic_attack"] + spell_def.power,
+                view.enemy_def.magic_defense
+            )
+            applied = view.enemy.receive_damage(dmg)
+            view.push_log(f"You cast {spell_def.name} for {applied}")
+        else:
+            view.push_log(f"{spell_def.name} missed")
+
+        # Continue battle
+        if not view.enemy.is_alive():
+            await view.end_battle(interaction, won=True)
+        else:
+            await view.enemy_turn(interaction)
+            await interaction.response.edit_message(
+                content=None, embed=view.build_embed(), view=view
+            )
+
+
+class SpellSelectView(View):
+    def __init__(self, view_ref: CombatView, known_spells: list[str]):
+        super().__init__(timeout=30)
+        self.add_item(SpellSelect(view_ref, known_spells))
+
 
 class CombatView(View):
     def __init__(
@@ -42,11 +115,7 @@ class CombatView(View):
         self.winner: str | None = None
         self.log: list[str] = []
         
-        # register Spell buttons only for learned spells
-        for spell_id in known_spells:
-            spell_def = spells.get(spell_id)
-            if spell_def:
-                self.add_item(SpellButton(spell_def, self))        
+        self.add_item(SpellChoiceButton(self, known_spells))       
         
     # helper to append and trim log to last 5 entries
     def push_log(self, entry: str):
