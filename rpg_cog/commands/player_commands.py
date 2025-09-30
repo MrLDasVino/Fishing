@@ -345,5 +345,5 @@ class PlayerCommands(commands.Cog):
             inline=True
         )
 
-        await       
+        await ctx.send(embed=embed)      
 
