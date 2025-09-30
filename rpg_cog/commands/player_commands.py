@@ -21,10 +21,10 @@ class CombatView(View):
         self.enemy_def = enemies.get(enemy_id)
         self.enemy = EnemyInstance(self.enemy_def)
 
-        # battle state counters (must exist before you build the embed)
-        self.rounds = 0
-        self.xp = 0
-        self.gold = 0
+        # initialize battle stats
+        self.rounds: int = 0
+        self.xp: int = 0
+        self.gold: int = 0
         self.loot: dict[str, int] = {}
         self.winner: str | None = None
         self.log: list[str] = []
@@ -34,11 +34,11 @@ class CombatView(View):
             title=f"{self.enemy_def.name} - Battle",
             color=discord.Color.random()
         )
-        # full‐width banner
+        # full-width banner
         if getattr(self.enemy_def, "image_url", None):
             embed.set_image(url=self.enemy_def.image_url)
 
-        # stats in the description just like before
+        # stats in description
         embed.description = (
             f"**Level:** {self.enemy_def.level}\n"
             f"**HP:** {self.enemy_def.hp} | **Attack:** {self.enemy_def.attack} | **Defense:** {self.enemy_def.defense}"
@@ -51,62 +51,52 @@ class CombatView(View):
             inline=False
         )
 
-        # round counter + rewards (if battle concluded)
-        embed.add_field(name="Rounds",     value=str(self.rounds), inline=True)
+        # rounds and rewards
+        embed.add_field(name="Rounds", value=str(self.rounds), inline=True)
         embed.add_field(
             name="XP Gained",
-            value=str(self.xp)   if self.winner is not None else "—",
+            value=str(self.xp) if self.winner else "—",
             inline=True
         )
         embed.add_field(
             name="Gold Gained",
-            value=str(self.gold) if self.winner is not None else "—",
+            value=str(self.gold) if self.winner else "—",
             inline=True
         )
 
-        # show winner in footer once set
+        # footer for winner
         if self.winner:
             embed.set_footer(text=f"🏆 Winner: {self.winner}")
 
         return embed
 
-    async def on_timeout(self):
-        for btn in self.children:
-            btn.disabled = True
-        await self.message.edit(content="🏁 Battle timed out.", view=self)
-
     async def end_battle(self, interaction: discord.Interaction, won: bool | None):
-        # disable all buttons
         for btn in self.children:
             btn.disabled = True
 
-        # award rewards on victory
-        if won:
-            xp = self.enemy_def.base_xp
-            gold = random.randint(*self.enemy_def.gold_range)
-            loot = _roll_loot(self.enemy_def.loot_table)
-            self.log.append(f"🏆 Victory! XP {xp} Gold {gold} Loot {loot}")
+        if won:  # victory rewards
+            self.xp = self.enemy_def.base_xp
+            self.gold = random.randint(*self.enemy_def.gold_range)
+            self.loot = _roll_loot(self.enemy_def.loot_table)
+            self.log.append(f"🏆 Victory! XP {self.xp} Gold {self.gold} Loot {self.loot}")
+            self.winner = "player"
 
-            # persist into Config
+            # persist
             user = self.player
             state = await self.ctx.cog.parent.ensure_player_state(user)
-            # apply gold + loot
-            state["gold"] = state.get("gold", 0) + gold
+            state["gold"] = state.get("gold", 0) + self.gold
             inv = state.setdefault("inventory", {})
-            for iid, qty in loot.items():
+            for iid, qty in self.loot.items():
                 inv[iid] = inv.get(iid, 0) + qty
-
-            # apply XP & level-up
-            from ..managers.xp import apply_xp
-            xp_out = apply_xp(state, xp)
+            xp_out = apply_xp(state, self.xp)
             state = xp_out["player"]
             await self.ctx.cog.parent.config.user(user).set(state)
 
-        else:
-            self.log.append("💀 Defeat or Escaped.")
-            # partial HP is already in self.player_stats
+        else:  # defeat or escape
+            self.log.append("💀 Defeat!" if won is False else "🚪 Escaped!")
+            self.winner = "enemy" if won is False else "player"
 
-            # write back HP so explore flow respects your damage
+            # persist remaining HP only
             user = self.player
             state = await self.ctx.cog.parent.ensure_player_state(user)
             state["hp"] = self.player_stats["hp"]
@@ -116,7 +106,6 @@ class CombatView(View):
         self.stop()
 
     async def enemy_turn(self, interaction: discord.Interaction):
-        # enemy attacks
         if _roll_hit(1.0, self.player_stats.get("evasion", 1.0)):
             crit = _roll_crit()
             dmg = _calc_damage(
@@ -124,7 +113,6 @@ class CombatView(View):
                 self.player_stats.get("defense", 0),
                 crit
             )
-            # apply any defend multiplier
             dmg = int(dmg * self.player_stats.pop("_defend_bonus", 1.0))
             self.player_stats["hp"] = max(0, self.player_stats["hp"] - dmg)
             self.log.append(f"{self.enemy_def.name} hits for {dmg}{' crit' if crit else ''}")
@@ -141,6 +129,8 @@ class CombatView(View):
         if interaction.user != self.player:
             return await interaction.response.send_message("Not your battle!", ephemeral=True)
 
+        # count this as one round
+        self.rounds += 1
         # player attack
         if _roll_hit(self.player_stats["accuracy"], self.enemy_def.level + self.enemy_def.defense):
             crit = _roll_crit()
@@ -152,7 +142,6 @@ class CombatView(View):
 
         if not self.enemy.is_alive():
             return await self.end_battle(interaction, won=True)
-
         await self.enemy_turn(interaction)
 
     @button(label="Defend", style=discord.ButtonStyle.secondary)
@@ -160,6 +149,7 @@ class CombatView(View):
         if interaction.user != self.player:
             return await interaction.response.send_message("Not your battle!", ephemeral=True)
 
+        self.rounds += 1
         self.log.append("You brace yourself.")
         self.player_stats["_defend_bonus"] = 0.5
         await self.enemy_turn(interaction)
@@ -168,7 +158,6 @@ class CombatView(View):
     async def skill(self, interaction: discord.Interaction, _):
         if interaction.user != self.player:
             return await interaction.response.send_message("Not your battle!", ephemeral=True)
-
         self.log.append("No skills yet.")
         await interaction.response.edit_message(embed=self.build_embed(), view=self)
 
@@ -176,8 +165,7 @@ class CombatView(View):
     async def item(self, interaction: discord.Interaction, _):
         if interaction.user != self.player:
             return await interaction.response.send_message("Not your battle!", ephemeral=True)
-
-        self.log.append("Item menu not implemented.")
+        self.log.append("No items yet.")
         await interaction.response.edit_message(embed=self.build_embed(), view=self)
 
     @button(label="Escape", style=discord.ButtonStyle.danger)
@@ -185,9 +173,9 @@ class CombatView(View):
         if interaction.user != self.player:
             return await interaction.response.send_message("Not your battle!", ephemeral=True)
 
+        self.rounds += 1
         if random.random() < 0.5:
-            self.log.append("Escaped successfully!")
-            await self.end_battle(interaction, won=None)
+            return await self.end_battle(interaction, won=None)
         else:
             self.log.append("Escape failed.")
             await self.enemy_turn(interaction)
@@ -214,14 +202,12 @@ class PlayerCommands(commands.Cog):
         match = None
         for rid in regions.keys():
             rdef = regions.get(rid)
-            # compare against the region's ID or its .name attribute
             if rid.lower() == region.lower() or rdef.name.lower() == region.lower():
                 match = rdef
                 break
         if not match:
-            region_ids = regions.keys()
             return await ctx.send(
-                f"Unknown region `{region}`. Try: {', '.join(region_ids)}"
+                f"Unknown region `{region}`. Try: {', '.join(regions.keys())}"
             )
 
         # 2) Pick a random enemy ID from that region
@@ -230,10 +216,7 @@ class PlayerCommands(commands.Cog):
             return await ctx.send(f"No enemies in region `{match.name}`")
         eid = random.choice(pool)
 
-        # 3) Ensure the player state via your RPGCog
-        player = await self.parent.ensure_player_state(ctx.author)
-
-        # 4) Launch interactive combat view instead of one-shot resolve
+        # 3) Ensure the player state
         state = await self.parent.ensure_player_state(ctx.author)
         player_stats = {
             "hp":       state.get("hp",      state.get("max_hp", 20)),
@@ -243,11 +226,13 @@ class PlayerCommands(commands.Cog):
             "accuracy": state.get("accuracy",1.0),
             "evasion":  state.get("evasion", 1.0),
         }
+
+        # 4) Launch interactive combat view
         view = CombatView(ctx, player_stats, eid)
         view.message = await ctx.send(
             embed=view.build_embed(),
             view=view
-        )
+        
 
 
     @rpg.command()
