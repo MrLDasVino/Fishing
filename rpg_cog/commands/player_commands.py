@@ -232,7 +232,7 @@ class PlayerCommands(commands.Cog):
         view.message = await ctx.send(
             embed=view.build_embed(),
             view=view
-        
+        )
 
 
     @rpg.command()
