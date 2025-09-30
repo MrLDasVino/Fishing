@@ -10,6 +10,13 @@ from ..managers.combat import _roll_hit, _roll_crit, _calc_damage, EnemyInstance
 from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
 
+def humanize(item_id: str) -> str:
+    """
+    Turn 'health_potion' → 'Health Potion', 
+    or 'super_elixir_of_life' → 'Super Elixir Of Life'.
+    """
+    return item_id.replace("_", " ").title()
+
 class CombatView(View):
     def __init__(self, ctx: commands.Context, player_stats: dict, enemy_id: str):
         super().__init__(timeout=120)
@@ -113,7 +120,16 @@ class CombatView(View):
             self.xp = self.enemy_def.base_xp
             self.gold = random.randint(*self.enemy_def.gold_range)
             self.loot = _roll_loot(self.enemy_def.loot_table)
-            self.push_log(f"🏆 Victory! XP {self.xp} Gold {self.gold} Loot {self.loot}")
+
+            # build a human-friendly loot string
+            loot_str = ", ".join(
+                f"{qty}× {humanize(iid)}"
+                for iid, qty in self.loot.items()
+            ) or "None"
+            self.push_log(
+                f"🏆 Victory! XP {self.xp} Gold {self.gold} Loot {loot_str}"
+            )
+
             self.winner = "player"
 
             # persist
@@ -442,7 +458,8 @@ class PlayerCommands(commands.Cog):
         if inventory:
             for item_id, qty in inventory.items():
                 item_def = items.get(item_id)
-                display_name = getattr(item_def, "name", item_id)
+                # use the defined name if it exists, otherwise humanize the ID
+                display_name = getattr(item_def, "name", None) or humanize(item_id)
                 embed.add_field(name=display_name, value=str(qty), inline=True)
         else:
             embed.add_field(name="Inventory Empty", value="You have no items.", inline=False)
