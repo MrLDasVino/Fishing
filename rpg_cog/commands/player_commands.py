@@ -28,6 +28,12 @@ class CombatView(View):
         self.loot: dict[str, int] = {}
         self.winner: str | None = None
         self.log: list[str] = []
+        
+    # helper to append and trim log to last 5 entries
+    def push_log(self, entry: str):
+        self.log.append(entry)
+        if len(self.log) > 5:
+            self.log.pop(0)        
 
     def build_embed(self) -> discord.Embed:
         # helper to draw a bar of length `size` with `filled` segments
@@ -107,7 +113,7 @@ class CombatView(View):
             self.xp = self.enemy_def.base_xp
             self.gold = random.randint(*self.enemy_def.gold_range)
             self.loot = _roll_loot(self.enemy_def.loot_table)
-            self.log.append(f"🏆 Victory! XP {self.xp} Gold {self.gold} Loot {self.loot}")
+            self.push_log(f"🏆 Victory! XP {self.xp} Gold {self.gold} Loot {self.loot}")
             self.winner = "player"
 
             # persist
@@ -122,7 +128,7 @@ class CombatView(View):
             await self.ctx.cog.parent.config.user(user).set(state)
 
         else:  # defeat or escape
-            self.log.append("💀 Defeat!" if won is False else "🚪 Escaped!")
+            self.push_log("💀 Defeat!" if won is False else "🚪 Escaped!")
             self.winner = "enemy" if won is False else "player"
 
             # persist remaining HP only
@@ -144,9 +150,9 @@ class CombatView(View):
             )
             dmg = int(dmg * self.player_stats.pop("_defend_bonus", 1.0))
             self.player_stats["hp"] = max(0, self.player_stats["hp"] - dmg)
-            self.log.append(f"{self.enemy_def.name} hits for {dmg}{' crit' if crit else ''}")
+            self.push_log(f"{self.enemy_def.name} hits for {dmg}{' crit' if crit else ''}")
         else:
-            self.log.append(f"{self.enemy_def.name} misses")
+            self.push_log(f"{self.enemy_def.name} misses")
 
         if self.player_stats["hp"] <= 0:
             await self.end_battle(interaction, won=False)
@@ -165,9 +171,9 @@ class CombatView(View):
             crit = _roll_crit()
             dmg = _calc_damage(self.player_stats["attack"], self.enemy_def.defense, crit)
             applied = self.enemy.receive_damage(dmg)
-            self.log.append(f"You hit for {applied}{' crit' if crit else ''}")
+            self.push_log(f"You hit for {applied}{' crit' if crit else ''}")
         else:
-            self.log.append("You miss")
+            self.push_log("You miss")
 
         if not self.enemy.is_alive():
             return await self.end_battle(interaction, won=True)
@@ -179,7 +185,7 @@ class CombatView(View):
             return await interaction.response.send_message("Not your battle!", ephemeral=True)
 
         self.rounds += 1
-        self.log.append("You brace yourself.")
+        self.push_log("You brace yourself.")
         self.player_stats["_defend_bonus"] = 0.5
         await self.enemy_turn(interaction)
 
@@ -206,7 +212,7 @@ class CombatView(View):
         if random.random() < 0.5:
             return await self.end_battle(interaction, won=None)
         else:
-            self.log.append("Escape failed.")
+            self.push_log("Escape failed.")
             await self.enemy_turn(interaction)
 
 class PlayerCommands(commands.Cog):
