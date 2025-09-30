@@ -56,8 +56,8 @@ class RPGCog(commands.Cog):
                 "defense": 1,
                 "accuracy": 1.0,
                 "evasion": 1.0,
-                "magic_attack": =0,
-                "magic_defense": =0,
+                "magic_attack": 0,
+                "magic_defense": 0,
                 "gold": 0,
                 "inventory": {}
             }
