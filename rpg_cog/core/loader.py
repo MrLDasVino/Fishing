@@ -3,7 +3,7 @@ import yaml
 from pathlib import Path
 from typing import Dict
 from .registry import items, enemies, regions, shops, quests, dungeons, spells
-from .base import ItemDef, EnemyDef, RegionDef, ShopDef, QuestDef, DungeonDef
+from .base import ItemDef, EnemyDef, RegionDef, ShopDef, QuestDef, DungeonDef, SpellDef
 
 def _validate_unique(ids: Dict[str, str], section: str):
     dupes = [k for k, v in ids.items() if list(ids.values()).count(v) > 1]
@@ -14,7 +14,7 @@ def load_world(path: Path, *, replace: bool = True):
     doc = yaml.safe_load(path.read_text())
     if replace:
         items.clear(); enemies.clear(); regions.clear()
-        shops.clear(); quests.clear(); dungeons.clear()
+        shops.clear(); quests.clear(); dungeons.clear(); spells.clear()
 
     for itm in doc.get("items", []):
         obj = ItemDef(**itm)
@@ -39,3 +39,7 @@ def load_world(path: Path, *, replace: bool = True):
     for d in doc.get("dungeons", []):
         obj = DungeonDef(**d)
         dungeons.register(obj.id, obj)
+    
+    for sp in doc.get("spells", []):
+        obj = SpellDef(**sp)
+        spells.register(obj.id, obj)
