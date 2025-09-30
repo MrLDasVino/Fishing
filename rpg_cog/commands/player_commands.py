@@ -38,10 +38,13 @@ class CombatView(View):
         if getattr(self.enemy_def, "image_url", None):
             embed.set_image(url=self.enemy_def.image_url)
 
-        # stats in description
+        # description: Level, HP/MP, Atk, Def
         embed.description = (
             f"**Level:** {self.enemy_def.level}\n"
-            f"**HP:** {self.enemy_def.hp} | **Attack:** {self.enemy_def.attack} | **Defense:** {self.enemy_def.defense}"
+            f"**HP:** {self.player_stats['hp']} / {self.player_stats['max_hp']}  "
+            f"**MP:** {self.player_stats['mp']} / {self.player_stats['max_mp']}\n"
+            f"**Attack:** {self.player_stats['attack']}  "
+            f"**Defense:** {self.player_stats['defense']}"
         )
 
         # combat log
@@ -52,10 +55,10 @@ class CombatView(View):
         )
 
         # rounds and rewards
-        embed.add_field(name="Rounds", value=str(self.rounds), inline=True)
+        embed.add_field(name="Rounds",      value=str(self.rounds), inline=True)
         embed.add_field(
             name="XP Gained",
-            value=str(self.xp) if self.winner else "—",
+            value=str(self.xp)   if self.winner else "—",
             inline=True
         )
         embed.add_field(
@@ -64,7 +67,7 @@ class CombatView(View):
             inline=True
         )
 
-        # footer for winner
+        # footer with winner
         if self.winner:
             embed.set_footer(text=f"🏆 Winner: {self.winner}")
 
@@ -221,6 +224,8 @@ class PlayerCommands(commands.Cog):
         player_stats = {
             "hp":       state.get("hp",      state.get("max_hp", 20)),
             "max_hp":   state.get("max_hp", 20),
+            "mp":       state.get("mp",      state.get("max_mp", 10)),
+            "max_mp":   state.get("max_mp", 10),
             "attack":   state.get("attack",  5),
             "defense":  state.get("defense", 1),
             "accuracy": state.get("accuracy",1.0),
