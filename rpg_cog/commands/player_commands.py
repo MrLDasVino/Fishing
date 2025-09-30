@@ -1,15 +1,168 @@
 # commands/player_commands.py (fight command excerpt)
 import discord
 import random
+from discord.ui import View, button
 from redbot.core import commands
 from typing import Optional
 
 from ..core.registry import regions, enemies, items
-from ..managers.combat import run_combat
+from ..managers.combat import _roll_hit, _roll_crit, _calc_damage, EnemyInstance, _roll_loot
 from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
 
+class CombatView(View):
+    def __init__(self, ctx: commands.Context, player_stats: dict, enemy_id: str):
+        super().__init__(timeout=120)
+        self.ctx = ctx
+        self.player = ctx.author
+        self.player_stats = player_stats
 
+        # load enemy
+        self.enemy_def = enemies.get(enemy_id)
+        self.enemy = EnemyInstance(self.enemy_def)
+
+        self.log: list[str] = []
+
+    def build_embed(self) -> discord.Embed:
+        e = discord.Embed(
+            title=f"{self.enemy_def.name} — Interactive Battle",
+            color=discord.Color.blurple()
+        )
+        e.add_field(
+            name=f"{self.player.display_name} HP",
+            value=f"{self.player_stats['hp']} / {self.player_stats['max_hp']}",
+            inline=True
+        )
+        e.add_field(
+            name=f"{self.enemy_def.name} HP",
+            value=f"{self.enemy.hp} / {self.enemy_def.hp}",
+            inline=True
+        )
+        recent = "\n".join(self.log[-5:]) or "No actions yet."
+        e.add_field(name="Battle Log", value=recent, inline=False)
+        return e
+
+    async def on_timeout(self):
+        for btn in self.children:
+            btn.disabled = True
+        await self.message.edit(content="🏁 Battle timed out.", view=self)
+
+    async def end_battle(self, interaction: discord.Interaction, won: bool | None):
+        # disable all buttons
+        for btn in self.children:
+            btn.disabled = True
+
+        # award rewards on victory
+        if won:
+            xp = self.enemy_def.base_xp
+            gold = random.randint(*self.enemy_def.gold_range)
+            loot = _roll_loot(self.enemy_def.loot_table)
+            self.log.append(f"🏆 Victory! XP {xp} Gold {gold} Loot {loot}")
+
+            # persist into Config
+            user = self.player
+            state = await self.ctx.cog.parent.ensure_player_state(user)
+            # apply gold + loot
+            state["gold"] = state.get("gold", 0) + gold
+            inv = state.setdefault("inventory", {})
+            for iid, qty in loot.items():
+                inv[iid] = inv.get(iid, 0) + qty
+
+            # apply XP & level-up
+            from ..managers.xp import apply_xp
+            xp_out = apply_xp(state, xp)
+            state = xp_out["player"]
+            await self.ctx.cog.parent.config.user(user).set(state)
+
+        else:
+            self.log.append("💀 Defeat or Escaped.")
+            # partial HP is already in self.player_stats
+
+            # write back HP so explore flow respects your damage
+            user = self.player
+            state = await self.ctx.cog.parent.ensure_player_state(user)
+            state["hp"] = self.player_stats["hp"]
+            await self.ctx.cog.parent.config.user(user).set(state)
+
+        await interaction.response.edit_message(embed=self.build_embed(), view=self)
+        self.stop()
+
+    async def enemy_turn(self, interaction: discord.Interaction):
+        # enemy attacks
+        if _roll_hit(1.0, self.player_stats.get("evasion", 1.0)):
+            crit = _roll_crit()
+            dmg = _calc_damage(
+                self.enemy_def.attack,
+                self.player_stats.get("defense", 0),
+                crit
+            )
+            # apply any defend multiplier
+            dmg = int(dmg * self.player_stats.pop("_defend_bonus", 1.0))
+            self.player_stats["hp"] = max(0, self.player_stats["hp"] - dmg)
+            self.log.append(f"{self.enemy_def.name} hits for {dmg}{' crit' if crit else ''}")
+        else:
+            self.log.append(f"{self.enemy_def.name} misses")
+
+        if self.player_stats["hp"] <= 0:
+            await self.end_battle(interaction, won=False)
+        else:
+            await interaction.response.edit_message(embed=self.build_embed(), view=self)
+
+    @button(label="Attack", style=discord.ButtonStyle.primary)
+    async def attack(self, interaction: discord.Interaction, _):
+        if interaction.user != self.player:
+            return await interaction.response.send_message("Not your battle!", ephemeral=True)
+
+        # player attack
+        if _roll_hit(self.player_stats["accuracy"], self.enemy_def.level + self.enemy_def.defense):
+            crit = _roll_crit()
+            dmg = _calc_damage(self.player_stats["attack"], self.enemy_def.defense, crit)
+            applied = self.enemy.receive_damage(dmg)
+            self.log.append(f"You hit for {applied}{' crit' if crit else ''}")
+        else:
+            self.log.append("You miss")
+
+        if not self.enemy.is_alive():
+            return await self.end_battle(interaction, won=True)
+
+        await self.enemy_turn(interaction)
+
+    @button(label="Defend", style=discord.ButtonStyle.secondary)
+    async def defend(self, interaction: discord.Interaction, _):
+        if interaction.user != self.player:
+            return await interaction.response.send_message("Not your battle!", ephemeral=True)
+
+        self.log.append("You brace yourself.")
+        self.player_stats["_defend_bonus"] = 0.5
+        await self.enemy_turn(interaction)
+
+    @button(label="Skill", style=discord.ButtonStyle.success)
+    async def skill(self, interaction: discord.Interaction, _):
+        if interaction.user != self.player:
+            return await interaction.response.send_message("Not your battle!", ephemeral=True)
+
+        self.log.append("No skills yet.")
+        await interaction.response.edit_message(embed=self.build_embed(), view=self)
+
+    @button(label="Item", style=discord.ButtonStyle.primary)
+    async def item(self, interaction: discord.Interaction, _):
+        if interaction.user != self.player:
+            return await interaction.response.send_message("Not your battle!", ephemeral=True)
+
+        self.log.append("Item menu not implemented.")
+        await interaction.response.edit_message(embed=self.build_embed(), view=self)
+
+    @button(label="Escape", style=discord.ButtonStyle.danger)
+    async def escape(self, interaction: discord.Interaction, _):
+        if interaction.user != self.player:
+            return await interaction.response.send_message("Not your battle!", ephemeral=True)
+
+        if random.random() < 0.5:
+            self.log.append("Escaped successfully!")
+            await self.end_battle(interaction, won=None)
+        else:
+            self.log.append("Escape failed.")
+            await self.enemy_turn(interaction)
 
 class PlayerCommands(commands.Cog):
     def __init__(self, parent):
@@ -52,67 +205,18 @@ class PlayerCommands(commands.Cog):
         # 3) Ensure the player state via your RPGCog
         player = await self.parent.ensure_player_state(ctx.author)
 
-        # 4) Run your existing combat routine
-        result = run_combat(player, eid)
-
-        # ─── Apply XP (with level‐ups & stat gains) ───
-        user_conf = self.parent.config.user(ctx.author)
-        data = await user_conf.all()                  # fetch xp, level, hp, attack, etc.
-        out = apply_xp(data, result.xp)               # returns {"player": new_dict, "leveled": [levels]}
-        new_player = out["player"]
-        leveled = out["leveled"]
-
-        # write back every modified stat
-        await user_conf.xp.set(new_player["xp"])
-        await user_conf.level.set(new_player["level"])
-        await user_conf.max_hp.set(new_player["max_hp"])
-        await user_conf.hp.set(new_player["hp"])
-        await user_conf.attack.set(new_player["attack"])
-        await user_conf.defense.set(new_player["defense"])
-
-        # persist gold on top of XP flow
-        old_gold = await user_conf.gold()
-        await user_conf.gold.set(old_gold + result.gold)
-
-        # notify about levels gained
-        for lvl in leveled:
-            await ctx.send(f"🎉 You reached level {lvl}! (+5 HP, +1 Atk, +1 Def)")
-
-        # 5) Retrieve the enemy definition for banner & name
-        enemy_def = enemies.get(eid)
-
-        # 6) Build a “Combat Log” embed with stats above the log
-        embed = discord.Embed(
-            title=f"{enemy_def.name} - Battle",
-            color=discord.Color.random()
-        )
-
-        # full‐width banner
-        if getattr(enemy_def, "image_url", None):
-            embed.set_image(url=enemy_def.image_url)
-
-        # stats in the description: Level on its own, then HP|Attack|Defense
-        embed.description = (
-            f"**Level:** {enemy_def.level}\n"
-            f"**HP:** {enemy_def.hp} | **Attack:** {enemy_def.attack} | **Defense:** {enemy_def.defense}"
-        )
-
-        # combat transcript
-        embed.add_field(
-            name="Combat Log",
-            value="\n".join(result.log),
-            inline=False
-        )
-
-        # round counter + rewards
-        embed.add_field(name="Rounds", value=str(result.rounds), inline=True)
-        embed.add_field(name="XP Gained", value=str(result.xp), inline=True)
-        embed.add_field(name="Gold Gained", value=str(result.gold), inline=True)
-
-        # outcome in footer
-        embed.set_footer(text=f"🏆 Winner: {result.winner}")
-
-        await ctx.send(embed=embed)
+        # 4) instead of run_combat/embed, launch interactive view:
+        state = await self.parent.ensure_player_state(ctx.author)
+        player_stats = {
+            "hp":    state.get("hp",    state.get("max_hp", 20)),
+            "max_hp":state.get("max_hp",20),
+            "attack":state.get("attack",5),
+            "defense":state.get("defense",1),
+            "accuracy":state.get("accuracy",1.0),
+            "evasion":state.get("evasion",1.0),
+        }
+        view = CombatView(ctx, player_stats, eid, cog=self)
+        view.message = await ctx.send(embed=view.build_embed(), view=view)
 
 
     @rpg.command()
