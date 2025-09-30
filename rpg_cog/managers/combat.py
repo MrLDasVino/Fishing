@@ -1,4 +1,3 @@
-# managers/combat.py
 import random
 from dataclasses import dataclass
 from typing import Dict, List
@@ -7,6 +6,9 @@ from ..core.registry import enemies
 CRIT_CHANCE = 0.06
 CRIT_MULT = 1.75
 HIT_BASE = 0.8
+
+# allow each hit to vary by ±10%
+DMG_VARIANCE = 0.10
 
 @dataclass
 class CombatResult:
@@ -25,7 +27,7 @@ class EnemyInstance:
     def is_alive(self):
         return self.hp > 0
 
-    def receive_damage(self, dmg:int):
+    def receive_damage(self, dmg: int):
         applied = max(0, dmg - self.defn.defense)
         self.hp = max(0, self.hp - applied)
         return applied
@@ -38,8 +40,21 @@ def _roll_crit() -> bool:
     return random.random() < CRIT_CHANCE
 
 def _calc_damage(attack: int, defense: int, crit: bool) -> int:
+    """
+    Calculate core damage, apply crit multiplier, then vary it by ±DMG_VARIANCE.
+    Returns at least 1.
+    """
+    # 1) Base damage before random swing
     base = max(1, attack - int(defense * 0.5))
-    return int(base * (CRIT_MULT if crit else 1.0))
+    dmg = base * (CRIT_MULT if crit else 1.0)
+
+    # 2) Apply ±10% variation
+    variance = random.uniform(1 - DMG_VARIANCE, 1 + DMG_VARIANCE)
+    swung = dmg * variance
+
+    # 3) Round and clamp
+    final = max(1, round(swung))
+    return final
 
 def _roll_loot(loot_table) -> Dict[str, int]:
     drops = {}

@@ -225,14 +225,15 @@ class PlayerCommands(commands.Cog):
         await self.parent.config.user(user).set(state)
         await ctx.send(f"You used **{item_id}** and recovered **{heal_amount} HP**. Current HP: **{state['hp']}/{state['max_hp']}**.")
 
-    @rpg.command(name="rest", help="Rest to restore your HP completely.")
+    @rpg.command(name="rest", help="Rest to restore your HP and MP completely.")
     async def rest(self, ctx):
-        """Rest to restore to full HP."""
+        """Rest to restore to full HP and MP."""
         user = ctx.author
         state = await self.parent.ensure_player_state(user)
 
         # Fully heal the player (no cost)
         state["hp"] = state.get("max_hp", 20)
+        state["mp"] = state.get("max_mp", 10)    # ← refill MP
         await self.parent.config.user(user).set(state)
 
         # Build and send a rich embed
@@ -241,12 +242,16 @@ class PlayerCommands(commands.Cog):
             description="You feel completely refreshed and your wounds are healed.",
             color=discord.Color.random()
         )
-        # Full-width banner image (replace with your own URL)
         embed.set_image(url="https://files.catbox.moe/v8f5vk.png")
         embed.add_field(
             name="HP",
             value=f"{state['hp']}/{state['max_hp']}",
-            inline=False
+            inline=True
+        )
+        embed.add_field(
+            name="MP",                            # ← new
+            value=f"{state['mp']}/{state['max_mp']}",
+            inline=True
         )
         await ctx.send(embed=embed)
         
@@ -280,10 +285,11 @@ class PlayerCommands(commands.Cog):
 
    
 
+
     @rpg.command(name="stats", help="Show your current RPG stats and level progress.")
     async def rpg_stats(self, ctx: commands.Context):
         """
-        Display the calling user's stats: level, XP, HP, attack, defense, etc.,
+        Display the calling user's stats: level, XP, HP, MP, attack, defense, etc.,
         plus how much XP is needed for the next level.
         """
         user = ctx.author
@@ -298,8 +304,8 @@ class PlayerCommands(commands.Cog):
             title=f"{user.display_name}'s RPG Stats",
             color=discord.Color.random()
         )
-        # Full-width banner image for stats (replace with your own URL)
         embed.set_image(url="https://files.catbox.moe/eu2ad8.png")
+
         # Level & XP
         embed.add_field(name="Level", value=str(lvl), inline=True)
         embed.add_field(name="XP", value=f"{xp} / {next_xp}", inline=True)
@@ -308,6 +314,11 @@ class PlayerCommands(commands.Cog):
         embed.add_field(
             name="HP",
             value=f"{data['hp']} / {data['max_hp']}",
+            inline=True
+        )
+        embed.add_field(
+            name="MP",                              # ← new
+            value=f"{data['mp']} / {data['max_mp']}",
             inline=True
         )
         embed.add_field(name="Attack", value=str(data["attack"]), inline=True)
@@ -334,5 +345,5 @@ class PlayerCommands(commands.Cog):
             inline=True
         )
 
-        await ctx.send(embed=embed)        
+        await       
 

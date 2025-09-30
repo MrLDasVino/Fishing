@@ -22,6 +22,8 @@ class RPGCog(commands.Cog):
             xp=0,
             hp=20,
             max_hp=20,
+            mp=10,        # ← new
+            max_mp=10,    # ← new
             attack=5,
             defense=1,
             accuracy=1.0,
@@ -46,6 +48,8 @@ class RPGCog(commands.Cog):
                 "xp": 0,
                 "hp": 20,
                 "max_hp": 20,
+                "mp": 10,        # ← new
+                "max_mp": 10,    # ← new
                 "attack": 5,
                 "defense": 1,
                 "accuracy": 1.0,
