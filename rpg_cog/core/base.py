@@ -60,5 +60,5 @@ class SpellDef:
     description: str
     power: int            # base magic damage
     cost: int             # MP cost
-    crit_chance: float = CRIT_CHANCE
-    variance: float = DMG_VARIANCE    
+    crit_chance: float = 0.06    # default 6% crit
+    variance: float = 0.10       # ±10% damage variance    
