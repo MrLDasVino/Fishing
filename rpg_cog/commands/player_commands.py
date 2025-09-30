@@ -18,7 +18,13 @@ def humanize(item_id: str) -> str:
     return item_id.replace("_", " ").title()
 
 class CombatView(View):
-    def __init__(self, ctx: commands.Context, player_stats: dict, enemy_id: str):
+    def __init__(
+        self,
+        ctx: commands.Context,
+        player_stats: dict,
+        enemy_id: str,
+        known_spells: list[str],      # ← new parameter
+    ):
         super().__init__(timeout=120)
         self.ctx = ctx
         self.player = ctx.author
@@ -36,12 +42,11 @@ class CombatView(View):
         self.winner: str | None = None
         self.log: list[str] = []
         
-       # Add buttons only for spells the user has learned
-       user_state = await self.ctx.cog.parent.config.user(self.player).all()
-       known = set(user_state.get("spells", []))
-       for spell in spells.all():
-           if spell.id in known:
-               self.add_item(SpellButton(spell, self))        
+        # register Spell buttons only for learned spells
+        for spell_id in known_spells:
+            spell_def = spells.get(spell_id)
+            if spell_def:
+                self.add_item(SpellButton(spell_def, self))        
         
     # helper to append and trim log to last 5 entries
     def push_log(self, entry: str):
@@ -250,30 +255,29 @@ class SpellButton(discord.ui.Button):
         if interaction.user != view.player:
             return await interaction.response.send_message("Not your battle!", ephemeral=True)
 
-        # 1) Check MP cost
+        # check MP
         if view.player_stats["mp"] < self.spell.cost:
             view.push_log("Not enough MP.")
             return await interaction.response.edit_message(embed=view.build_embed(), view=view)
 
-        # 2) Deduct MP
+        # deduct MP & cast
         view.player_stats["mp"] -= self.spell.cost
-
-        # 3) Magic hit roll
         if _roll_hit(view.player_stats["accuracy"], view.enemy_def.magic_defense):
             dmg = calc_magic(
                 view.player_stats["magic_attack"] + self.spell.power,
                 view.enemy_def.magic_defense
             )
             applied = view.enemy.receive_damage(dmg)
-            view.push_log(f"You cast {self.spell.name} for {applied}{' crit' if dmg > applied else ''}")
+            view.push_log(f"You cast {self.spell.name} for {applied}")
         else:
             view.push_log(f"{self.spell.name} missed")
 
-        # 4) Victory or enemy turn
+        # aftermath
         if not view.enemy.is_alive():
             return await view.end_battle(interaction, won=True)
         await view.enemy_turn(interaction)
         await interaction.response.edit_message(embed=view.build_embed(), view=view)
+
             
 
 class PlayerCommands(commands.Cog):
@@ -314,8 +318,9 @@ class PlayerCommands(commands.Cog):
                 f"Unknown region `{region}`. Try: {', '.join(regions.keys())}"
             )
 
-        # 2) Ensure full player state (fills missing keys but respects HP)
+        # 2) Ensure full player state and pull known spells
         state = await self.parent.ensure_player_state(ctx.author)
+        known_spells = state.get("spells", [])
 
         # 3) Build player_stats, re-using current_hp
         player_stats = {
@@ -338,7 +343,7 @@ class PlayerCommands(commands.Cog):
         eid = random.choice(pool)
 
         # 5) Launch interactive CombatView
-        view = CombatView(ctx, player_stats, eid)
+        view = CombatView(ctx, player_stats, eid, known_spells)
         view.message = await ctx.send(embed=view.build_embed(), view=view)
 
 
