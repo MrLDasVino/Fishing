@@ -32,7 +32,7 @@ class CombatView(View):
     # helper to append and trim log to last 5 entries
     def push_log(self, entry: str):
         self.log.append(entry)
-        if len(self.log) > 5:
+        if len(self.log) > 8:
             self.log.pop(0)        
 
     def build_embed(self) -> discord.Embed:
