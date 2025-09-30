@@ -622,42 +622,85 @@ class PlayerCommands(commands.Cog):
 
         await self.parent.config.user(user).set(state) 
 
-    @rpg.command(name="shop", help="Show the inventory of a shop (items and spells).")
-    async def rpg_shop(self, ctx: commands.Context, shop_id: str):
-        """
-        Usage: !rpg shop <shop_id>
-        """
+    @rpg.command(name="shop", help="Show the inventory of a shop.")
+    async def rpg_shop(self, ctx, shop_id: str):
         shop = shops.get(shop_id)
         if not shop:
             return await ctx.send(f"No such shop: `{shop_id}`.")
+    
+        view = ShopView(shop)
+        await ctx.send(embed=view.current_embed(), view=view)
 
-        embed = discord.Embed(
-            title=f"🏪 Shop: {shop_id}",
-            color=discord.Color.blue()
+class ShopView(View):
+    def __init__(self, shop):
+        super().__init__(timeout=120)
+        self.shop = shop
+
+        # Group items by category  
+        groups = defaultdict(list)
+        for item_id, cost in shop.inventory.items():
+            itm = items.get(item_id)
+            cat = getattr(itm, "category", "Miscellaneous")
+            name = getattr(itm, "name", item_id)
+            groups[cat].append(f"**{name}** — {cost}g")
+
+        # Two categories per page  
+        cats = list(groups.items())
+        self.pages = [dict(cats[i : i + 2]) for i in range(0, len(cats), 2)]
+        self.page = 0
+
+        # Prev/Next buttons  
+        self.add_item(self.Prev(self))
+        self.add_item(self.Next(self))
+
+    def current_embed(self) -> discord.Embed:
+        e = discord.Embed(
+            title=f"🏪 {self.shop.name or self.shop.id}",
+            color=Color.blue()
         )
+        if self.shop.thumbnail:
+            e.set_thumbnail(url=self.shop.thumbnail)
+        e.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
 
-        # Items for sale
-        if shop.inventory:
-            lines = []
-            for item_id, cost in shop.inventory.items():
-                item_def = items.get(item_id)
-                name = item_def.name if item_def else humanize(item_id)
-                lines.append(f"**{name}** — {cost} Gold")
-            embed.add_field(name="🛒 Items for Sale", value="\n".join(lines), inline=False)
-        else:
-            embed.add_field(name="🛒 Items for Sale", value="None", inline=False)
+        for cat, lines in self.pages[self.page].items():
+            e.add_field(name=f"📦 {cat}", value="\n".join(lines), inline=False)
 
-        # Spells for sale (if any)
-        if getattr(shop, "spell_inventory", None):
-            if shop.spell_inventory:
-                lines = []
-                for spell_id, cost in shop.spell_inventory.items():
-                    spell_def = spells.get(spell_id)
-                    name = spell_def.name if spell_def else spell_id
-                    lines.append(f"**{name}** — {cost} Gold")
-                embed.add_field(name="✨ Spells for Sale", value="\n".join(lines), inline=False)
+        # Show spells on last page  
+        if self.page == len(self.pages) - 1 and self.shop.spell_inventory:
+            spell_lines = [
+                f"**{spells[s].name}** — {c}g"
+                for s, c in self.shop.spell_inventory.items()
+            ]
+            e.add_field(name="✨ Spells", value="\n".join(spell_lines), inline=False)
+
+        return e
+
+    class Prev(Button):
+        def __init__(self, parent: "ShopView"):
+            super().__init__(label="⏮️", style=ButtonStyle.secondary)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            if self.parent.page > 0:
+                self.parent.page -= 1
+                await interaction.response.edit_message(
+                    embed=self.parent.current_embed(), view=self.parent
+                )
             else:
-                embed.add_field(name="✨ Spells for Sale", value="None", inline=False)
+                await interaction.response.defer()
 
-        await ctx.send(embed=embed)        
+    class Next(Button):
+        def __init__(self, parent: "ShopView"):
+            super().__init__(label="⏭️", style=ButtonStyle.secondary)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            if self.parent.page < len(self.parent.pages) - 1:
+                self.parent.page += 1
+                await interaction.response.edit_message(
+                    embed=self.parent.current_embed(), view=self.parent
+                )
+            else:
+                await interaction.response.defer()
+        
 

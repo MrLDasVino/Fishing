@@ -85,9 +85,13 @@ regions:
 
 shops:
   - id: mill_trader
+    name: "Old Mill Trader"                
     region: old_mill
+    thumbnail: ""  
     inventory:
       potion_common: 10
+      
+     
 
 quests:
   - id: quest_save_farm
