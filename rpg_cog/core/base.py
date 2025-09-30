@@ -17,6 +17,8 @@ class EnemyDef:
     hp: int
     attack: int
     defense: int
+    magic_attack: int = 0    
+    magic_defense: int = 0      
     base_xp: int = 0
     gold_range: List[int] = field(default_factory=lambda: [0, 0])
     loot_table: List[Dict[str, Any]] = field(default_factory=list)

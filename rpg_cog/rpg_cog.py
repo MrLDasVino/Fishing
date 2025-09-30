@@ -22,12 +22,14 @@ class RPGCog(commands.Cog):
             xp=0,
             hp=20,
             max_hp=20,
-            mp=10,        # ← new
-            max_mp=10,    # ← new
+            mp=10,        
+            max_mp=10,    
             attack=5,
             defense=1,
             accuracy=1.0,
             evasion=1.0,
+            magic_attack=0,      
+            magic_defense=0,                 
             gold=0,
             inventory={}
         )
@@ -48,12 +50,14 @@ class RPGCog(commands.Cog):
                 "xp": 0,
                 "hp": 20,
                 "max_hp": 20,
-                "mp": 10,        # ← new
-                "max_mp": 10,    # ← new
+                "mp": 10,        
+                "max_mp": 10,    
                 "attack": 5,
                 "defense": 1,
                 "accuracy": 1.0,
                 "evasion": 1.0,
+                "magic_attack"=0,      
+                "magic_defense"=0,                     
                 "gold": 0,
                 "inventory": {}
             }
