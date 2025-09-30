@@ -54,7 +54,7 @@ class CombatView(View):
 
         # Player stats field
         embed.add_field(
-            name=f"{self.player.display_name} ▶️",
+            name=f"{self.player.display_name} ⚔️",
             value=(
                 f"HP: {p_hp}/{p_max}  `{bar(p_fill)}`\n"
                 f"MP: {self.player_stats['mp']}/{self.player_stats['max_mp']}  `{bar(int(self.player_stats['mp']/self.player_stats['max_mp']*10))}`\n"
@@ -227,7 +227,10 @@ class PlayerCommands(commands.Cog):
         Explore a region to fight a random enemy in it.
         Example: !rpg explore old_mill
         """
-        # 1) lookup region by id or human name
+        # 1) ensure player state & block if HP is zero
+        state = await self.parent.ensure_player_state(ctx.author)
+        if state.get("hp", 0) <= 0:
+            return await ctx.send(":broken_heart: You’re out of HP! Heal up before you explore.")
         match = None
         for rid in regions.keys():
             rdef = regions.get(rid)
