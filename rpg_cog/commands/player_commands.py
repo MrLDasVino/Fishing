@@ -21,6 +21,12 @@ class CombatView(View):
         self.enemy_def = enemies.get(enemy_id)
         self.enemy = EnemyInstance(self.enemy_def)
 
+        # battle state counters (must exist before you build the embed)
+        self.rounds = 0
+        self.xp = 0
+        self.gold = 0
+        self.loot: dict[str, int] = {}
+        self.winner: str | None = None
         self.log: list[str] = []
 
     def build_embed(self) -> discord.Embed:
