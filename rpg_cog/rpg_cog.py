@@ -60,6 +60,7 @@ class RPGCog(commands.Cog):
                 "magic_defense": 0,
                 "gold": 0,
                 "inventory": {}
+                "spells": []                
             }
             await self.config.user(user).set(state)
         return state

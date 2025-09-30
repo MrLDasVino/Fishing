@@ -5,7 +5,7 @@ from discord.ui import View, button
 from redbot.core import commands
 from typing import Optional
 
-from ..core.registry import regions, enemies, items, spells
+from ..core.registry import regions, enemies, items, shops, spells
 from ..managers.combat import _roll_hit, _roll_crit, _calc_damage, EnemyInstance, _roll_loot
 from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
@@ -36,8 +36,12 @@ class CombatView(View):
         self.winner: str | None = None
         self.log: list[str] = []
         
-        for spell in spells.all():
-            self.add_item(SpellButton(spell, self))        
+       # Add buttons only for spells the user has learned
+       user_state = await self.ctx.cog.parent.config.user(self.player).all()
+       known = set(user_state.get("spells", []))
+       for spell in spells.all():
+           if spell.id in known:
+               self.add_item(SpellButton(spell, self))        
         
     # helper to append and trim log to last 5 entries
     def push_log(self, entry: str):
@@ -495,5 +499,82 @@ class PlayerCommands(commands.Cog):
             inline=True
         )
 
-        await ctx.send(embed=embed)      
+        await ctx.send(embed=embed) 
+
+    @rpg.command(name="buy", help="Buy an item or spell from a shop.")
+    async def rpg_buy(self, ctx: commands.Context, shop_id: str, thing_id: str):
+        """
+        Usage: !rpg buy <shop_id> <item_or_spell_id>
+        """
+        user = ctx.author
+        state = await self.parent.ensure_player_state(user)
+        shop = shops.get(shop_id)
+        if not shop:
+            return await ctx.send(f"No such shop: `{shop_id}`")
+
+        # decide if we're buying an item or a spell
+        if thing_id in shop.inventory:
+            cost = shop.inventory[thing_id]
+            category = "item"
+        elif getattr(shop, "spell_inventory", None) and thing_id in shop.spell_inventory:
+            cost = shop.spell_inventory[thing_id]
+            category = "spell"
+        else:
+            return await ctx.send(f"`{shop_id}` doesn't offer `{thing_id}`.")
+
+        # check gold
+        if state["gold"] < cost:
+            return await ctx.send(f"You need {cost} gold to buy `{thing_id}`, but you have {state['gold']}.")
+
+        # deduct & grant
+        state["gold"] -= cost
+        if category == "item":
+            inv = state.setdefault("inventory", {})
+            inv[thing_id] = inv.get(thing_id, 0) + 1
+        else:  # spell
+            known = state.setdefault("spells", [])
+            if thing_id in known:
+                return await ctx.send(f"You already know `{thing_id}`.")
+            known.append(thing_id)
+
+        await self.parent.config.user(user).set(state) 
+
+    @rpg.command(name="shop", help="Show the inventory of a shop (items and spells).")
+    async def rpg_shop(self, ctx: commands.Context, shop_id: str):
+        """
+        Usage: !rpg shop <shop_id>
+        """
+        shop = shops.get(shop_id)
+        if not shop:
+            return await ctx.send(f"No such shop: `{shop_id}`.")
+
+        embed = discord.Embed(
+            title=f"🏪 Shop: {shop_id}",
+            color=discord.Color.blue()
+        )
+
+        # Items for sale
+        if shop.inventory:
+            lines = []
+            for item_id, cost in shop.inventory.items():
+                item_def = items.get(item_id)
+                name = item_def.name if item_def else humanize(item_id)
+                lines.append(f"**{name}** — {cost} Gold")
+            embed.add_field(name="🛒 Items for Sale", value="\n".join(lines), inline=False)
+        else:
+            embed.add_field(name="🛒 Items for Sale", value="None", inline=False)
+
+        # Spells for sale (if any)
+        if getattr(shop, "spell_inventory", None):
+            if shop.spell_inventory:
+                lines = []
+                for spell_id, cost in shop.spell_inventory.items():
+                    spell_def = spells.get(spell_id)
+                    name = spell_def.name if spell_def else spell_id
+                    lines.append(f"**{name}** — {cost} Gold")
+                embed.add_field(name="✨ Spells for Sale", value="\n".join(lines), inline=False)
+            else:
+                embed.add_field(name="✨ Spells for Sale", value="None", inline=False)
+
+        await ctx.send(embed=embed)        
 

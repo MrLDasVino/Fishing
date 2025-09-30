@@ -37,6 +37,7 @@ class ShopDef:
     id: str
     region: Optional[str] = None
     inventory: Dict[str, int] = field(default_factory=dict)
+    spell_inventory: Dict[str, int] = field(default_factory=dict)  # spell_id → gold cost    
 
 @dataclass
 class QuestDef:

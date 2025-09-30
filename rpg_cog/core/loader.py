@@ -2,7 +2,7 @@
 import yaml
 from pathlib import Path
 from typing import Dict
-from .registry import items, enemies, regions, shops, quests, dungeons
+from .registry import items, enemies, regions, shops, quests, dungeons, spells
 from .base import ItemDef, EnemyDef, RegionDef, ShopDef, QuestDef, DungeonDef
 
 def _validate_unique(ids: Dict[str, str], section: str):
