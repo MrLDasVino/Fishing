@@ -30,35 +30,61 @@ class CombatView(View):
         self.log: list[str] = []
 
     def build_embed(self) -> discord.Embed:
+        # helper to draw a bar of length `size` with `filled` segments
+        def bar(filled: int, size: int = 10) -> str:
+            full = "█"
+            empty = "░"
+            return full * filled + empty * (size - filled)
+
+        # calculate fill amounts
+        p_hp = self.player_stats["hp"]
+        p_max = self.player_stats["max_hp"]
+        e_hp = self.enemy.hp
+        e_max = self.enemy_def.hp
+
+        p_fill = int((p_hp / p_max) * 10)
+        e_fill = int((e_hp / e_max) * 10)
+
         embed = discord.Embed(
             title=f"{self.enemy_def.name} - Battle",
             color=discord.Color.random()
         )
-        # full-width banner
-        if getattr(self.enemy_def, "image_url", None):
+        if self.enemy_def.image_url:
             embed.set_image(url=self.enemy_def.image_url)
 
-        # description: Level, HP/MP, Atk, Def
-        embed.description = (
-            f"**Level:** {self.enemy_def.level}\n"
-            f"**HP:** {self.player_stats['hp']} / {self.player_stats['max_hp']}  "
-            f"**MP:** {self.player_stats['mp']} / {self.player_stats['max_mp']}\n"
-            f"**Attack:** {self.player_stats['attack']}  "
-            f"**Defense:** {self.player_stats['defense']}"
+        # Player stats field
+        embed.add_field(
+            name=f"{self.player.display_name} ▶️",
+            value=(
+                f"HP: {p_hp}/{p_max}  `{bar(p_fill)}`\n"
+                f"MP: {self.player_stats['mp']}/{self.player_stats['max_mp']}  `{bar(int(self.player_stats['mp']/self.player_stats['max_mp']*10))}`\n"
+                f"Atk: {self.player_stats['attack']}  Def: {self.player_stats['defense']}"
+            ),
+            inline=False
         )
 
-        # combat log
+        # Enemy stats field
+        embed.add_field(
+            name=f"{self.enemy_def.name} ⚔️",
+            value=(
+                f"HP: {e_hp}/{e_max}  `{bar(e_fill)}`\n"
+                f"Atk: {self.enemy_def.attack}  Def: {self.enemy_def.defense}"
+            ),
+            inline=False
+        )
+
+        # Combat log
         embed.add_field(
             name="Combat Log",
             value="\n".join(self.log) or "―",
             inline=False
         )
 
-        # rounds and rewards
-        embed.add_field(name="Rounds",      value=str(self.rounds), inline=True)
+        # Rounds & rewards
+        embed.add_field(name="Rounds", value=str(self.rounds), inline=True)
         embed.add_field(
             name="XP Gained",
-            value=str(self.xp)   if self.winner else "—",
+            value=str(self.xp) if self.winner else "—",
             inline=True
         )
         embed.add_field(
@@ -67,11 +93,11 @@ class CombatView(View):
             inline=True
         )
 
-        # footer with winner
         if self.winner:
             embed.set_footer(text=f"🏆 Winner: {self.winner}")
 
         return embed
+
 
     async def end_battle(self, interaction: discord.Interaction, won: bool | None):
         for btn in self.children:
