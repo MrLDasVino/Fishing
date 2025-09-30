@@ -228,26 +228,29 @@ class PlayerCommands(commands.Cog):
         Example: !rpg explore old_mill
         """
 
-        # 1) Region lookup unchanged
-        match = None
-        for rid, rdef in regions.items():
-            if rid.lower() == region.lower() or rdef.name.lower() == region.lower():
-                match = rdef
-                break
-        if not match:
-            return await ctx.send(f"Unknown region `{region}`. Try: {', '.join(regions.keys())}")
-
-        # 2) Fetch raw config to check HP without writing defaults
+        # 0) Check raw HP so we don't auto-heal or allow 0 HP
         user_conf = self.parent.config.user(ctx.author)
         data = await user_conf.all()
         current_hp = data.get("hp", data.get("max_hp", 20))
         if current_hp <= 0:
             return await ctx.send(":broken_heart: You’re out of HP! Heal up before you explore.")
 
-        # 3) Now ensure the rest of your state (fills missing keys but won't override hp)
+        # 1) Region lookup by id or human name
+        match = None
+        for rid in regions.keys():
+            rdef = regions.get(rid)
+            if rid.lower() == region.lower() or rdef.name.lower() == region.lower():
+                match = rdef
+                break
+        if not match:
+            return await ctx.send(
+                f"Unknown region `{region}`. Try: {', '.join(regions.keys())}"
+            )
+
+        # 2) Ensure full player state (fills missing keys but respects HP)
         state = await self.parent.ensure_player_state(ctx.author)
 
-        # 4) Build your player_stats dict, re-using current_hp
+        # 3) Build player_stats, re-using current_hp
         player_stats = {
             "hp":       current_hp,
             "max_hp":   state.get("max_hp", 20),
@@ -259,15 +262,16 @@ class PlayerCommands(commands.Cog):
             "evasion":  state.get("evasion", 1.0),
         }
 
-        # 5) Pick an enemy
+        # 4) Pick a random enemy
         pool = match.enemies
         if not pool:
             return await ctx.send(f"No enemies in region `{match.name}`")
         eid = random.choice(pool)
 
-        # 6) Launch the interactive CombatView
+        # 5) Launch interactive CombatView
         view = CombatView(ctx, player_stats, eid)
         view.message = await ctx.send(embed=view.build_embed(), view=view)
+
 
 
 
