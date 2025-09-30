@@ -205,18 +205,21 @@ class PlayerCommands(commands.Cog):
         # 3) Ensure the player state via your RPGCog
         player = await self.parent.ensure_player_state(ctx.author)
 
-        # 4) instead of run_combat/embed, launch interactive view:
+        # 4) Launch interactive combat view instead of one-shot resolve
         state = await self.parent.ensure_player_state(ctx.author)
         player_stats = {
-            "hp":    state.get("hp",    state.get("max_hp", 20)),
-            "max_hp":state.get("max_hp",20),
-            "attack":state.get("attack",5),
-            "defense":state.get("defense",1),
-            "accuracy":state.get("accuracy",1.0),
-            "evasion":state.get("evasion",1.0),
+            "hp":       state.get("hp",      state.get("max_hp", 20)),
+            "max_hp":   state.get("max_hp", 20),
+            "attack":   state.get("attack",  5),
+            "defense":  state.get("defense", 1),
+            "accuracy": state.get("accuracy",1.0),
+            "evasion":  state.get("evasion", 1.0),
         }
-        view = CombatView(ctx, player_stats, eid, cog=self)
-        view.message = await ctx.send(embed=view.build_embed(), view=view)
+        view = CombatView(ctx, player_stats, eid)
+        view.message = await ctx.send(
+            embed=view.build_embed(),
+            view=view
+        )
 
 
     @rpg.command()
