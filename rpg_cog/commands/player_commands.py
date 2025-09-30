@@ -1,7 +1,9 @@
 # commands/player_commands.py (fight command excerpt)
 import discord
 import random
-from discord.ui import View, button
+from collections import defaultdict
+from discord import ButtonStyle, Color
+from discord.ui import View, Button, button
 from redbot.core import commands
 from typing import Optional
 
