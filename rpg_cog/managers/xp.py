@@ -23,6 +23,10 @@ def apply_xp(player: Dict, gained_xp: int) -> Dict:
         # Attack/Defense gains
         player["attack"] += 1
         player["defense"] += 1
+        
+        # Magic Attack/Defense gains
+        player["magic_attack"] = player.get("magic_attack", 0) + 1
+        player["magic_defense"] = player.get("magic_defense", 0) + 1        
 
         leveled.append(player["level"])
     return {"player": player, "leveled": leveled}

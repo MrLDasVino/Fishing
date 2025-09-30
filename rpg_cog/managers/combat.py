@@ -51,10 +51,26 @@ def _calc_damage(attack: int, defense: int, crit: bool) -> int:
     # 2) Apply ±10% variation
     variance = random.uniform(1 - DMG_VARIANCE, 1 + DMG_VARIANCE)
     swung = dmg * variance
+    
 
     # 3) Round and clamp
     final = max(1, round(swung))
-    return final
+    return 
+    
+def calc_physical(atk: int, df: int) -> int:
+    """
+    Physical damage: uses physical attack/defense.
+    """
+    crit = _roll_crit()
+    return _calc_damage(atk, df, crit)
+
+def calc_magic(matk: int, mdef: int) -> int:
+    """
+    Magic damage: uses magic attack/defense.
+    """
+    crit = _roll_crit()
+    # optional: you might vary variance or crit chance here
+    return _calc_damage(matk, mdef, crit)    
 
 def _roll_loot(loot_table) -> Dict[str, int]:
     drops = {}

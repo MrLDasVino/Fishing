@@ -5,7 +5,7 @@ from discord.ui import View, button
 from redbot.core import commands
 from typing import Optional
 
-from ..core.registry import regions, enemies, items
+from ..core.registry import regions, enemies, items, spells
 from ..managers.combat import _roll_hit, _roll_crit, _calc_damage, EnemyInstance, _roll_loot
 from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
@@ -35,6 +35,9 @@ class CombatView(View):
         self.loot: dict[str, int] = {}
         self.winner: str | None = None
         self.log: list[str] = []
+        
+        for spell in spells.all():
+            self.add_item(SpellButton(spell, self))        
         
     # helper to append and trim log to last 5 entries
     def push_log(self, entry: str):
@@ -231,6 +234,43 @@ class CombatView(View):
         else:
             self.push_log("Escape failed.")
             await self.enemy_turn(interaction)
+            
+class SpellButton(discord.ui.Button):
+    def __init__(self, spell_def, view: CombatView):
+        super().__init__(label=spell_def.name, style=discord.ButtonStyle.primary)
+        self.spell = spell_def
+        self.view_ref = view
+
+    async def callback(self, interaction: discord.Interaction):
+        view = self.view_ref
+        if interaction.user != view.player:
+            return await interaction.response.send_message("Not your battle!", ephemeral=True)
+
+        # 1) Check MP cost
+        if view.player_stats["mp"] < self.spell.cost:
+            view.push_log("Not enough MP.")
+            return await interaction.response.edit_message(embed=view.build_embed(), view=view)
+
+        # 2) Deduct MP
+        view.player_stats["mp"] -= self.spell.cost
+
+        # 3) Magic hit roll
+        if _roll_hit(view.player_stats["accuracy"], view.enemy_def.magic_defense):
+            dmg = calc_magic(
+                view.player_stats["magic_attack"] + self.spell.power,
+                view.enemy_def.magic_defense
+            )
+            applied = view.enemy.receive_damage(dmg)
+            view.push_log(f"You cast {self.spell.name} for {applied}{' crit' if dmg > applied else ''}")
+        else:
+            view.push_log(f"{self.spell.name} missed")
+
+        # 4) Victory or enemy turn
+        if not view.enemy.is_alive():
+            return await view.end_battle(interaction, won=True)
+        await view.enemy_turn(interaction)
+        await interaction.response.edit_message(embed=view.build_embed(), view=view)
+            
 
 class PlayerCommands(commands.Cog):
     def __init__(self, parent):

@@ -52,3 +52,13 @@ class DungeonDef:
     region: str
     floors: int = 1
     monsters: List[str] = field(default_factory=list)
+    
+@dataclass
+class SpellDef:
+    id: str
+    name: str
+    description: str
+    power: int            # base magic damage
+    cost: int             # MP cost
+    crit_chance: float = CRIT_CHANCE
+    variance: float = DMG_VARIANCE    

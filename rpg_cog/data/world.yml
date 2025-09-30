@@ -105,3 +105,10 @@ dungeons:
     floors: 3
     monsters:
       - goblin_scout
+      
+spells:
+  - id: firebolt
+    name: Firebolt
+    description: “A crackling bolt of fire.”
+    power: 8
+    cost: 4
