@@ -24,23 +24,45 @@ class CombatView(View):
         self.log: list[str] = []
 
     def build_embed(self) -> discord.Embed:
-        e = discord.Embed(
-            title=f"{self.enemy_def.name} — Interactive Battle",
-            color=discord.Color.blurple()
+        embed = discord.Embed(
+            title=f"{self.enemy_def.name} - Battle",
+            color=discord.Color.random()
         )
-        e.add_field(
-            name=f"{self.player.display_name} HP",
-            value=f"{self.player_stats['hp']} / {self.player_stats['max_hp']}",
+        # full‐width banner
+        if getattr(self.enemy_def, "image_url", None):
+            embed.set_image(url=self.enemy_def.image_url)
+
+        # stats in the description just like before
+        embed.description = (
+            f"**Level:** {self.enemy_def.level}\n"
+            f"**HP:** {self.enemy_def.hp} | **Attack:** {self.enemy_def.attack} | **Defense:** {self.enemy_def.defense}"
+        )
+
+        # combat log
+        embed.add_field(
+            name="Combat Log",
+            value="\n".join(self.log) or "―",
+            inline=False
+        )
+
+        # round counter + rewards (if battle concluded)
+        embed.add_field(name="Rounds",     value=str(self.rounds), inline=True)
+        embed.add_field(
+            name="XP Gained",
+            value=str(self.xp)   if self.winner is not None else "—",
             inline=True
         )
-        e.add_field(
-            name=f"{self.enemy_def.name} HP",
-            value=f"{self.enemy.hp} / {self.enemy_def.hp}",
+        embed.add_field(
+            name="Gold Gained",
+            value=str(self.gold) if self.winner is not None else "—",
             inline=True
         )
-        recent = "\n".join(self.log[-5:]) or "No actions yet."
-        e.add_field(name="Battle Log", value=recent, inline=False)
-        return e
+
+        # show winner in footer once set
+        if self.winner:
+            embed.set_footer(text=f"🏆 Winner: {self.winner}")
+
+        return embed
 
     async def on_timeout(self):
         for btn in self.children:
