@@ -1241,18 +1241,14 @@ class SlotSelectView(View):
         self.state = state
 
         slots = list(state.get("equipment", {}).keys())
-        options = [
-            discord.SelectOption(
-                label=slot.title(),
-                value=slot,
-                description=(
-                    f"Equipped: {items.get(state['equipment'][slot]).name}"
-                    if state['equipment'][slot]
-                    else "Empty"
-                )
+        options = []
+        for slot in slots:
+            pretty = slot.replace("_", " ").title()
+            current = state["equipment"].get(slot)
+            desc = f"Equipped: {items.get(current).name}" if current else "Empty"
+            options.append(
+                discord.SelectOption(label=pretty, value=slot, description=desc)
             )
-            for slot in slots
-        ]
         self.add_item(SlotSelect(options))
 
 class SlotSelect(Select):
@@ -1294,8 +1290,9 @@ class SlotSelect(Select):
 
         # ─── 2) Build the embed with your slot banner ───
         embed = Embed(
-            title=f"⚙️ Slot: {slot.title()}",
-            description="Select an item to equip, or choose to unequip.",
+        pretty_slot = slot.replace("_", " ").title()
+        embed = Embed(
+            title=f"⚙️ Slot: {pretty_slot}",
             color=Color.random()
         )
         banner_url = SLOT_BANNERS.get(slot)
