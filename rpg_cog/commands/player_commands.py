@@ -7,7 +7,7 @@ from discord.ui import View, Button, button, Select
 from redbot.core import commands
 from typing import Optional
 
-from ..core.registry import regions, enemies, items, shops, spells
+from ..core.registry import regions, enemies, items, shops, spells, quests
 from ..managers.combat import _roll_hit, _roll_crit, _calc_damage, EnemyInstance, _roll_loot
 from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
