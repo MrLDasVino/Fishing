@@ -71,7 +71,7 @@ class RPGCog(commands.Cog):
                 "magic_defense": 0,
                 "gold": 0,
                 "spells": [],
-                "inventory": {}
+                "inventory": {},
                 "region": "old_mill",
                 "equipment": {
                     "head": None,
