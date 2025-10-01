@@ -34,6 +34,13 @@ class RPGCog(commands.Cog):
             gold=0,
             inventory={},
             region="old_mill",
+            equipment={     
+              "head": None,
+              "chest": None,
+              "legs": None,
+              "weapon": None,
+              "offhand": None,
+            },            
             active_quests={},     
             completed_quests=[]              
         )
@@ -64,7 +71,17 @@ class RPGCog(commands.Cog):
                 "magic_defense": 0,
                 "gold": 0,
                 "spells": [],
-                "inventory": {}                
+                "inventory": {}
+                "region": "old_mill",
+                "equipment": {
+                    "head": None,
+                    "chest": None,
+                    "legs": None,
+                    "weapon": None,
+                    "offhand": None,
+                },
+                "active_quests": {},
+                "completed_quests": []
             }
             await self.config.user(user).set(state)
         return state

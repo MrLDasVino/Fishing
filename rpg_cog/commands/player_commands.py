@@ -803,6 +803,21 @@ class PlayerCommands(commands.Cog):
         # send with the selection view
         await ctx.send(embed=embed, view=QuestSelectView(self, ctx, available))
         
+    @rpg.command(name="equip", help="Equip or unequip your gear.")
+    async def rpg_equip(self, ctx: commands.Context):
+        """
+        Let the player pick a slot (weapon, head, etc.) to (un)equip.
+        """
+        state = await self.parent.ensure_player_state(ctx.author)
+        await ctx.send(
+            embed=Embed(
+                title="🛡️ Manage Equipment",
+                description="Select a slot to equip or unequip gear.",
+                color=Color.blue()
+            ),
+            view=SlotSelectView(self, ctx, state)
+        )        
+        
 
 class ShopView(View):
     def __init__(self, cog: commands.Cog, ctx: commands.Context, shop):
@@ -1197,4 +1212,138 @@ class QuestSelect(Select):
             content=f"✅ You’ve accepted **{qdef.title}**!",
             embed=None, view=None
         )
+        
+class SlotSelectView(View):
+    def __init__(self, cog, ctx, state: dict):
+        super().__init__(timeout=60)
+        self.cog = cog
+        self.ctx = ctx
+        self.state = state
+
+        slots = list(state.get("equipment", {}).keys())
+        options = [
+            discord.SelectOption(
+                label=slot.title(),
+                value=slot,
+                description=(
+                    f"Equipped: {items.get(state['equipment'][slot]).name}"
+                    if state['equipment'][slot]
+                    else "Empty"
+                )
+            )
+            for slot in slots
+        ]
+        self.add_item(SlotSelect(options))
+
+class SlotSelect(Select):
+    def __init__(self, options):
+        super().__init__(
+            placeholder="Choose slot…",
+            min_values=1,
+            max_values=1,
+            options=options
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        slot = self.values[0]
+        view: SlotSelectView = self.view
+        inv = view.state.get("inventory", {})
+
+        # Build list of items in inventory that match this slot
+        choices = []
+        for item_id, qty in inv.items():
+            it = items.get(item_id)
+            if it and it.equip_slot == slot:
+                choices.append(discord.SelectOption(
+                    label=it.name,
+                    value=item_id,
+                    description=f"{qty} in inventory"
+                ))
+        # Always allow unequip
+        choices.insert(0, discord.SelectOption(
+            label="Unequip",
+            value="__unequip__",
+            description="Remove currently equipped item"
+        ))
+
+        await interaction.response.edit_message(
+            embed=Embed(
+                title=f"Slot: {slot.title()}",
+                description="Select an item to equip, or unequip.",
+                color=Color.green()
+            ),
+            view=EquipSelectView(view.cog, view.ctx, slot, choices)
+        )
+
+class EquipSelectView(View):
+    def __init__(self, cog, ctx, slot: str, options: list[discord.SelectOption]):
+        super().__init__(timeout=60)
+        self.cog = cog
+        self.ctx = ctx
+        self.slot = slot
+        self.add_item(EquipSelect(options, slot))
+
+class EquipSelect(Select):
+    def __init__(self, options, slot: str):
+        super().__init__(
+            placeholder="Choose gear…",
+            min_values=1,
+            max_values=1,
+            options=options
+        )
+        self.slot = slot
+
+    async def callback(self, interaction: discord.Interaction):
+        user = interaction.user
+        cfg = self.view.cog.parent.config.user(user)
+        state = await cfg.all()
+
+        old_id = state["equipment"].get(self.slot)
+        new_id = self.values[0]
+
+        # Unequip logic
+        if new_id == "__unequip__":
+            if old_id:
+                old = items.get(old_id)
+                for stat, val in old.modifiers.items():
+                    state[stat] -= val
+                state["equipment"][self.slot] = None
+                await cfg.update({self.slot: None, **{stat: state[stat] for stat in old.modifiers}})
+                msg = f"Unequipped **{old.name}** from {self.slot}."
+            else:
+                msg = "Nothing to unequip."
+            await interaction.response.edit_message(content=msg, embed=None, view=None)
+            return
+
+        # Equip logic
+        it = items.get(new_id)
+        if not it or it.equip_slot != self.slot:
+            return await interaction.response.send_message(
+                "Invalid item for this slot.", ephemeral=True
+            )
+
+        # Remove old modifiers
+        if old_id:
+            old = items.get(old_id)
+            for stat, val in old.modifiers.items():
+                state[stat] -= val
+
+        # Apply new modifiers
+        for stat, val in it.modifiers.items():
+            state[stat] = state.get(stat, 0) + val
+
+        state["equipment"][self.slot] = new_id
+
+        # Persist both equipment map & stat changes
+        update_payload = {"equipment": state["equipment"]}
+        for stat in it.modifiers:
+            update_payload[stat] = state[stat]
+        await cfg.update(update_payload)
+
+        await interaction.response.edit_message(
+            content=f"Equipped **{it.name}** in {self.slot}.",
+            embed=None,
+            view=None
+        )
+        
 

@@ -10,6 +10,11 @@ class ItemDef:
     rarity: str
     stats: Dict[str, int] = field(default_factory=dict)
 
+    #  make this item wearable in one of these slots
+    equip_slot: Optional[str] = None            
+    #  stat modifiers applied when equipped
+    modifiers: Dict[str, int] = field(default_factory=dict)
+
 @dataclass
 class EnemyDef:
     id: str
