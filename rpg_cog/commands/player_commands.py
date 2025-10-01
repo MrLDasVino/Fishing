@@ -13,7 +13,7 @@ from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
 from ..core.base import PlaceDef, QuestDef
 
-GENERAL_EQUIP_BANNER = "https://files.catbox.moe/trmec2.png"
+GENERAL_EQUIP_BANNER = "https://files.catbox.moe/trmec2.png",
 SLOT_BANNERS = {
     "head":    "https://files.catbox.moe/o4l0ao.png",
     "chest":   "https://files.catbox.moe/vfd1i1.png",
