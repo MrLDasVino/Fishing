@@ -55,7 +55,7 @@ def _calc_damage(attack: int, defense: int, crit: bool) -> int:
 
     # 3) Round and clamp
     final = max(1, round(swung))
-    return 
+    return final
     
 def calc_physical(atk: int, df: int) -> int:
     """
