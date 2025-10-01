@@ -11,7 +11,7 @@ from ..core.registry import regions, enemies, items, shops, spells
 from ..managers.combat import _roll_hit, _roll_crit, _calc_damage, EnemyInstance, _roll_loot
 from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
-from ..core.base import PlaceDef
+from ..core.base import PlaceDef, QuestDef
 
 def humanize(item_id: str) -> str:
     """
