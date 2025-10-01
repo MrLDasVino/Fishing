@@ -390,13 +390,13 @@ class PlayerCommands(commands.Cog):
         if current_hp <= 0:
             return await ctx.send("💔 You have no HP. Rest or heal before exploring.")
 
-        # 3) Ensure region has enemies
-        pool = region_def.enemies
-        if not pool:
-            return await ctx.send(f"No enemies to explore in **{region_def.name}**.")
+        # 3) Filter only defined enemies
+        valid_pool = [eid for eid in region_def.enemies if enemies.get(eid)]
+        if not valid_pool:
+            return await ctx.send(f"No valid enemies to explore in **{region_def.name}**.")
 
         # 4) Launch battle with a random pick
-        eid = random.choice(pool)
+        eid = random.choice(valid_pool)
         player_stats = {
             "hp": current_hp,
             "max_hp": state.get("max_hp", 20),
@@ -411,8 +411,6 @@ class PlayerCommands(commands.Cog):
         }
         view = CombatView(ctx, player_stats, eid, state.get("spells", []))
         await ctx.send(embed=view.build_embed(), view=view)
-
-
 
 
     @rpg.command()
