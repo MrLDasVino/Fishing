@@ -24,6 +24,14 @@ class EnemyDef:
     loot_table: List[Dict[str, Any]] = field(default_factory=list)
     image_url: Optional[str] = None
     level: int = 1
+    
+@dataclass
+class PlaceDef:
+    id: str
+    name: str
+    description: str = ""
+    enemies: List[str] = field(default_factory=list)
+    thumbnail: str = ""    
 
 @dataclass
 class RegionDef:
@@ -33,10 +41,10 @@ class RegionDef:
     description: str = ""                    # narrative text on arrival
     level_range: List[int] = field(default_factory=list)
     enemies: List[str] = field(default_factory=list)
-
     adjacent: List[str] = field(default_factory=list)   # reachable region IDs
     thumbnail: str = ""                                 # banner/embed image URL
     shops: List[str] = field(default_factory=list)      # shop IDs in this region
+    places: List[PlaceDef] = field(default_factory=list)
 
 @dataclass
 class ShopDef:

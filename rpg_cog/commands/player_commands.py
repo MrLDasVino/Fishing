@@ -11,6 +11,7 @@ from ..core.registry import regions, enemies, items, shops, spells
 from ..managers.combat import _roll_hit, _roll_crit, _calc_damage, EnemyInstance, _roll_loot
 from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
+from ..core.base import PlaceDef
 
 def humanize(item_id: str) -> str:
     """
@@ -363,7 +364,59 @@ class SpellSelectView(View):
 class PlayerCommands(commands.Cog):
     def __init__(self, parent):
         self.parent = parent
-        self.config = parent.config        
+        self.config = parent.config
+
+    class PlaceSelect(discord.ui.Select):
+        def __init__(self, view_ref, places: list[PlaceDef]):
+            options = [
+                discord.SelectOption(label=p.name, value=p.id)
+                for p in places
+            ]
+            super().__init__(
+                placeholder="Choose an area…",
+                min_values=1, max_values=1,
+                options=options
+            )
+            self.view_ref = view_ref
+
+        async def callback(self, interaction: discord.Interaction):
+            place_id = self.values[0]
+            view = self.view_ref
+            place = next(p for p in view.places if p.id == place_id)
+            await view.start_explore(interaction, place)
+
+    class PlaceSelectView(discord.ui.View):
+        def __init__(self, ctx, state: dict, places: list[PlaceDef]):
+            super().__init__(timeout=60)
+            self.ctx = ctx
+            self.state = state
+            self.places = places
+            self.add_item(PlayerCommands.PlaceSelect(self, places))
+
+        async def start_explore(self, interaction: discord.Interaction, place: PlaceDef):
+            valid = [eid for eid in place.enemies if enemies.get(eid)]
+            if not valid:
+                return await interaction.response.edit_message(
+                    content=f"No enemies in **{place.name}**.", view=None
+                )
+            eid = random.choice(valid)
+            s = self.state
+            player_stats = {
+                "hp":       s.get("hp", s.get("max_hp", 20)),
+                "max_hp":   s.get("max_hp", 20),
+                "mp":       s.get("mp", s.get("max_mp", 10)),
+                "max_mp":   s.get("max_mp", 10),
+                "attack":   s.get("attack", 5),
+                "defense":  s.get("defense", 1),
+                "accuracy": s.get("accuracy", 1.0),
+                "evasion":  s.get("evasion", 1.0),
+                "magic_attack":  s.get("magic_attack", 0),
+                "magic_defense": s.get("magic_defense", 0),
+            }
+            view = CombatView(self.ctx, player_stats, eid, s.get("spells", []))
+            await interaction.response.edit_message(
+                embed=view.build_embed(), view=view
+            )        
 
     @commands.group(name="rpg")
     async def rpg(self, ctx: commands.Context):
@@ -376,41 +429,55 @@ class PlayerCommands(commands.Cog):
     @rpg.command(name="explore")
     async def rpg_explore(self, ctx: commands.Context):
         """
-        Explore a random enemy in the region you’re currently in.
+        Explore one of the places in your current region.
         """
-        # 1) Ensure player and fetch current region
         state = await self.parent.ensure_player_state(ctx.author)
         current = state.get("region", "old_mill")
         region_def = regions.get(current)
         if not region_def:
             return await ctx.send(f"Your saved region `{current}` is invalid.")
 
-        # 2) Check HP
-        current_hp = state.get("hp", state.get("max_hp", 20))
-        if current_hp <= 0:
-            return await ctx.send("💔 You have no HP. Rest or heal before exploring.")
+        hp_now = state.get("hp", state.get("max_hp", 20))
+        if hp_now <= 0:
+            return await ctx.send("💔 You have no HP. Rest or heal first.")
 
-        # 3) Filter only defined enemies
-        valid_pool = [eid for eid in region_def.enemies if enemies.get(eid)]
-        if not valid_pool:
-            return await ctx.send(f"No valid enemies to explore in **{region_def.name}**.")
+        # If multiple places defined, prompt a dropdown
+        if len(region_def.places) > 1:
+            return await ctx.send(
+                f"Where would you like to explore in **{region_def.name}**?",
+                view=PlaceSelectView(ctx, state, region_def.places)
+            )
 
-        # 4) Launch battle with a random pick
-        eid = random.choice(valid_pool)
+        # Single‐place or fallback to flat enemies
+        if region_def.places:
+            place = region_def.places[0]
+        else:
+            place = PlaceDef(
+                id=current,
+                name=region_def.name,
+                enemies=region_def.enemies
+            )
+
+        valid = [eid for eid in place.enemies if enemies.get(eid)]
+        if not valid:
+            return await ctx.send(f"No enemies in **{place.name}**.")
+
+        eid = random.choice(valid)
         player_stats = {
-            "hp": current_hp,
-            "max_hp": state.get("max_hp", 20),
-            "mp": state.get("mp", state.get("max_mp", 10)),
-            "max_mp": state.get("max_mp", 10),
-            "attack": state.get("attack", 5),
-            "defense": state.get("defense", 1),
+            "hp":       hp_now,
+            "max_hp":   state.get("max_hp", 20),
+            "mp":       state.get("mp",     state.get("max_mp", 10)),
+            "max_mp":   state.get("max_mp", 10),
+            "attack":   state.get("attack", 5),
+            "defense":  state.get("defense", 1),
             "accuracy": state.get("accuracy", 1.0),
-            "evasion": state.get("evasion", 1.0),
-            "magic_attack": state.get("magic_attack", 0),
+            "evasion":  state.get("evasion", 1.0),
+            "magic_attack":  state.get("magic_attack", 0),
             "magic_defense": state.get("magic_defense", 0),
         }
         view = CombatView(ctx, player_stats, eid, state.get("spells", []))
         await ctx.send(embed=view.build_embed(), view=view)
+
 
 
     @rpg.command()

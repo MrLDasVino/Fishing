@@ -41,6 +41,7 @@ enemies:
         drop_chance: 0.3
     image_url: "https://files.catbox.moe/incs7z.png"
     level: 1
+    
   - id: chicken
     name: Chicken
     hp: 8
@@ -56,6 +57,7 @@ enemies:
         drop_chance: 0.5
     image_url: "https://files.catbox.moe/2oborf.png"
     level: 1
+    
   - id: raccoon
     name: Raccoon
     hp: 15
@@ -78,16 +80,29 @@ regions:
     name: "Old Mill"
     description: "A weathered mill stands by a slow stream."
     level_range: [1, 3]
-    enemies:
-      - goblin_scout
-      - rat
-      - chicken
-      - raccoon
     adjacent:
       - forest
     thumbnail: "https://files.catbox.moe/g11oz9.png"
     shops:
       - mill_trader
+    places:
+      - id: mill_interior
+        name: "Mill Interior"
+        description: "The interior of the mill."
+        enemies:
+          - goblin_scout
+          - rat
+          - chicken
+          - raccoon
+        thumbnail: ""
+
+      - id: basement_entrance
+        name: "Basement Entrance"
+        description: "A dark stairway leading below the mill."
+        enemies:
+          - goblin_scout
+        thumbnail: ""
+
       
   - id: forest
     name: "Enchanted Forest"
