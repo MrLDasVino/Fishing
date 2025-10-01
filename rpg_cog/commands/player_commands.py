@@ -416,7 +416,43 @@ class PlayerCommands(commands.Cog):
             view = CombatView(self.ctx, player_stats, eid, s.get("spells", []))
             await interaction.response.edit_message(
                 embed=view.build_embed(), view=view
-            )        
+            )
+
+    class ShopSelect(discord.ui.Select):
+        def __init__(self, view_ref, shops: list):
+            options = [
+                discord.SelectOption(label=s.name or s.id, value=s.id)
+                for s in shops
+            ]
+            super().__init__(
+                placeholder="Choose a shop…",
+                min_values=1, max_values=1,
+                options=options
+            )
+            self.view_ref = view_ref
+
+        async def callback(self, interaction: discord.Interaction):
+            shop_id = self.values[0]
+            view = self.view_ref
+            # get the Cog instance and original ctx
+            cog = view.cog
+            ctx = view.ctx
+            shop = shops.get(shop_id)
+            # instantiate the normal ShopView
+            shop_view = ShopView(cog, ctx, shop)
+            await interaction.response.edit_message(
+                embed=shop_view.current_embed(),
+                view=shop_view
+            )
+
+    class ShopSelectView(discord.ui.View):
+        def __init__(self, cog, ctx, shops: list):
+            super().__init__(timeout=60)
+            self.cog = cog      # the PlayerCommands instance
+            self.ctx = ctx      # the Context
+            self.shops = shops  # list of ShopDef
+            # refer to the nested Select class via PlayerCommands
+            self.add_item(PlayerCommands.ShopSelect(self, shops))            
 
     @commands.group(name="rpg")
     async def rpg(self, ctx: commands.Context):
@@ -681,24 +717,46 @@ class PlayerCommands(commands.Cog):
 
         await self.parent.config.user(user).set(state) 
 
-    @rpg.command(name="shop", help="Show the inventory of a shop.")
-    async def rpg_shop(self, ctx, shop_id: str):
-        # 1) Ensure player and fetch current region
+    @rpg.command(name="shop", help="Show or choose a shop in your current region.")
+    async def rpg_shop(self, ctx, shop_id: Optional[str] = None):
+        # 1) fetch state & current region
         state = await self.parent.ensure_player_state(ctx.author)
         current = state.get("region", "old_mill")
+        region_def = regions.get(current)
+        if not region_def:
+            return await ctx.send(f"Your saved region `{current}` is invalid.")
 
-        # 2) Lookup shop and region-lock
-        shop = shops.get(shop_id)
-        if not shop:
-            return await ctx.send(f"No such shop: `{shop_id}`.")
-        if shop.region != current:
+        # 2) gather valid shops here
+        valid_shops = [
+            shops.get(sid) for sid in region_def.shops
+            if shops.get(sid)
+        ]
+        if not valid_shops:
+            return await ctx.send(f"No shops in **{region_def.name}**.")
+
+        # 3) if no ID provided and multiple shops, show dropdown
+        if not shop_id and len(valid_shops) > 1:
             return await ctx.send(
-                f"You can’t visit **{shop.name or shop.id}** from **{current}**."
+                f"Which shop in **{region_def.name}** would you like to visit?",
+                view=self.ShopSelectView(self, ctx, valid_shops)
             )
 
-        # 3) Show it
+        # 4) determine the target shop
+        if shop_id:
+            shop = shops.get(shop_id)
+            if not shop:
+                return await ctx.send(f"No such shop: `{shop_id}`.")
+            if shop.region != current:
+                return await ctx.send(
+                    f"You can’t visit **{shop.name or shop.id}** from **{current}**."
+                )
+        else:
+            # exactly one shop—auto-select it
+            shop = valid_shops[0]
+
+        # 5) show the normal ShopView
         view = ShopView(self, ctx, shop)
-        await ctx.send(embed=view.current_embed(), view=view)
+        await ctx.send(embed=view.current_embed(), 
 
         
     @rpg.command(name="travel", help="Browse and travel to adjacent regions.")
