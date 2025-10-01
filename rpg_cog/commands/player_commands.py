@@ -652,8 +652,8 @@ class ShopView(View):
         self.page = 0
 
         # Prev/Next buttons  
-        self.add_item(self.Prev(self))
-        self.add_item(self.Next(self))
+        self.add_item(self.Prev())
+        self.add_item(self.Next())
 
     def current_embed(self) -> discord.Embed:
         e = discord.Embed(
@@ -678,29 +678,29 @@ class ShopView(View):
         return e
 
     class Prev(Button):
-        def __init__(self, parent: "ShopView"):
+        def __init__(self):
             super().__init__(label="⏮️", style=ButtonStyle.secondary)
-            self.parent = parent
 
         async def callback(self, interaction: discord.Interaction):
-            if self.parent.page > 0:
-                self.parent.page -= 1
+            view: ShopView = self.view  # built-in, points back to your ShopView
+            if view.page > 0:
+                view.page -= 1
                 await interaction.response.edit_message(
-                    embed=self.parent.current_embed(), view=self.parent
+                    embed=view.current_embed(), view=view
                 )
             else:
                 await interaction.response.defer()
 
     class Next(Button):
-        def __init__(self, parent: "ShopView"):
+        def __init__(self):
             super().__init__(label="⏭️", style=ButtonStyle.secondary)
-            self.parent = parent
 
         async def callback(self, interaction: discord.Interaction):
-            if self.parent.page < len(self.parent.pages) - 1:
-                self.parent.page += 1
+            view: ShopView = self.view
+            if view.page < len(view.pages) - 1:
+                view.page += 1
                 await interaction.response.edit_message(
-                    embed=self.parent.current_embed(), view=self.parent
+                    embed=view.current_embed(), view=view
                 )
             else:
                 await interaction.response.defer()
