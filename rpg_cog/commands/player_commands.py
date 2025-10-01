@@ -673,50 +673,7 @@ class PlayerCommands(commands.Cog):
         )
 
         await ctx.send(embed=embed) 
-
-    @rpg.command(name="buy", help="Buy an item or spell from a shop.")
-    async def rpg_buy(self, ctx: commands.Context, shop_id: str, thing_id: str):
-        # 1) Ensure player and fetch current region
-        state = await self.parent.ensure_player_state(ctx.author)
-        current = state.get("region", "old_mill")
-
-        # 2) Lookup shop and region-lock
-        shop = shops.get(shop_id)
-        if not shop:
-            return await ctx.send(f"No such shop: `{shop_id}`.")
-        if shop.region != current:
-            return await ctx.send(
-                f"You can’t buy from **{shop.name or shop.id}** while in **{current}**."
-            )
-
-        # 3) Decide what they’re buying
-        if thing_id in shop.inventory:
-            cost = shop.inventory[thing_id]
-            category = "item"
-        elif getattr(shop, "spell_inventory", None) and thing_id in shop.spell_inventory:
-            cost = shop.spell_inventory[thing_id]
-            category = "spell"
-        else:
-            return await ctx.send(f"`{shop_id}` doesn’t offer `{thing_id}`.")
-        
-
-        # check gold
-        if state["gold"] < cost:
-            return await ctx.send(f"You need {cost} gold to buy `{thing_id}`, but you have {state['gold']}.")
-
-        # deduct & grant
-        state["gold"] -= cost
-        if category == "item":
-            inv = state.setdefault("inventory", {})
-            inv[thing_id] = inv.get(thing_id, 0) + 1
-        else:  # spell
-            known = state.setdefault("spells", [])
-            if thing_id in known:
-                return await ctx.send(f"You already know `{thing_id}`.")
-            known.append(thing_id)
-
-        await self.parent.config.user(user).set(state) 
-
+ 
     @rpg.command(name="shop", help="Show or choose a shop in your current region.")
     async def rpg_shop(self, ctx, shop_id: Optional[str] = None):
         # 1) fetch state & current region
