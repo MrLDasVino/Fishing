@@ -75,13 +75,47 @@ enemies:
 
 regions:
   - id: old_mill
-    name: Old Mill
+    name: "Old Mill"
+    description: "A weathered mill stands by a slow stream."
     level_range: [1, 3]
     enemies:
       - goblin_scout
       - rat
       - chicken
       - raccoon
+    adjacent:
+      - forest
+    thumbnail: "https://files.catbox.moe/g11oz9.png"
+    shops:
+      - mill_trader
+      
+  - id: forest
+    name: "Enchanted Forest"
+    description: "Mossy trees whisper in the wind."
+    level_range: [2, 5]
+    enemies:
+      - wolf
+      - bear
+    adjacent:
+      - old_mill
+      - village
+    thumbnail: "https://files.catbox.moe/sgm461.png"
+    shops:
+      - herb_seller
+
+  - id: village
+    name: "Quiet Village"
+    description: "Small cottages dot the winding roads."
+    level_range: [1, 4]
+    enemies:
+      - bandit
+      - rat
+    adjacent:
+      - forest
+    thumbnail: "https://files.catbox.moe/y85pit.png"
+    shops:
+      - general_store
+      - blacksmith   
 
 shops:
   - id: mill_trader

@@ -632,6 +632,54 @@ class PlayerCommands(commands.Cog):
 
         view = ShopView(self, ctx, shop)
         await ctx.send(embed=view.current_embed(), view=view)
+        
+    @rpg.command(name="travel", help="Browse and travel to adjacent regions.")
+    async def rpg_travel(self, ctx, region_id: Optional[str] = None):
+        user_cfg = self.config.user(ctx.author)
+        state = await user_cfg.all()
+        current_id = state.get("region", "old_mill")
+        current_def = regions.get(current_id)
+
+        # Direct-arg travel
+        if region_id:
+            target = regions.get(region_id)
+            if not target:
+                return await ctx.send(f"No such region: `{region_id}`.")
+            if region_id not in current_def.adjacent:
+                return await ctx.send(
+                    f"You can’t reach **{target.name}** from **{current_def.name}**."
+                )
+
+            await user_cfg.update(region=region_id)
+            embed = discord.Embed(
+                title=f"🏞️ Traveled to {target.name}",
+                description=target.description,
+                color=Color.green()
+            )
+            if target.thumbnail:
+                embed.set_image(url=target.thumbnail)
+
+            if target.shops:
+                shop_lines = [
+                    f"🏪 {shops.get(sid).name or sid}"
+                    for sid in target.shops
+                ]
+                embed.add_field(
+                    name="Available Shops",
+                    value="\n".join(shop_lines),
+                    inline=False
+                )
+
+            return await ctx.send(embed=embed)
+
+        # Interactive browser
+        view = RegionBrowseView(self, ctx, current_def.adjacent)
+        # start at page=0 (first adjacent region)
+        await ctx.send(
+            f"Where would you like to travel from **{current_def.name}**?",
+            embed=view.current_embed(),
+            view=view
+        )        
 
 class ShopView(View):
     def __init__(self, cog: commands.Cog, ctx: commands.Context, shop):
@@ -854,5 +902,117 @@ class QuantitySelect(Select):
             ephemeral=True
         )
 
+class RegionBrowseView(View):
+    def __init__(self, cog: commands.Cog, ctx: commands.Context, adjacents: list[str]):
+        super().__init__(timeout=120)
+        self.cog = cog
+        self.ctx = ctx
+        self.adjacents = adjacents
+        self.page = 0
+
+        # Prev / Next to cycle
+        self.add_item(self.Prev())
+        self.add_item(self.Next())
+        # Confirm travel
+        self.add_item(self.Confirm())
+
+    def current_embed(self) -> discord.Embed:
+        rid = self.adjacents[self.page]
+        reg = regions.get(rid)
+        e = discord.Embed(
+            title=f"🏞️ {reg.name}",
+            description=reg.description,
+            color=Color.blue()
+        )
+        if reg.thumbnail:
+            e.set_image(url=reg.thumbnail)
+
+        # details
+        e.add_field(
+            name="Level Range",
+            value=f"{reg.level_range[0]}–{reg.level_range[1]}",
+            inline=True
+        )
+        if reg.enemies:
+            e.add_field(
+                name="Enemies",
+                value=", ".join(reg.enemies),
+                inline=True
+            )
+        if reg.shops:
+            shop_list = "\n".join(f"🏪 {shops.get(s).name or s}" for s in reg.shops)
+            e.add_field(name="Shops", value=shop_list, inline=False)
+
+        e.set_footer(
+            text=f"Option {self.page+1}/{len(self.adjacents)} • Confirm to travel"
+        )
+        return e
+
+    class Prev(Button):
+        def __init__(self):
+            super().__init__(label="⏮️", style=ButtonStyle.secondary)
+
+        async def callback(self, interaction: discord.Interaction):
+            view: RegionBrowseView = self.view
+            if view.page > 0:
+                view.page -= 1
+                await interaction.response.edit_message(
+                    embed=view.current_embed(), view=view
+                )
+            else:
+                await interaction.response.defer()
+
+    class Next(Button):
+        def __init__(self):
+            super().__init__(label="⏭️", style=ButtonStyle.secondary)
+
+        async def callback(self, interaction: discord.Interaction):
+            view: RegionBrowseView = self.view
+            if view.page < len(view.adjacents) - 1:
+                view.page += 1
+                await interaction.response.edit_message(
+                    embed=view.current_embed(), view=view
+                )
+            else:
+                await interaction.response.defer()
+
+    class Confirm(Button):
+        def __init__(self):
+            super().__init__(label="✅ Travel", style=ButtonStyle.success)
+
+        async def callback(self, interaction: discord.Interaction):
+            view: RegionBrowseView = self.view
+            # guard: only the original author
+            if interaction.user != view.ctx.author:
+                return await interaction.response.send_message(
+                    "This isn’t your travel session.", ephemeral=True
+                )
+
+            target_id = view.adjacents[view.page]
+            user_cfg = view.cog.config.user(interaction.user)
+            await user_cfg.update(region=target_id)
+            dest = regions.get(target_id)
+
+            embed = discord.Embed(
+                title=f"🏞️ Traveled to {dest.name}",
+                description=dest.description,
+                color=Color.green()
+            )
+            if dest.thumbnail:
+                embed.set_image(url=dest.thumbnail)
+
+            if dest.shops:
+                shop_lines = [
+                    f"🏪 {shops.get(sid).name or sid}"
+                    for sid in dest.shops
+                ]
+                embed.add_field(
+                    name="Available Shops",
+                    value="\n".join(shop_lines),
+                    inline=False
+                )
+
+            # remove buttons after confirming
+            await interaction.response.edit_message(embed=embed, view=None)
         
 

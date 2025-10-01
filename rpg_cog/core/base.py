@@ -29,8 +29,14 @@ class EnemyDef:
 class RegionDef:
     id: str
     name: str
+
+    description: str = ""                    # narrative text on arrival
     level_range: List[int] = field(default_factory=list)
     enemies: List[str] = field(default_factory=list)
+
+    adjacent: List[str] = field(default_factory=list)   # reachable region IDs
+    thumbnail: str = ""                                 # banner/embed image URL
+    shops: List[str] = field(default_factory=list)      # shop IDs in this region
 
 @dataclass
 class ShopDef:

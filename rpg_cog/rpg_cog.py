@@ -31,7 +31,8 @@ class RPGCog(commands.Cog):
             magic_attack=0,      
             magic_defense=0,     
             gold=0,
-            inventory={}
+            inventory={},
+            region="old_mill"
         )
 
         # load world data (data/world.yml relative to this file)
