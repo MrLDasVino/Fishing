@@ -1009,14 +1009,19 @@ class RegionBrowseView(View):
             if dest.thumbnail:
                 embed.set_image(url=dest.thumbnail)
 
-            if dest.shops:
-                shop_lines = [
-                    f"🏪 {shops.get(sid).name or sid}"
-                    for sid in dest.shops
-                ]
+            # only render shops that actually exist
+            valid = []
+            for sid in dest.shops:
+                shop_def = shops.get(sid)
+                if shop_def:
+                    valid.append(f"🏪 {shop_def.name}")
+                else:
+                    # optional: show the raw ID or skip entirely
+                    valid.append(f"🏪 {sid}")
+            if valid:
                 embed.add_field(
                     name="Available Shops",
-                    value="\n".join(shop_lines),
+                    value="\n".join(valid),
                     inline=False
                 )
 
