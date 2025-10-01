@@ -1269,24 +1269,45 @@ class SlotSelect(Select):
         view: SlotSelectView = self.view
         inv = view.state.get("inventory", {})
 
-        # … build your `choices` list here …
+        # ─── 1) Build the choices list for this slot ───
+        choices = []
+        for item_id, qty in inv.items():
+            it = items.get(item_id)
+            if it and it.equip_slot == slot:
+                choices.append(
+                    discord.SelectOption(
+                        label=it.name,
+                        value=item_id,
+                        description=f"{qty} in inventory"
+                    )
+                )
 
-        # 1) build the embed
+        # Always allow unequip
+        choices.insert(
+            0,
+            discord.SelectOption(
+                label="Unequip",
+                value="__unequip__",
+                description="Remove currently equipped item"
+            )
+        )
+
+        # ─── 2) Build the embed with your slot banner ───
         embed = Embed(
             title=f"⚙️ Slot: {slot.title()}",
             description="Select an item to equip, or choose to unequip.",
             color=Color.random()
         )
-        # 2) insert the banner if we have one
         banner_url = SLOT_BANNERS.get(slot)
         if banner_url:
             embed.set_image(url=banner_url)
 
-        # 3) edit the message—note the comma between kwargs
+        # ─── 3) Send the updated view ───
         await interaction.response.edit_message(
             embed=embed,
             view=EquipSelectView(view.cog, view.ctx, slot, choices)
         )
+
 
 
 class EquipSelectView(View):
