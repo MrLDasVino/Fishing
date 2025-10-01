@@ -724,14 +724,16 @@ class PurchaseButton(Button):
         # Build combined options for items + spells
         options = []
         for item_id, cost in view.shop.inventory.items():
+            itm_def = items.get(item_id)
             options.append(discord.SelectOption(
-                label=items[item_id].name,
+                label=itm_def.name,
                 description=f"{cost}g",
                 value=f"item:{item_id}"
             ))
         for spell_id, cost in view.shop.spell_inventory.items():
+            sp_def = spells.get(spell_id)
             options.append(discord.SelectOption(
-                label=spells[spell_id].name,
+                label=sp_def.name,
                 description=f"{cost}g (Spell)",
                 value=f"spell:{spell_id}"
             ))
@@ -776,11 +778,12 @@ class ItemSelect(Select):
 
             gold -= cost
             known = state.get("spells", [])
+            sp_def = spells.get(obj_id)
             if obj_id in known:
-                msg = f"You already know **{spells[obj_id].name}**."
+                msg = f"You already know **{sp_def.name}**."
             else:
                 known.append(obj_id)
-                msg = f"✅ Learned **{spells[obj_id].name}** for {cost}g."
+                msg = f"✅ Learned **{sp_def.name}** for {cost}g."
                 await cfg.spells.set(known)
 
             await cfg.update({"gold": gold})
