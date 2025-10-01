@@ -629,16 +629,18 @@ class PlayerCommands(commands.Cog):
         shop = shops.get(shop_id)
         if not shop:
             return await ctx.send(f"No such shop: `{shop_id}`.")
-    
-        view = ShopView(shop)
+
+        view = ShopView(self, ctx, shop)
         await ctx.send(embed=view.current_embed(), view=view)
 
 class ShopView(View):
-    def __init__(self, shop):
+    def __init__(self, cog: commands.Cog, ctx: commands.Context, shop):
         super().__init__(timeout=120)
+        self.cog = cog
+        self.ctx = ctx
         self.shop = shop
 
-        # Group items by category  
+        # Group items by category
         groups = defaultdict(list)
         for item_id, cost in shop.inventory.items():
             itm = items.get(item_id)
@@ -646,28 +648,30 @@ class ShopView(View):
             name = getattr(itm, "name", item_id)
             groups[cat].append(f"**{name}** — {cost}g")
 
-        # Two categories per page  
+        # Two categories per page
         cats = list(groups.items())
         self.pages = [dict(cats[i : i + 2]) for i in range(0, len(cats), 2)]
         self.page = 0
 
-        # Prev/Next buttons  
+        # Navigation buttons
         self.add_item(self.Prev())
         self.add_item(self.Next())
+        # Purchase button
+        self.add_item(PurchaseButton())
 
     def current_embed(self) -> discord.Embed:
         e = discord.Embed(
             title=f"🏪 {self.shop.name or self.shop.id}",
             color=Color.blue()
         )
-        if self.shop.thumbnail:
+        if getattr(self.shop, "thumbnail", ""):
             e.set_thumbnail(url=self.shop.thumbnail)
         e.set_footer(text=f"Page {self.page + 1}/{len(self.pages)}")
 
         for cat, lines in self.pages[self.page].items():
             e.add_field(name=f"📦 {cat}", value="\n".join(lines), inline=False)
 
-        # Show spells on last page  
+        # On last page, show spells
         if self.page == len(self.pages) - 1 and self.shop.spell_inventory:
             spell_lines = [
                 f"**{spells[s].name}** — {c}g"
@@ -682,7 +686,7 @@ class ShopView(View):
             super().__init__(label="⏮️", style=ButtonStyle.secondary)
 
         async def callback(self, interaction: discord.Interaction):
-            view: ShopView = self.view  # built-in, points back to your ShopView
+            view: ShopView = self.view
             if view.page > 0:
                 view.page -= 1
                 await interaction.response.edit_message(
@@ -704,5 +708,148 @@ class ShopView(View):
                 )
             else:
                 await interaction.response.defer()
+
+
+class PurchaseButton(Button):
+    def __init__(self):
+        super().__init__(label="Buy", style=ButtonStyle.success)
+
+    async def callback(self, interaction: discord.Interaction):
+        view: ShopView = self.view
+        if interaction.user != view.ctx.author:
+            return await interaction.response.send_message(
+                "This isn’t your shop session.", ephemeral=True
+            )
+
+        # Build combined options for items + spells
+        options = []
+        for item_id, cost in view.shop.inventory.items():
+            options.append(discord.SelectOption(
+                label=items[item_id].name,
+                description=f"{cost}g",
+                value=f"item:{item_id}"
+            ))
+        for spell_id, cost in view.shop.spell_inventory.items():
+            options.append(discord.SelectOption(
+                label=spells[spell_id].name,
+                description=f"{cost}g (Spell)",
+                value=f"spell:{spell_id}"
+            ))
+
+        await interaction.response.send_message(
+            "Select what you’d like to buy:",
+            view=ItemSelectView(view, options),
+            ephemeral=True
+        )
+
+
+class ItemSelectView(View):
+    def __init__(self, parent: ShopView, options: list[discord.SelectOption]):
+        super().__init__(timeout=30)
+        self.parent = parent
+        self.add_item(ItemSelect(options))
+
+
+class ItemSelect(Select):
+    def __init__(self, options: list[discord.SelectOption]):
+        super().__init__(
+            placeholder="Choose an item or spell…",
+            min_values=1, max_values=1,
+            options=options
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        view: ShopView = self.view.parent  # parent of this View is ShopView
+        kind, obj_id = self.values[0].split(":", 1)
+
+        # Load user state
+        cfg = view.cog.config.user(interaction.user)
+        state = await cfg.all()
+        gold = state.get("gold", 0)
+
+        if kind == "spell":
+            cost = view.shop.spell_inventory[obj_id]
+            if gold < cost:
+                return await interaction.response.send_message(
+                    "You can’t afford that spell.", ephemeral=True
+                )
+
+            gold -= cost
+            known = state.get("spells", [])
+            if obj_id in known:
+                msg = f"You already know **{spells[obj_id].name}**."
+            else:
+                known.append(obj_id)
+                msg = f"✅ Learned **{spells[obj_id].name}** for {cost}g."
+                await cfg.spells.set(known)
+
+            await cfg.update({"gold": gold})
+            return await interaction.response.send_message(
+                f"{msg}\nYou have {gold}g left.", ephemeral=True
+            )
+
+        # Item purchase branch
+        cost_per = view.shop.inventory[obj_id]
+        max_qty = min(gold // cost_per, 10)
+        if max_qty == 0:
+            return await interaction.response.send_message(
+                "You can’t afford even one.", ephemeral=True
+            )
+
+        qty_opts = [
+            discord.SelectOption(label=str(n), value=str(n))
+            for n in range(1, max_qty + 1)
+        ]
+        await interaction.response.send_message(
+            f"How many **{items[obj_id].name}** at {cost_per}g each?",
+            view=QuantitySelectView(view, obj_id, cost_per, qty_opts),
+            ephemeral=True
+        )
+
+
+class QuantitySelectView(View):
+    def __init__(self, parent: ShopView, item_id: str, cost: int, options):
+        super().__init__(timeout=30)
+        self.parent = parent
+        self.item_id = item_id
+        self.cost = cost
+        self.add_item(QuantitySelect(options))
+
+
+class QuantitySelect(Select):
+    def __init__(self, options):
+        super().__init__(
+            placeholder="Choose quantity…",
+            min_values=1, max_values=1,
+            options=options
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        parent_view: ShopView = self.view.parent
+        qty = int(self.values[0])
+        total = qty * parent_view.view_cost  # cost passed via parent_view
+
+        # Update user state
+        cfg = parent_view.cog.config.user(interaction.user)
+        state = await cfg.all()
+        gold = state.get("gold", 0)
+        inv = state.get("inventory", {})
+
+        if total > gold:
+            return await interaction.response.send_message(
+                "You can’t afford that many.", ephemeral=True
+            )
+
+        gold -= total
+        inv[self.item_id] = inv.get(self.item_id, 0) + qty
+        await cfg.update({"gold": gold})
+        await cfg.inventory.set(inv)
+
+        return await interaction.response.send_message(
+            f"✅ Purchased {qty}× **{items[self.item_id].name}** for {total}g.\n"
+            f"You now have {gold}g left.",
+            ephemeral=True
+        )
+
         
 

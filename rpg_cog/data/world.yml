@@ -87,7 +87,7 @@ shops:
   - id: mill_trader
     name: "Old Mill Trader"                
     region: old_mill
-    thumbnail: ""  
+    thumbnail: "https://files.catbox.moe/68hs1f.png"  
     inventory:
       potion_common: 10
       
