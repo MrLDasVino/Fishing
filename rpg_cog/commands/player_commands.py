@@ -363,6 +363,7 @@ class SpellSelectView(View):
 class PlayerCommands(commands.Cog):
     def __init__(self, parent):
         self.parent = parent
+        self.config = parent.config        
 
     @commands.group(name="rpg")
     async def rpg(self, ctx: commands.Context):
