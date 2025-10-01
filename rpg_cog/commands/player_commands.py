@@ -374,58 +374,44 @@ class PlayerCommands(commands.Cog):
             await ctx.send_help(ctx.command)
 
     @rpg.command(name="explore")
-    async def rpg_explore(self, ctx: commands.Context, *, region: str):
+    async def rpg_explore(self, ctx: commands.Context):
         """
-        Explore a region to fight a random enemy in it.
-        Example: !rpg explore old_mill
+        Explore a random enemy in the region you’re currently in.
         """
-
-        # 0) Check raw HP so we don't auto-heal or allow 0 HP
-        user_conf = self.parent.config.user(ctx.author)
-        data = await user_conf.all()
-        current_hp = data.get("hp", data.get("max_hp", 20))
-        if current_hp <= 0:
-            return await ctx.send(":broken_heart: You’re out of HP! Heal up before you explore.")
-
-        # 1) Region lookup by id or human name
-        match = None
-        for rid in regions.keys():
-            rdef = regions.get(rid)
-            if rid.lower() == region.lower() or rdef.name.lower() == region.lower():
-                match = rdef
-                break
-        if not match:
-            return await ctx.send(
-                f"Unknown region `{region}`. Try: {', '.join(regions.keys())}"
-            )
-
-        # 2) Ensure full player state and pull known spells
+        # 1) Ensure player and fetch current region
         state = await self.parent.ensure_player_state(ctx.author)
-        known_spells = state.get("spells", [])
+        current = state.get("region", "old_mill")
+        region_def = regions.get(current)
+        if not region_def:
+            return await ctx.send(f"Your saved region `{current}` is invalid.")
 
-        # 3) Build player_stats, re-using current_hp
-        player_stats = {
-            "hp":       current_hp,
-            "max_hp":   state.get("max_hp", 20),
-            "mp":       state.get("mp",     state.get("max_mp", 10)),
-            "max_mp":   state.get("max_mp", 10),
-            "attack":   state.get("attack", 5),
-            "defense":  state.get("defense",1),
-            "accuracy": state.get("accuracy",1.0),
-            "evasion":  state.get("evasion", 1.0),
-            "magic_attack":  state.get("magic_attack", 0),    
-            "magic_defense": state.get("magic_defense", 0),               
-        }
+        # 2) Check HP
+        current_hp = state.get("hp", state.get("max_hp", 20))
+        if current_hp <= 0:
+            return await ctx.send("💔 You have no HP. Rest or heal before exploring.")
 
-        # 4) Pick a random enemy
-        pool = match.enemies
+        # 3) Ensure region has enemies
+        pool = region_def.enemies
         if not pool:
-            return await ctx.send(f"No enemies in region `{match.name}`")
-        eid = random.choice(pool)
+            return await ctx.send(f"No enemies to explore in **{region_def.name}**.")
 
-        # 5) Launch interactive CombatView
-        view = CombatView(ctx, player_stats, eid, known_spells)
-        view.message = await ctx.send(embed=view.build_embed(), view=view)
+        # 4) Launch battle with a random pick
+        eid = random.choice(pool)
+        player_stats = {
+            "hp": current_hp,
+            "max_hp": state.get("max_hp", 20),
+            "mp": state.get("mp", state.get("max_mp", 10)),
+            "max_mp": state.get("max_mp", 10),
+            "attack": state.get("attack", 5),
+            "defense": state.get("defense", 1),
+            "accuracy": state.get("accuracy", 1.0),
+            "evasion": state.get("evasion", 1.0),
+            "magic_attack": state.get("magic_attack", 0),
+            "magic_defense": state.get("magic_defense", 0),
+        }
+        view = CombatView(ctx, player_stats, eid, state.get("spells", []))
+        await ctx.send(embed=view.build_embed(), view=view)
+
 
 
 
@@ -589,16 +575,20 @@ class PlayerCommands(commands.Cog):
 
     @rpg.command(name="buy", help="Buy an item or spell from a shop.")
     async def rpg_buy(self, ctx: commands.Context, shop_id: str, thing_id: str):
-        """
-        Usage: !rpg buy <shop_id> <item_or_spell_id>
-        """
-        user = ctx.author
-        state = await self.parent.ensure_player_state(user)
+        # 1) Ensure player and fetch current region
+        state = await self.parent.ensure_player_state(ctx.author)
+        current = state.get("region", "old_mill")
+
+        # 2) Lookup shop and region-lock
         shop = shops.get(shop_id)
         if not shop:
-            return await ctx.send(f"No such shop: `{shop_id}`")
+            return await ctx.send(f"No such shop: `{shop_id}`.")
+        if shop.region != current:
+            return await ctx.send(
+                f"You can’t buy from **{shop.name or shop.id}** while in **{current}**."
+            )
 
-        # decide if we're buying an item or a spell
+        # 3) Decide what they’re buying
         if thing_id in shop.inventory:
             cost = shop.inventory[thing_id]
             category = "item"
@@ -606,7 +596,8 @@ class PlayerCommands(commands.Cog):
             cost = shop.spell_inventory[thing_id]
             category = "spell"
         else:
-            return await ctx.send(f"`{shop_id}` doesn't offer `{thing_id}`.")
+            return await ctx.send(f"`{shop_id}` doesn’t offer `{thing_id}`.")
+        
 
         # check gold
         if state["gold"] < cost:
@@ -627,12 +618,23 @@ class PlayerCommands(commands.Cog):
 
     @rpg.command(name="shop", help="Show the inventory of a shop.")
     async def rpg_shop(self, ctx, shop_id: str):
+        # 1) Ensure player and fetch current region
+        state = await self.parent.ensure_player_state(ctx.author)
+        current = state.get("region", "old_mill")
+
+        # 2) Lookup shop and region-lock
         shop = shops.get(shop_id)
         if not shop:
             return await ctx.send(f"No such shop: `{shop_id}`.")
+        if shop.region != current:
+            return await ctx.send(
+                f"You can’t visit **{shop.name or shop.id}** from **{current}**."
+            )
 
+        # 3) Show it
         view = ShopView(self, ctx, shop)
         await ctx.send(embed=view.current_embed(), view=view)
+
         
     @rpg.command(name="travel", help="Browse and travel to adjacent regions.")
     async def rpg_travel(self, ctx, region_id: Optional[str] = None):
