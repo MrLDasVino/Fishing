@@ -13,6 +13,21 @@ from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
 from ..core.base import PlaceDef, QuestDef
 
+GENERAL_EQUIP_BANNER = "https://files.catbox.moe/trmec2.png"
+SLOT_BANNERS = {
+    "head":    "https://files.catbox.moe/o4l0ao.png",
+    "chest":   "https://files.catbox.moe/vfd1i1.png",
+    "legs":    "https://files.catbox.moe/bow88x.png",
+    "weapon":  "https://files.catbox.moe/9jtyti.png",
+    "offhand": "https://files.catbox.moe/gzbqjw.png",
+    "gloves":    "https://files.catbox.moe/205mhh.png",
+    "left_ring": "https://files.catbox.moe/n21e6c.png",
+    "right_ring":"https://files.catbox.moe/n21e6c.png",
+    "boots":     "https://files.catbox.moe/kdpwy3.png",
+    "cape":      "https://files.catbox.moe/n8jcr7.png",
+    "amulet":  "https://files.catbox.moe/dwhmm1.png",    
+}
+
 def humanize(item_id: str) -> str:
     """
     Turn 'health_potion' → 'Health Potion', 
@@ -813,8 +828,9 @@ class PlayerCommands(commands.Cog):
             embed=Embed(
                 title="🛡️ Manage Equipment",
                 description="Select a slot to equip or unequip gear.",
-                color=Color.blue()
+                color=Color.random()
             ),
+            embed.set_image(url=GENERAL_EQUIP_BANNER)
             view=SlotSelectView(self, ctx, state)
         )        
         
@@ -1270,8 +1286,11 @@ class SlotSelect(Select):
             embed=Embed(
                 title=f"Slot: {slot.title()}",
                 description="Select an item to equip, or unequip.",
-                color=Color.green()
+                color=Color.random()
             ),
+            banner_url = SLOT_BANNERS.get(slot)
+            if banner_url:
+                embed.set_image(url=banner_url)            
             view=EquipSelectView(view.cog, view.ctx, slot, choices)
         )
 
