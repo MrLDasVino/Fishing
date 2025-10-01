@@ -13,7 +13,7 @@ from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
 from ..core.base import PlaceDef, QuestDef
 
-GENERAL_EQUIP_BANNER = "https://files.catbox.moe/trmec2.png",
+GENERAL_EQUIP_BANNER = "https://files.catbox.moe/trmec2.png"
 SLOT_BANNERS = {
     "head":    "https://files.catbox.moe/o4l0ao.png",
     "chest":   "https://files.catbox.moe/vfd1i1.png",
@@ -824,15 +824,19 @@ class PlayerCommands(commands.Cog):
         Let the player pick a slot (weapon, head, etc.) to (un)equip.
         """
         state = await self.parent.ensure_player_state(ctx.author)
-        await ctx.send(
-            embed=Embed(
-                title="🛡️ Manage Equipment",
-                description="Select a slot to equip or unequip gear.",
-                color=Color.random()
-            ),
-            embed.set_image(url=GENERAL_EQUIP_BANNER)
-            view=SlotSelectView(self, ctx, state)
-        )        
+        
+        # 1) Create the Embed
+        equip_embed = Embed(
+            title="🛡️ Manage Equipment",
+            description="Select a slot to equip or unequip gear.",
+            color=Color.random()
+        )
+        
+        # 2) Add your banner
+        equip_embed.set_image(url=GENERAL_EQUIP_BANNER)
+        
+        # 3) Send it with the view
+        await ctx.send(embed=equip_embed, view=SlotSelectView(self, ctx, state))  
         
 
 class ShopView(View):
