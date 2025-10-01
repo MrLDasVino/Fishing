@@ -146,8 +146,9 @@ quests:
   - id: quest_save_farm
     title: Save the Farm
     description: Clear goblins from Old Mill
+    region: old_mill            
     requirements:
-      kill: goblin_scout:3
+      kill: goblin_scout: 3
     rewards:
       xp: 100
       gold: 25

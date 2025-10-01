@@ -3,6 +3,7 @@ from pathlib import Path
 from redbot.core import commands, Config
 
 from .core.loader import load_world
+from .core.registry import quests
 
 
 class RPGCog(commands.Cog):
@@ -32,7 +33,9 @@ class RPGCog(commands.Cog):
             magic_defense=0,     
             gold=0,
             inventory={},
-            region="old_mill"
+            region="old_mill",
+            active_quests={},     
+            completed_quests=[]              
         )
 
         # load world data (data/world.yml relative to this file)
@@ -65,6 +68,57 @@ class RPGCog(commands.Cog):
             }
             await self.config.user(user).set(state)
         return state
+        
+    async def record_kill(self, user, enemy_id: str):
+        """
+        Called whenever a player slays an enemy: bumps any active kill‐type quests.
+        """
+        cfg = self.config.user(user)
+        state = await cfg.all()
+        active = state.get("active_quests", {})
+        completed = state.setdefault("completed_quests", [])
+        to_complete = []
+
+        for qid, progress in list(active.items()):
+            qdef = quests.get(qid)
+            if not qdef or "kill" not in qdef.requirements:
+                continue
+            reqs = qdef.requirements["kill"]  # e.g. {"goblin_scout": 3}
+            if enemy_id not in reqs:
+                continue
+
+            # increment kill count
+            progress["kill"][enemy_id] += 1
+
+            # check if all kill requirements are met
+            if all(progress["kill"].get(e, 0) >= cnt for e, cnt in reqs.items()):
+                to_complete.append(qid)
+
+        # award completed quests
+        for qid in to_complete:
+            qdef = quests.get(qid)
+            active.pop(qid, None)
+            completed.append(qid)
+
+            # grant rewards
+            state["xp"]   = state.get("xp", 0)   + qdef.rewards.get("xp", 0)
+            state["gold"] = state.get("gold", 0) + qdef.rewards.get("gold", 0)
+
+            await cfg.update({
+                "active_quests": active,
+                "completed_quests": completed,
+                "xp": state["xp"],
+                "gold": state["gold"],
+            })
+
+            # notify player via DM
+            try:
+                await user.send(
+                    f"🎉 Quest **{qdef.title}** complete! "
+                    f"+{qdef.rewards.get('xp',0)} XP, +{qdef.rewards.get('gold',0)}g."
+                )
+            except:
+                pass   
 
     async def red_delete_data_for_user(self, **kwargs):
         """

@@ -156,6 +156,7 @@ class CombatView(View):
             xp_out = apply_xp(state, self.xp)
             state = xp_out["player"]
             await self.ctx.cog.parent.config.user(user).set(state)
+            await self.ctx.cog.parent.record_kill(self.player, self.enemy_def.id)
 
         else:  # defeat or escape
             self.push_log("💀 Defeat!" if won is False else "🚪 Escaped!")
@@ -766,7 +767,32 @@ class PlayerCommands(commands.Cog):
             f"Where would you like to travel from **{current_def.name}**?",
             embed=view.current_embed(),
             view=view
-        )        
+        ) 
+
+    @rpg.command(name="quests", help="Browse and accept quests available in your region.")
+    async def rpg_quests(self, ctx: commands.Context):
+        # 1) load player state and current region
+        state = await self.parent.ensure_player_state(ctx.author)
+        current = state.get("region", "old_mill")
+        # 2) filter world quests by region and not already taken or completed
+        available = [
+            q for q in quests.all()
+            if q.region == current
+            and q.id not in state.get("active_quests", {})
+            and q.id not in state.get("completed_quests", [])
+        ]
+        if not available:
+            return await ctx.send("No new quests in this region.")
+        # 3) send embed + dropdown
+        embed = discord.Embed(
+            title=f"Quests in {regions.get(current).name}",
+            description="Select a quest to accept:",
+            color=discord.Color.random()
+        )
+        for q in available:
+            embed.add_field(name=q.title, value=q.description, inline=False)
+        await ctx.send(embed=embed, view=QuestSelectView(self, ctx, available))
+        
 
 class ShopView(View):
     def __init__(self, cog: commands.Cog, ctx: commands.Context, shop):
@@ -1116,4 +1142,49 @@ class RegionBrowseView(View):
             # remove buttons after confirming
             await interaction.response.edit_message(embed=embed, view=None)
         
+class QuestSelectView(View):
+    def __init__(self, cog, ctx, quest_defs: list[QuestDef]):
+        super().__init__(timeout=60)
+        self.cog = cog
+        self.ctx = ctx
+        self.quests = quest_defs
+        self.add_item(QuestSelect(self, quest_defs))
+
+class QuestSelect(Select):
+    def __init__(self, view: QuestSelectView, quest_defs: list[QuestDef]):
+        options = [
+            discord.SelectOption(label=q.title, value=q.id, description=q.description)
+            for q in quest_defs
+        ]
+        super().__init__(placeholder="Choose a quest…",
+                         min_values=1, max_values=1,
+                         options=options)
+        self.view_ref = view
+
+    async def callback(self, interaction: discord.Interaction):
+        qid = self.values[0]
+        qdef = next(q for q in self.view_ref.quests if q.id == qid)
+        user = interaction.user
+        cfg = self.view_ref.cog.parent.config.user(user)
+
+        # region guard (extra safety)
+        state = await cfg.all()
+        if state.get("region") != qdef.region:
+            return await interaction.response.send_message(
+                "You must be in the right region to accept this quest.", ephemeral=True
+            )
+
+        # register quest
+        active = state.setdefault("active_quests", {})
+        # initialize progress counters based on requirements
+        active[qid] = {   # e.g. {"kill": {"goblin_scout": 0}}
+            key: {eid: 0 for eid in reqs} 
+            for key, reqs in qdef.requirements.items()
+        }
+        await cfg.active_quests.set(active)
+
+        await interaction.response.edit_message(
+            content=f"✅ You’ve accepted **{qdef.title}**!",
+            embed=None, view=None
+        )
 

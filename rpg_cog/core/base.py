@@ -60,9 +60,10 @@ class QuestDef:
     id: str
     title: str
     description: str
+    region: str                    
     requirements: Dict[str, Any] = field(default_factory=dict)
     rewards: Dict[str, int] = field(default_factory=dict)
-
+    
 @dataclass
 class DungeonDef:
     id: str
