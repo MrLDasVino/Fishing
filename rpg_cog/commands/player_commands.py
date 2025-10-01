@@ -804,7 +804,7 @@ class PlayerCommands(commands.Cog):
         embed = Embed(
             title=f"📝 Quests in {region_def.name}",
             description="Select a quest to accept from the dropdown below.",
-            color=Color.gold()
+            color=Color.random()
         )
 
         # use the region thumbnail as a banner
@@ -868,7 +868,7 @@ class ShopView(View):
     def current_embed(self) -> discord.Embed:
         e = discord.Embed(
             title=f"🏪 {self.shop.name or self.shop.id}",
-            color=Color.blue()
+            color=Color.random()
         )
         if getattr(self.shop, "thumbnail", ""):
             e.set_thumbnail(url=self.shop.thumbnail)
@@ -1080,7 +1080,7 @@ class RegionBrowseView(View):
         e = discord.Embed(
             title=f"🏞️ {reg.name}",
             description=reg.description,
-            color=Color.blue()
+            color=Color.random()
         )
         if reg.thumbnail:
             e.set_image(url=reg.thumbnail)
@@ -1275,7 +1275,7 @@ class SlotSelect(Select):
         embed = Embed(
             title=f"⚙️ Slot: {slot.title()}",
             description="Select an item to equip, or choose to unequip.",
-            color=Color.green()
+            color=Color.random()
         )
         # 2) insert the banner if we have one
         banner_url = SLOT_BANNERS.get(slot)
