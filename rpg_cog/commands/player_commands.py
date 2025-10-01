@@ -654,20 +654,24 @@ class PlayerCommands(commands.Cog):
             await user_cfg.region.set(region_id)
             embed = discord.Embed(
                 title=f"🏞️ Traveled to {target.name}",
-                description=target.description,
-                color=Color.green()
+                description=(
+                    f"You navigate winding paths and finally arrive at **{target.name}**.\n\n"
+                    f"{target.description}"
+                ),
+                color=Color.random()
             )
             if target.thumbnail:
                 embed.set_image(url=target.thumbnail)
 
-            if target.shops:
-                shop_lines = [
-                    f"🏪 {shops.get(sid).name or sid}"
-                    for sid in target.shops
-                ]
+            valid_shops = []
+            for sid in target.shops:
+                shop_def = shops.get(sid)
+                if shop_def:
+                    valid_shops.append(f"🏪 {shop_def.name}")
+            if valid_shops:
                 embed.add_field(
                     name="Available Shops",
-                    value="\n".join(shop_lines),
+                    value="\n".join(valid_shops),
                     inline=False
                 )
 
@@ -1003,25 +1007,27 @@ class RegionBrowseView(View):
 
             embed = discord.Embed(
                 title=f"🏞️ Traveled to {dest.name}",
-                description=dest.description,
-                color=Color.green()
+                description=(
+                    f"After your journey, you set foot in **{dest.name}** at last.\n\n"
+                    f"{dest.description}"
+                ),
+                color=Color.random()
             )
             if dest.thumbnail:
                 embed.set_image(url=dest.thumbnail)
 
             # only render shops that actually exist
-            valid = []
+            valid_shops = []
             for sid in dest.shops:
                 shop_def = shops.get(sid)
                 if shop_def:
-                    valid.append(f"🏪 {shop_def.name}")
+                    valid_shops.append(f"🏪 {shop_def.name}")
                 else:
-                    # optional: show the raw ID or skip entirely
-                    valid.append(f"🏪 {sid}")
-            if valid:
+                    valid_shops.append(f"🏪 {sid}")
+            if valid_shops:
                 embed.add_field(
                     name="Available Shops",
-                    value="\n".join(valid),
+                    value="\n".join(valid_shops),
                     inline=False
                 )
 
