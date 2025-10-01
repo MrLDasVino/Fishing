@@ -1252,7 +1252,7 @@ class SlotSelectView(View):
         self.add_item(SlotSelect(options))
 
 class SlotSelect(Select):
-    def __init__(self, options):
+    def __init__(self, options: list[SelectOption]):
         super().__init__(
             placeholder="Choose slot…",
             min_values=1,
@@ -1261,45 +1261,43 @@ class SlotSelect(Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        # 1) Grab the slot key and player state
         slot = self.values[0]
         view: SlotSelectView = self.view
         inv = view.state.get("inventory", {})
 
-        # ─── 1) Build the choices list for this slot ───
-        choices = []
+        # 2) Build the list of equippable items in that slot
+        choices: list[SelectOption] = []
         for item_id, qty in inv.items():
             it = items.get(item_id)
             if it and it.equip_slot == slot:
-                choices.append(
-                    discord.SelectOption(
-                        label=it.name,
-                        value=item_id,
-                        description=f"{qty} in inventory"
-                    )
-                )
+                choices.append(SelectOption(
+                    label=it.name,
+                    value=item_id,
+                    description=f"{qty} in inventory"
+                ))
 
-        # Always allow unequip
-        choices.insert(
-            0,
-            discord.SelectOption(
-                label="Unequip",
-                value="__unequip__",
-                description="Remove currently equipped item"
-            )
-        )
+        # Always allow an “Unequip” option
+        choices.insert(0, SelectOption(
+            label="Unequip",
+            value="__unequip__",
+            description="Remove currently equipped item"
+        ))
 
-        # ─── 2) Build the embed with your slot banner ───
-        embed = Embed(
+        # 3) Pretty-print the slot name
         pretty_slot = slot.replace("_", " ").title()
+
+        # 4) Build the embed and apply the slot’s banner
         embed = Embed(
             title=f"⚙️ Slot: {pretty_slot}",
-            color=Color.random()
+            description="Select an item to equip, or choose to unequip.",
+            color=Color.green()
         )
         banner_url = SLOT_BANNERS.get(slot)
         if banner_url:
             embed.set_image(url=banner_url)
 
-        # ─── 3) Send the updated view ───
+        # 5) Edit the original message with the new embed and next view
         await interaction.response.edit_message(
             embed=embed,
             view=EquipSelectView(view.cog, view.ctx, slot, choices)
