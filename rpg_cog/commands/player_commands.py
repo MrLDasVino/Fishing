@@ -2,7 +2,7 @@
 import discord
 import random
 from collections import defaultdict
-from discord import ButtonStyle, Color, Embed
+from discord import ButtonStyle, Color, Embed, SelectOption
 from discord.ui import View, Button, button, Select
 from redbot.core import commands
 from typing import Optional
