@@ -651,7 +651,7 @@ class PlayerCommands(commands.Cog):
                     f"You can’t reach **{target.name}** from **{current_def.name}**."
                 )
 
-            await user_cfg.update(region=region_id)
+            await user_cfg.region.set(region_id)
             embed = discord.Embed(
                 title=f"🏞️ Traveled to {target.name}",
                 description=target.description,
@@ -998,7 +998,7 @@ class RegionBrowseView(View):
 
             target_id = view.adjacents[view.page]
             user_cfg = view.cog.config.user(interaction.user)
-            await user_cfg.update(region=target_id)
+            await user_cfg.region.set(target_id)
             dest = regions.get(target_id)
 
             embed = discord.Embed(
