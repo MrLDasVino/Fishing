@@ -771,10 +771,11 @@ class PlayerCommands(commands.Cog):
 
     @rpg.command(name="quests", help="Browse and accept quests available in your region.")
     async def rpg_quests(self, ctx: commands.Context):
-        # 1) load player state and current region
         state = await self.parent.ensure_player_state(ctx.author)
         current = state.get("region", "old_mill")
-        # 2) filter world quests by region and not already taken or completed
+        region_def = regions.get(current)
+        
+        # filter available quests
         available = [
             q for q in quests.all()
             if q.region == current
@@ -782,15 +783,24 @@ class PlayerCommands(commands.Cog):
             and q.id not in state.get("completed_quests", [])
         ]
         if not available:
-            return await ctx.send("No new quests in this region.")
-        # 3) send embed + dropdown
-        embed = discord.Embed(
-            title=f"Quests in {regions.get(current).name}",
-            description="Select a quest to accept:",
-            color=discord.Color.random()
+            return await ctx.send(f"No new quests in **{region_def.name}**.")
+
+        # build a rich embed
+        embed = Embed(
+            title=f"📝 Quests in {region_def.name}",
+            description="Select a quest to accept from the dropdown below.",
+            color=Color.gold()
         )
+
+        # use the region thumbnail as a banner
+        if region_def.thumbnail:
+            embed.set_image(url=region_def.thumbnail)
+
+        # list each quest as a field
         for q in available:
             embed.add_field(name=q.title, value=q.description, inline=False)
+
+        # send with the selection view
         await ctx.send(embed=embed, view=QuestSelectView(self, ctx, available))
         
 
