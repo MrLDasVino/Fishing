@@ -940,9 +940,16 @@ class RegionBrowseView(View):
                 value=", ".join(reg.enemies),
                 inline=True
             )
-        if reg.shops:
-            shop_list = "\n".join(f"🏪 {shops.get(s).name or s}" for s in reg.shops)
-            e.add_field(name="Shops", value=shop_list, inline=False)
+        # only include shops that actually exist in your registry
+        valid_defs = [shops.get(sid) for sid in reg.shops]
+        valid_defs = [sd for sd in valid_defs if sd is not None]
+        if valid_defs:
+            shop_lines = [f"🏪 {sd.name}" for sd in valid_defs]
+            e.add_field(name="Shops", value="\n".join(shop_lines), inline=False)
+        else:
+            # optional: show nothing or a placeholder
+            # e.add_field(name="Shops", value="No shops here.", inline=False)
+            pass
 
         e.set_footer(
             text=f"Option {self.page+1}/{len(self.adjacents)} • Confirm to travel"
