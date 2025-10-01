@@ -445,7 +445,7 @@ class PlayerCommands(commands.Cog):
         if len(region_def.places) > 1:
             return await ctx.send(
                 f"Where would you like to explore in **{region_def.name}**?",
-                view=PlaceSelectView(ctx, state, region_def.places)
+                view=self.PlaceSelectView(ctx, state, region_def.places)
             )
 
         # Single‐place or fallback to flat enemies
