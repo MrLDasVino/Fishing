@@ -635,71 +635,16 @@ class PlayerCommands(commands.Cog):
 
         await ctx.send(embed=embed)
 
-   
-
 
     @rpg.command(name="stats", help="Show your current RPG stats and level progress.")
     async def rpg_stats(self, ctx: commands.Context):
-        """
-        Display the calling user's stats: level, XP, HP, MP, attack, defense, etc.,
-        plus how much XP is needed for the next level.
-        """
+        """Display stats with paging buttons."""
         user = ctx.author
-        # load all fields from config in one go
+        # load all fields
         data = await self.parent.config.user(user).all()
-
-        lvl = data["level"]
-        xp = data["xp"]
-        next_xp = xp_to_next(lvl)
-
-        embed = discord.Embed(
-            title=f"{user.display_name}'s RPG Stats",
-            color=discord.Color.random()
-        )
-        embed.set_image(url="https://files.catbox.moe/eu2ad8.png")
-
-        # Level & XP
-        embed.add_field(name="Level", value=str(lvl), inline=True)
-        embed.add_field(name="XP", value=f"{xp} / {next_xp}", inline=True)
-
-        # Core attributes
-        embed.add_field(
-            name="HP",
-            value=f"{data['hp']} / {data['max_hp']}",
-            inline=True
-        )
-        embed.add_field(
-            name="MP",                              # ← new
-            value=f"{data['mp']} / {data['max_mp']}",
-            inline=True
-        )
-        embed.add_field(name="Attack", value=str(data["attack"]), inline=True)
-        embed.add_field(name="Defense", value=str(data["defense"]), inline=True)
-        embed.add_field(name="Magic Attack", value=str(data.get("magic_attack", 0)), inline=True)
-        embed.add_field(name="Magic Defense", value=str(data.get("magic_defense", 0)), inline=True)        
-
-        # Other stats
-        embed.add_field(
-            name="Accuracy",
-            value=f"{data['accuracy']:.2f}",
-            inline=True
-        )
-        embed.add_field(
-            name="Evasion",
-            value=f"{data['evasion']:.2f}",
-            inline=True
-        )
-
-        # Currency & inventory size
-        inv = data.get("inventory", {})
-        embed.add_field(name="Gold", value=str(data["gold"]), inline=True)
-        embed.add_field(
-            name="Items in Inventory",
-            value=str(sum(inv.values())),
-            inline=True
-        )
-
-        await ctx.send(embed=embed) 
+        # send the multi-page view instead of a single embed
+        view = StatsView(self, ctx, data)
+        await ctx.send(embed=view.current_embed(), view=view) 
  
     @rpg.command(name="shop", help="Show or choose a shop in your current region.")
     async def rpg_shop(self, ctx, shop_id: Optional[str] = None):
@@ -1201,6 +1146,97 @@ class RegionBrowseView(View):
 
             # remove buttons after confirming
             await interaction.response.edit_message(embed=embed, view=None)
+            
+
+class StatsView(View):
+    def __init__(self, cog: commands.Cog, ctx: commands.Context, data: dict):
+        super().__init__(timeout=120)
+        self.cog = cog
+        self.ctx = ctx
+        self.data = data
+        self.page = 0
+        # Add one button per page
+        for idx, label in enumerate(("Stats", "Gear", "Skills", "Spells")):
+            # Highlight current page by using primary style
+            style = ButtonStyle.primary if idx == self.page else ButtonStyle.secondary
+            self.add_item(self.PageButton(label, idx, style))
+
+    class PageButton(Button):
+        def __init__(self, label: str, idx: int, style: ButtonStyle):
+            super().__init__(label=label, style=style)
+            self.idx = idx
+
+        async def callback(self, interaction: discord.Interaction):
+            view: StatsView = self.view
+            # Update page
+            view.page = self.idx
+            # Refresh all buttons’ styles
+            for btn in view.children:
+                btn.style = ButtonStyle.primary if getattr(btn, "idx", None) == view.page else ButtonStyle.secondary
+            # Edit the message with the new embed
+            await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+    def current_embed(self) -> discord.Embed:
+        """Return embed based on self.page."""
+        user = self.ctx.author
+        d = self.data
+        if self.page == 0:
+            embed = discord.Embed(
+                title=f"{user.display_name}'s RPG Stats",
+                color=discord.Color.random()
+            )
+            # replicate your existing fields
+            lvl = d["level"]
+            xp, next_xp = d["xp"], xp_to_next(lvl)
+            embed.add_field(name="Level", value=str(lvl), inline=True)
+            embed.add_field(name="XP", value=f"{xp} / {next_xp}", inline=True)
+            embed.add_field(name="HP", value=f"{d['hp']} / {d['max_hp']}", inline=True)
+            embed.add_field(name="MP", value=f"{d['mp']} / {d['max_mp']}", inline=True)
+            embed.add_field(name="Attack", value=str(d["attack"]), inline=True)
+            embed.add_field(name="Defense", value=str(d["defense"]), inline=True)
+            embed.add_field(name="Magic Attack", value=str(d.get("magic_attack", 0)), inline=True)
+            embed.add_field(name="Magic Defense", value=str(d.get("magic_defense", 0)), inline=True)
+            embed.add_field(name="Accuracy", value=f"{d['accuracy']:.2f}", inline=True)
+            embed.add_field(name="Evasion", value=f"{d['evasion']:.2f}", inline=True)
+            embed.add_field(name="Gold", value=str(d["gold"]), inline=True)
+            inv_count = sum(d.get("inventory", {}).values())
+            embed.add_field(name="Items in Inventory", value=str(inv_count), inline=True)
+            return embed
+
+        if self.page == 1:
+            embed = discord.Embed(
+                title=f"{user.display_name}'s Equipped Gear",
+                color=discord.Color.random()
+            )
+            equip = d.get("equipment", {})
+            for slot, item_id in equip.items():
+                name = items.get(item_id).name if item_id else "Empty"
+                embed.add_field(name=slot.replace("_", " ").title(), value=name, inline=True)
+            return embed
+
+        if self.page == 2:
+            embed = discord.Embed(
+                title=f"{user.display_name}'s Skills",
+                color=discord.Color.random()
+            )
+            skills = d.get("skills", [])  # adjust key if you name it differently
+            if skills:
+                embed.description = "\n".join(f"- {s}" for s in skills)
+            else:
+                embed.description = "No skills learned."
+            return embed
+
+        # page == 3: spells
+        embed = discord.Embed(
+            title=f"{user.display_name}'s Spells",
+            color=discord.Color.random()
+        )
+        learned = d.get("spells", [])
+        if learned:
+            embed.description = "\n".join(f"- {spells.get(sp).name}" for sp in learned)
+        else:
+            embed.description = "No spells learned."
+        return embed            
         
 class QuestSelectView(View):
     def __init__(self, cog, ctx, quest_defs: list[QuestDef]):
