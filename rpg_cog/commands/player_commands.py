@@ -1067,16 +1067,10 @@ class RegionBrowseView(View):
                 value=", ".join(reg.enemies),
                 inline=True
             )
-        # only include shops that actually exist in your registry
-        valid_defs = [shops.get(sid) for sid in reg.shops]
-        valid_defs = [sd for sd in valid_defs if sd is not None]
+        valid_defs = [shops.get(sid) for sid in reg.shops if shops.get(sid)]
         if valid_defs:
             shop_lines = [f"🏪 {sd.name}" for sd in valid_defs]
             e.add_field(name="Shops", value="\n".join(shop_lines), inline=False)
-        else:
-            # optional: show nothing or a placeholder
-            # e.add_field(name="Shops", value="No shops here.", inline=False)
-            pass
 
         e.set_footer(
             text=f"Option {self.page+1}/{len(self.adjacents)} • Confirm to travel"
@@ -1117,17 +1111,31 @@ class RegionBrowseView(View):
 
         async def callback(self, interaction: discord.Interaction):
             view: RegionBrowseView = self.view
-            # guard: only the original author
+
+            # only the original author can confirm
             if interaction.user != view.ctx.author:
                 return await interaction.response.send_message(
                     "This isn’t your travel session.", ephemeral=True
                 )
 
             target_id = view.adjacents[view.page]
-            user_cfg = view.cog.config.user(interaction.user)
-            await user_cfg.region.set(target_id)
             dest = regions.get(target_id)
 
+            # ─── Level requirement check ────────────────────────────────────────
+            state = await view.cog.config.user(interaction.user).all()
+            player_level = state.get("level", 1)
+            if player_level < getattr(dest, "min_level", 1):
+                return await interaction.response.send_message(
+                    f"🚫 You must be at least level {dest.min_level} to travel to **{dest.name}**.",
+                    ephemeral=True
+                )
+            # ───────────────────────────────────────────────────────────────────
+
+            # perform the travel
+            user_cfg = view.cog.config.user(interaction.user)
+            await user_cfg.region.set(target_id)
+
+            # build the arrival embed
             embed = discord.Embed(
                 title=f"🏞️ Traveled to {dest.name}",
                 description=(
@@ -1139,14 +1147,11 @@ class RegionBrowseView(View):
             if dest.thumbnail:
                 embed.set_image(url=dest.thumbnail)
 
-            # only render shops that actually exist
             valid_shops = []
             for sid in dest.shops:
                 shop_def = shops.get(sid)
-                if shop_def:
-                    valid_shops.append(f"🏪 {shop_def.name}")
-                else:
-                    valid_shops.append(f"🏪 {sid}")
+                label = shop_def.name if shop_def else sid
+                valid_shops.append(f"🏪 {label}")
             if valid_shops:
                 embed.add_field(
                     name="Available Shops",
@@ -1156,6 +1161,7 @@ class RegionBrowseView(View):
 
             # remove buttons after confirming
             await interaction.response.edit_message(embed=embed, view=None)
+
             
 
 class StatsView(View):
