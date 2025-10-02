@@ -945,7 +945,7 @@ class PurchaseButton(Button):
             itm_def = items.get(item_id)
             emoji = RARITY_EMOJIS.get(itm_def.rarity, "")
             options.append(SelectOption(
-                label=f"{emoji} {itm_def.name}",,
+                label=f"{emoji} {itm_def.name}",
                 description=f"{cost}g",
                 value=f"item:{item_id}"
             ))
