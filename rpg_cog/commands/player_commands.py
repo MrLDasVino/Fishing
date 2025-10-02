@@ -1025,7 +1025,7 @@ class ItemSelect(Select):
             for n in range(1, max_qty + 1)
         ]
         await interaction.response.send_message(
-            f"How many **{items[obj_id].name}** at {cost_per}g each?",
+            f"How many **{items.get(obj_id).name}** at {cost_per}g each?",
             view=QuantitySelectView(view, obj_id, cost_per, qty_opts),
             ephemeral=True
         )
