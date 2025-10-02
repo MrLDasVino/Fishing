@@ -22,7 +22,10 @@ RARITY_EMOJIS = {
     "mythic":    "🌟",
 }
 
+STATS_BANNER_URL   = "https://files.catbox.moe/eu2ad8.png"
 GENERAL_EQUIP_BANNER = "https://files.catbox.moe/trmec2.png"
+SKILLS_BANNER_URL  = "https://files.catbox.moe/xjcmzc.png"
+SPELLS_BANNER_URL  = "https://files.catbox.moe/b1tnz3.png"
 SLOT_BANNERS = {
     "head":    "https://files.catbox.moe/o4l0ao.png",
     "chest":   "https://files.catbox.moe/vfd1i1.png",
@@ -1185,6 +1188,7 @@ class StatsView(View):
                 title=f"{user.display_name}'s RPG Stats",
                 color=discord.Color.random()
             )
+            embed.set_image(url=STATS_BANNER_URL)            
             # replicate your existing fields
             lvl = d["level"]
             xp, next_xp = d["xp"], xp_to_next(lvl)
@@ -1208,6 +1212,7 @@ class StatsView(View):
                 title=f"{user.display_name}'s Equipped Gear",
                 color=discord.Color.random()
             )
+            embed.set_image(url=GEAR_BANNER_URL)
             equip = d.get("equipment", {})
             for slot, item_id in equip.items():
                 name = items.get(item_id).name if item_id else "Empty"
@@ -1219,6 +1224,7 @@ class StatsView(View):
                 title=f"{user.display_name}'s Skills",
                 color=discord.Color.random()
             )
+            embed.set_image(url=SKILLS_BANNER_URL)
             skills = d.get("skills", [])  # adjust key if you name it differently
             if skills:
                 embed.description = "\n".join(f"- {s}" for s in skills)
@@ -1231,6 +1237,7 @@ class StatsView(View):
             title=f"{user.display_name}'s Spells",
             color=discord.Color.random()
         )
+        embed.set_image(url=SPELLS_BANNER_URL)
         learned = d.get("spells", [])
         if learned:
             embed.description = "\n".join(f"- {spells.get(sp).name}" for sp in learned)
