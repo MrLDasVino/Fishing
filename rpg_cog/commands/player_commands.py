@@ -740,8 +740,10 @@ class PlayerCommands(commands.Cog):
 
         # 5) show the normal ShopView
         view = ShopView(self, ctx, shop)
-        await ctx.send(embed=view.current_embed(), 
-    )
+        await ctx.send(
+            embed=view.current_embed(),
+            view=view
+        )
         
     @rpg.command(name="travel", help="Browse and travel to adjacent regions.")
     async def rpg_travel(self, ctx, region_id: Optional[str] = None):
