@@ -13,6 +13,15 @@ from ..managers.xp import apply_xp, xp_to_next
 from ..managers.healing import apply_heal
 from ..core.base import PlaceDef, QuestDef
 
+RARITY_EMOJIS = {
+    "common":    "⚪",
+    "uncommon":  "🟢",
+    "rare":      "🔵",
+    "epic":      "◆",
+    "legendary": "⭐",
+    "mythic":    "🌟",
+}
+
 GENERAL_EQUIP_BANNER = "https://files.catbox.moe/trmec2.png"
 SLOT_BANNERS = {
     "head":    "https://files.catbox.moe/o4l0ao.png",
@@ -617,8 +626,10 @@ class PlayerCommands(commands.Cog):
             for item_id, qty in inventory.items():
                 item_def = items.get(item_id)
                 # use the defined name if it exists, otherwise humanize the ID
+                # human-readable name + rarity emoji
                 display_name = getattr(item_def, "name", None) or humanize(item_id)
-                embed.add_field(name=display_name, value=str(qty), inline=True)
+                emoji       = RARITY_EMOJIS.get(getattr(item_def, "rarity", ""), "")
+                embed.add_field(name=f"{emoji} {display_name}", value=str(qty), inline=True)
         else:
             embed.add_field(name="Inventory Empty", value="You have no items.", inline=False)
 
@@ -851,8 +862,9 @@ class ShopView(View):
         for item_id, cost in shop.inventory.items():
             itm = items.get(item_id)
             cat = getattr(itm, "category", "Miscellaneous")
-            name = getattr(itm, "name", item_id)
-            groups[cat].append(f"**{name}** — {cost}g")
+            name  = getattr(itm, "name", item_id)
+            emoji = RARITY_EMOJIS.get(itm.rarity, "")
+            groups[cat].append(f"{emoji} **{name}** — {cost}g")
 
         # Two categories per page
         cats = list(groups.items())
@@ -931,8 +943,9 @@ class PurchaseButton(Button):
         options = []
         for item_id, cost in view.shop.inventory.items():
             itm_def = items.get(item_id)
-            options.append(discord.SelectOption(
-                label=itm_def.name,
+            emoji = RARITY_EMOJIS.get(itm_def.rarity, "")
+            options.append(SelectOption(
+                label=f"{emoji} {itm_def.name}",,
                 description=f"{cost}g",
                 value=f"item:{item_id}"
             ))
@@ -1271,8 +1284,10 @@ class SlotSelect(Select):
         for item_id, qty in inv.items():
             it = items.get(item_id)
             if it and it.equip_slot == slot:
+                # pull the emoji by the item’s rarity
+                emoji = RARITY_EMOJIS.get(it.rarity, "")
                 choices.append(SelectOption(
-                    label=it.name,
+                    label=f"{emoji} {it.name}",
                     value=item_id,
                     description=f"{qty} in inventory"
                 ))
