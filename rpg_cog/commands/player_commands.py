@@ -710,6 +710,12 @@ class PlayerCommands(commands.Cog):
                 return await ctx.send(
                     f"You can’t reach **{target.name}** from **{current_def.name}**."
                 )
+            # Level requirement check
+            player_level = state.get("level", 1)
+            if player_level < target.min_level:
+                return await ctx.send(
+                    f"🚫 You must be at least level {target.min_level} to travel to **{target.name}**."
+                )
 
             await user_cfg.region.set(region_id)
             embed = discord.Embed(
@@ -1411,6 +1417,12 @@ class EquipSelect(Select):
         if not it or it.equip_slot != self.slot:
             return await interaction.response.send_message(
                 "Invalid item for this slot.", ephemeral=True
+            )
+        # Level requirement check
+        player_level = state.get("level", 1)
+        if player_level < it.min_level:
+            return await interaction.response.send_message(
+                f"🚫 You must be at least level {it.min_level} to equip **{it.name}**.", ephemeral=True
             )
 
         # Remove old modifiers

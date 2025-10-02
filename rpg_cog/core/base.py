@@ -14,6 +14,8 @@ class ItemDef:
     equip_slot: Optional[str] = None            
     #  stat modifiers applied when equipped
     modifiers: Dict[str, int] = field(default_factory=dict)
+    # minimum player level required to equip
+    min_level: int = 1    
 
 @dataclass
 class EnemyDef:
@@ -43,6 +45,8 @@ class RegionDef:
     id: str
     name: str
 
+    # minimum player level required to travel here
+    min_level: int = 1
     description: str = ""                    # narrative text on arrival
     level_range: List[int] = field(default_factory=list)
     enemies: List[str] = field(default_factory=list)
