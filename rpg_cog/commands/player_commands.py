@@ -1276,23 +1276,73 @@ class SlotSelect(Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        # 1) Grab the slot key and player state
+        # 1) Gather state, current equipment and stat‐name mapping
         slot = self.values[0]
         view: SlotSelectView = self.view
-        inv = view.state.get("inventory", {})
+        state = view.state
+        inv = state.get("inventory", {})
 
-        # 2) Build the list of equippable items in that slot
+        # What’s equipped now?
+        equipped_id = state["equipment"].get(slot)
+        old_mods = items.get(equipped_id).modifiers if equipped_id else {}
+
+        # Human‐friendly stat labels
+        stat_names = {
+            "hp": "HP", "max_hp": "Max HP",
+            "mp": "MP", "max_mp": "Max MP",
+            "attack": "Atk", "defense": "Def",
+            "accuracy": "Acc", "evasion": "Eva",
+            "magic_attack": "MAtk", "magic_defense": "MDef",
+        }
+
+        # 2) Build the choices: start with Unequip
         choices: list[SelectOption] = []
+        # Compute delta for removing old gear
+        unequip_deltas = []
+        for stat, old in old_mods.items():
+            if stat not in stat_names or old == 0:
+                continue
+            diff = -old
+            sign = "+" if diff > 0 else "–"
+            val = f"{abs(diff):.2f}" if isinstance(old, float) else str(abs(diff))
+            unequip_deltas.append(f"{sign}{val} {stat_names[stat]}")
+        ud = f" ({', '.join(unequip_deltas)})" if unequip_deltas else ""
+        choices.append(SelectOption(
+            label="⚙️ Unequip",
+            value="__unequip__",
+            description=f"Remove current item{ud}"
+        ))
+
+        # 3) Now each equippable item
         for item_id, qty in inv.items():
             it = items.get(item_id)
-            if it and it.equip_slot == slot:
-                # pull the emoji by the item’s rarity
-                emoji = RARITY_EMOJIS.get(it.rarity, "")
-                choices.append(SelectOption(
-                    label=f"{emoji} {it.name}",
-                    value=item_id,
-                    description=f"{qty} in inventory"
-                ))
+            if not it or it.equip_slot != slot:
+                continue
+
+            # compute stat‐by‐stat delta: new_mod – old_mod
+            deltas = []
+            for stat, new in it.modifiers.items():
+                if stat not in stat_names:
+                    continue
+                old = old_mods.get(stat, 0)
+                diff = new - old
+                if diff == 0:
+                    continue
+                sign = "+" if diff > 0 else "–"
+                val = f"{abs(diff):.2f}" if isinstance(diff, float) else str(abs(diff))
+                deltas.append(f"{sign}{val} {stat_names[stat]}")
+
+            delta_str = f" ({', '.join(deltas)})" if deltas else ""
+
+            # rarity emoji + name
+            emoji = RARITY_EMOJIS.get(it.rarity, "")
+            label = f"{emoji} {it.name}"
+
+            choices.append(SelectOption(
+                label=label,
+                value=item_id,
+                description=f"{qty} in inventory{delta_str}"
+            ))
 
         # Always allow an “Unequip” option
         choices.insert(0, SelectOption(
