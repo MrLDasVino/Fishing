@@ -23,6 +23,7 @@ RARITY_EMOJIS = {
 }
 
 STATS_BANNER_URL   = "https://files.catbox.moe/eu2ad8.png"
+GEAR_BANNER_URL   = GENERAL_EQUIP_BANNER
 GENERAL_EQUIP_BANNER = "https://files.catbox.moe/trmec2.png"
 SKILLS_BANNER_URL  = "https://files.catbox.moe/xjcmzc.png"
 SPELLS_BANNER_URL  = "https://files.catbox.moe/b1tnz3.png"
