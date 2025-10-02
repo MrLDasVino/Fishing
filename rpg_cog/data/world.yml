@@ -91,6 +91,11 @@ regions:
     min_level: 1
     description: "A weathered mill stands by a slow stream."
     level_range: [1, 3]
+    enemies:
+      - goblin_scout
+      - rat
+      - chicken
+      - raccoon    
     adjacent:
       - forest
     thumbnail: "https://files.catbox.moe/g11oz9.png"
