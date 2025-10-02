@@ -1255,16 +1255,24 @@ class SlotSelectView(View):
         self.ctx = ctx
         self.state = state
 
-        slots = list(state.get("equipment", {}).keys())
+        # Build one dropdown option per equipment slot
         options = []
-        for slot in slots:
+        for slot, current in state.get("equipment", {}).items():
             pretty = slot.replace("_", " ").title()
-            current = state["equipment"].get(slot)
             desc = f"Equipped: {items.get(current).name}" if current else "Empty"
             options.append(
-                discord.SelectOption(label=pretty, value=slot, description=desc)
+                SelectOption(label=pretty, value=slot, description=desc)
             )
-        self.add_item(SlotSelect(options))
+
+        # De‐duplicate just in case (Discord requires unique `value`s)
+        seen = set()
+        unique = []
+        for opt in options:
+            if opt.value not in seen:
+                seen.add(opt.value)
+                unique.append(opt)
+
+        self.add_item(SlotSelect(unique))
 
 class SlotSelect(Select):
     def __init__(self, options: list[SelectOption]):
