@@ -88,6 +88,9 @@ enemies:
 regions:
   - id: old_mill
     name: "Old Mill"
+    travel_text: >
+      You crest a gentle rise, and in the distance the mill’s broken sails
+      come into view, their weathered boards turning slowly against a pale sky.    
     min_level: 1
     description: "A weathered mill stands by a slow stream."
     level_range: [1, 3]
@@ -122,6 +125,7 @@ regions:
       
   - id: forest
     name: "Enchanted Forest"
+    travel_text: "A hush falls when you enter the forest, mossy trees whispering secrets overhead."    
     min_level: 2
     description: "Mossy trees whisper in the wind."
     level_range: [2, 5]
@@ -137,6 +141,7 @@ regions:
 
   - id: village
     name: "Quiet Village"
+    travel_text: "Smoke curls from tiny chimneys as villagers wave you down cobblestone lanes."    
     min_level: 2
     description: "Small cottages dot the winding roads."
     level_range: [1, 4]

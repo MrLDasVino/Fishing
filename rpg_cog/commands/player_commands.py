@@ -718,12 +718,10 @@ class PlayerCommands(commands.Cog):
                 )
 
             await user_cfg.region.set(region_id)
+            arrival = target.travel_text or f"You navigate winding paths and finally arrive at **{target.name}**."
             embed = discord.Embed(
                 title=f"🏞️ Traveled to {target.name}",
-                description=(
-                    f"You navigate winding paths and finally arrive at **{target.name}**.\n\n"
-                    f"{target.description}"
-                ),
+                description=f"{arrival}\n\n{target.description}",
                 color=Color.random()
             )
             if target.thumbnail:
@@ -1136,12 +1134,10 @@ class RegionBrowseView(View):
             await user_cfg.region.set(target_id)
 
             # build the arrival embed
+            arrival = dest.travel_text or f"After your journey, you set foot in **{dest.name}** at last."
             embed = discord.Embed(
                 title=f"🏞️ Traveled to {dest.name}",
-                description=(
-                    f"After your journey, you set foot in **{dest.name}** at last.\n\n"
-                    f"{dest.description}"
-                ),
+                description=f"{arrival}\n\n{dest.description}",
                 color=Color.random()
             )
             if dest.thumbnail:

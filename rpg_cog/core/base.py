@@ -45,7 +45,7 @@ class RegionDef:
     id: str
     name: str
 
-    # minimum player level required to travel here
+    travel_text: str = ""
     min_level: int = 1
     description: str = ""                    # narrative text on arrival
     level_range: List[int] = field(default_factory=list)
