@@ -1315,6 +1315,9 @@ class SlotSelect(Select):
 
         # 3) Now each equippable item
         for item_id, qty in inv.items():
+            # skip whatever is already equipped
+            if item_id == equipped_id:
+                continue
             it = items.get(item_id)
             if not it or it.equip_slot != slot:
                 continue
