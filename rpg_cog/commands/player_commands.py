@@ -1749,13 +1749,13 @@ class DuelView(View):
             winner_state = await cfg.user(winner).all()
             await cfg.user(winner).update({"gold": winner_state["gold"] + self.wager*2})
 
-        # persist both players' remaining HP & MP
+        # persist both players' remaining HP & MP (use ensure_player_state + set)
         for m in (self.p1, self.p2):
-            stat = self.stats[m.id]
-            await cfg.user(m).update({
-                "hp": stat["hp"],
-                "mp": stat["mp"]
-            })
+            # load full state, update HP/MP, then overwrite entire profile
+            state = await self.cog.parent.ensure_player_state(m)
+            state["hp"] = self.stats[m.id]["hp"]
+            state["mp"] = self.stats[m.id]["mp"]
+            await self.cog.parent.config.user(m).set(state)
 
         await interaction.response.edit_message(embed=self.build_embed(), view=self)
         self.stop()
