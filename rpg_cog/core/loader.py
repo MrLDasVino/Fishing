@@ -47,3 +47,7 @@ def load_world(path: Path, *, replace: bool = True):
     for sp in doc.get("spells", []):
         obj = SpellDef(**sp)
         spells.register(obj.id, obj)
+        
+    for sk in doc.get("skills", []):
+        obj = SkillDef(**sk)
+        skills.register(obj.id, obj)        

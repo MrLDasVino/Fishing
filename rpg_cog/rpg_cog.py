@@ -32,6 +32,8 @@ class RPGCog(commands.Cog):
             magic_attack=0,      
             magic_defense=0,     
             gold=0,
+            spells=[],
+            skills=[],           
             inventory={},
             region="old_mill",
             equipment={     
@@ -77,6 +79,7 @@ class RPGCog(commands.Cog):
                 "magic_defense": 0,
                 "gold": 0,
                 "spells": [],
+                "skills": [],
                 "inventory": {},
                 "region": "old_mill",
                 "equipment": {

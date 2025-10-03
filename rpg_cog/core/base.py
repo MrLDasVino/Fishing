@@ -88,4 +88,12 @@ class SpellDef:
     power: int            # base magic damage
     cost: int             # MP cost
     crit_chance: float = 0.06    # default 6% crit
-    variance: float = 0.10       # ±10% damage variance    
+    variance: float = 0.10       # ±10% damage variance 
+
+@dataclass
+class SkillDef:
+    id: str
+    name: str
+    description: str
+    power: float          # damage multiplier, e.g. 1.5
+    cost: int = 0   

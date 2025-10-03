@@ -2,12 +2,12 @@ version: 1
 meta:
   world_name: Ebonreach
 items:
-  - id: potion_common
+  - id: healing_potion
     name: Healing Potion
     description: Restores 50 HP
     rarity: common
     stats:
-      heal: 50
+      heal: 20
       
   - id: rusty_dagger
     name: Rusty Dagger
@@ -190,3 +190,16 @@ spells:
     description: “A crackling bolt of fire.”
     power: 8
     cost: 4
+    
+skills:
+  - id: cleave
+    name: Cleave
+    description: Strike all enemies in melee for 1.2× damage.
+    power: 1.2
+    cost: 8
+    
+  - id: quick_slash
+    name: Quick Slash
+    description: Fast strike with no cooldown penalty.
+    power: 1.0
+    cost: 8

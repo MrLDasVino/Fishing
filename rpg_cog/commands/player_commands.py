@@ -56,7 +56,8 @@ class CombatView(View):
         ctx: commands.Context,
         player_stats: dict,
         enemy_id: str,
-        known_spells: list[str],      # ← new parameter
+        known_spells: list[str],
+        known_skills: list[str],
     ):
         super().__init__(timeout=120)
         self.ctx = ctx
@@ -75,7 +76,10 @@ class CombatView(View):
         self.winner: str | None = None
         self.log: list[str] = []
         
-        self.add_item(SpellChoiceButton(self, known_spells))
+        self.spells = known_spells
+        self.skills = known_skills
+        self.add_item(SpellChoiceButton(self, self.spells))
+        self.add_item(SkillChoiceButton(self, self.skills))
         
         
     # helper to append and trim log to last 5 entries
@@ -389,7 +393,77 @@ class SpellSelect(discord.ui.Select):
 class SpellSelectView(View):
     def __init__(self, view_ref: CombatView, known_spells: list[str]):
         super().__init__(timeout=30)
-        self.add_item(SpellSelect(view_ref, known_spells))            
+        self.add_item(SpellSelect(view_ref, known_spells))
+
+class SkillChoiceButton(discord.ui.Button):
+    def __init__(self, view_ref: CombatView, known_skills: list[str]):
+        super().__init__(label="Skill", style=ButtonStyle.success)
+        self.view_ref = view_ref
+        self.known_skills = known_skills
+
+    async def callback(self, interaction: discord.Interaction):
+        view = self.view_ref
+        if interaction.user != view.player:
+            return await interaction.response.send_message("Not your battle!", ephemeral=True)
+
+        if not self.known_skills:
+            return await interaction.response.send_message(
+                "You haven't learned any skills yet!", ephemeral=True
+            )
+
+        # show dropdown
+        await interaction.response.send_message(
+            "Select a skill to use:",
+            view=SkillSelectView(view, self.known_skills),
+            ephemeral=True
+        )
+
+class SkillSelect(discord.ui.Select):
+    def __init__(self, view_ref: CombatView, known_skills: list[str]):
+        options = [
+            discord.SelectOption(label=skills.get(sk).name, value=sk)
+            for sk in known_skills
+            if skills.get(sk)
+        ]
+        super().__init__(placeholder="Choose a skill…", min_values=1, max_values=1, options=options)
+        self.view_ref = view_ref
+
+    async def callback(self, interaction: discord.Interaction):
+        view = self.view_ref
+        skill_id = self.values[0]
+        sk_def = skills.get(skill_id)
+
+        # 1) MP check
+        if view.player_stats["mp"] < sk_def.cost:
+            view.push_log(f"Not enough MP for {sk_def.name}.")
+            return await interaction.response.edit_message(
+                embed=view.build_embed(), view=view
+            )
+
+        # 2) Deduct MP
+        view.player_stats["mp"] -= sk_def.cost
+        stat = view.player_stats
+
+        # optional MP check: if sk_def.cost and stat["mp"] < sk_def.cost:…
+
+        # apply damage
+        crit = _roll_crit()
+        base = stat["attack"] * sk_def.power
+        dmg = _calc_damage(int(base), view.enemy_def.defense, crit)
+        applied = view.enemy.receive_damage(dmg)
+        view.push_log(f"You use {sk_def.name} for {applied}{' crit' if crit else ''}")
+
+        # aftermath
+        if not view.enemy.is_alive():
+            return await view.end_battle(interaction, won=True)
+        await view.enemy_turn(interaction)
+        await interaction.response.edit_message(embed=view.build_embed(), view=view)
+
+class SkillSelectView(View):
+    def __init__(self, view_ref: CombatView, known_skills: list[str]):
+        super().__init__(timeout=30)
+        self.add_item(SkillSelect(view_ref, known_skills))
+        
 
 class PlayerCommands(commands.Cog):
     def __init__(self, parent):
@@ -443,7 +517,13 @@ class PlayerCommands(commands.Cog):
                 "magic_attack":  s.get("magic_attack", 0),
                 "magic_defense": s.get("magic_defense", 0),
             }
-            view = CombatView(self.ctx, player_stats, eid, s.get("spells", []))
+             view = CombatView(
+                 self.ctx,
+                 player_stats,
+                 eid,
+                 known_spells=s.get("spells", []),
+                 known_skills=s.get("skills", []),
+             )
             await interaction.response.edit_message(
                 embed=view.build_embed(), view=view
             )
@@ -1854,7 +1934,17 @@ class SkillSelect(Select):
         attacker = user
         defender = view.p2 if user.id == view.p1.id else view.p1
 
-        # snapshot stats
+        sk_def = skills.get(skill_id)
+
+        # MP check
+        stat = view.stats[user.id]
+        if stat["mp"] < sk_def.cost:
+            return await interaction.response.send_message(
+                f"Not enough MP for {sk_def.name}.", ephemeral=True
+            )
+
+        # Deduct MP
+        stat["mp"] -= sk_def.cost
         atk = view.stats[attacker.id]
         df  = view.stats[defender.id]
 
