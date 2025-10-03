@@ -27,6 +27,7 @@ GENERAL_EQUIP_BANNER = "https://files.catbox.moe/trmec2.png"
 GEAR_BANNER_URL   = GENERAL_EQUIP_BANNER
 SKILLS_BANNER_URL  = "https://files.catbox.moe/xjcmzc.png"
 SPELLS_BANNER_URL  = "https://files.catbox.moe/b1tnz3.png"
+DUEL_BANNER_URL = "https://files.catbox.moe/86o8a9.png"
 SLOT_BANNERS = {
     "head":    "https://files.catbox.moe/o4l0ao.png",
     "chest":   "https://files.catbox.moe/vfd1i1.png",
@@ -875,7 +876,49 @@ class PlayerCommands(commands.Cog):
         await ctx.send(
             f"🎁 {sender.display_name} gave {quantity}× **{name}** to {target.display_name}."
         )        
-        
+
+    @rpg.command(name="duel")
+    async def rpg_duel(self, ctx, opponent: Member, wager: int = 0):
+        """
+        Challenge a player to duel. Optionally wager gold.
+        Usage: [p]rpg duel @User [wager]
+        """
+        challenger = ctx.author
+        if opponent.bot or opponent == challenger:
+            return await ctx.send("Invalid target.")
+        # ensure state
+        state_c = await self.parent.ensure_player_state(challenger)
+        state_o = await self.parent.ensure_player_state(opponent)
+
+        # validate wager
+        if wager < 0 or state_c["gold"] < wager or state_o["gold"] < wager:
+            return await ctx.send("❌ Both players must have that much gold to wager.")
+
+        # lock in wager
+        if wager > 0:
+            cfg = self.parent.config
+            await cfg.user(challenger).update({"gold": state_c["gold"] - wager})
+            await cfg.user(opponent).update({"gold": state_o["gold"] - wager})
+
+        # snapshot stats
+        def snap(s):
+            return {
+                "hp":      s.get("hp", s.get("max_hp", 20)),
+                "max_hp":  s.get("max_hp", 20),
+                "mp":      s.get("mp", s.get("max_mp", 10)),
+                "max_mp":  s.get("max_mp", 10),
+                "attack":  s.get("attack", 5),
+                "defense": s.get("defense", 1),
+                "accuracy":s.get("accuracy", 1.0),
+                "evasion": s.get("evasion", 1.0),
+            }
+
+        stats_c = snap(state_c)
+        stats_o = snap(state_o)
+
+        view = DuelView(self, ctx, challenger, opponent, stats_c, stats_o, wager)
+        header = f"⚔️ {challenger.display_name} challenges {opponent.display_name} to a duel!"
+        await ctx.send(header, embed=view.build_embed(), view=view)        
 
 class ShopView(View):
     def __init__(self, cog: commands.Cog, ctx: commands.Context, shop):
@@ -1523,4 +1566,315 @@ class EquipSelect(Select):
             view=None
         )
         
+class DuelView(View):
+    def __init__(
+        self,
+        cog,
+        ctx,
+        p1: Member,
+        p2: Member,
+        stats_p1: dict,
+        stats_p2: dict,
+        wager: int = 0
+    ):
+        super().__init__(timeout=120)
+        self.cog = cog
+        self.ctx = ctx
+        self.p1, self.p2 = p1, p2
+        # map member.id → stats dict
+        self.stats = {p1.id: stats_p1, p2.id: stats_p2}
+        self.turn = random.choice([p1.id, p2.id])
+        self.rounds = 0
+        self.log: list[str] = []
+        self.wager = wager
+        # Deduct wager from both immediately if >0
+        if wager > 0:
+            cfg = cog.parent.config
+            for m in (p1, p2):
+                state = random  # placeholder
+            # We'll deduct in rpg_duel before sending view
 
+    def build_embed(self) -> Embed:
+        def bar(cur, mx):
+            filled = int((cur / mx) * 10)
+            return "█"*filled + "░"*(10 - filled)
+
+        s1 = self.stats[self.p1.id]
+        s2 = self.stats[self.p2.id]
+        e = Embed(
+            title=f"⚔️ Duel: {self.p1.display_name} vs {self.p2.display_name}",
+            description=f"Turn: {self.ctx.guild.get_member(self.turn).display_name}",
+            color=Color.random()
+        )
+        e.set_image(url=DUEL_BANNER_URL)
+        # Player 1
+        e.add_field(
+            name=self.p1.display_name,
+            value=(
+                f"HP: {s1['hp']}/{s1['max_hp']}  `{bar(s1['hp'], s1['max_hp'])}`\n"
+                f"MP: {s1['mp']}/{s1['max_mp']}`  `{bar(s1['mp'], s1['max_mp'])}`\n"
+                f"Atk: {s1['attack']}  Def: {s1['defense']}"
+            ),
+            inline=False
+        )
+        # Player 2
+        e.add_field(
+            name=self.p2.display_name,
+            value=(
+                f"HP: {s2['hp']}/{s2['max_hp']}  `{bar(s2['hp'], s2['max_hp'])}`\n"
+                f"MP: {s2['mp']}/{s2['max_mp']}`  `{bar(s2['mp'], s2['max_mp'])}`\n"
+                f"Atk: {s2['attack']}  Def: {s2['defense']}"
+            ),
+            inline=False
+        )
+        e.add_field(name="Log", value="\n".join(self.log[-6:]) or "―", inline=False)
+        e.set_footer(text=f"Rounds: {self.rounds}  Pot: {self.wager*2}g")
+        return e
+
+    # ─── Attack ───────────────────────────────────────────────────────────────
+    @button(label="Attack", style=ButtonStyle.primary)
+    async def attack(self, interaction, _):
+        if interaction.user.id != self.turn:
+            return await interaction.response.send_message("Not your turn!", ephemeral=True)
+
+        attacker = interaction.user
+        defender = self.p2 if attacker.id == self.p1.id else self.p1
+        atk = self.stats[attacker.id]
+        df  = self.stats[defender.id]
+
+        self.rounds += 1
+        if _roll_hit(atk["accuracy"], df["evasion"]):
+            crit = _roll_crit()
+            dmg  = _calc_damage(atk["attack"], df["defense"], crit)
+            df["hp"] = max(0, df["hp"] - dmg)
+            self.log.append(f"{attacker.display_name} hits {defender.display_name} for {dmg}{' crit' if crit else ''}")
+        else:
+            self.log.append(f"{attacker.display_name} misses")
+
+        if df["hp"] <= 0:
+            return await self.end_duel(interaction, winner=attacker)
+
+        # reset any defend bonus
+        atk.pop("_defend_bonus", None)
+        self.turn = defender.id
+        await interaction.response.edit_message(embed=self.build_embed(), view=self)
+
+    # ─── Defend ───────────────────────────────────────────────────────────────
+    @button(label="Defend", style=ButtonStyle.secondary)
+    async def defend(self, interaction, _):
+        if interaction.user.id != self.turn:
+            return await interaction.response.send_message("Not your turn!", ephemeral=True)
+
+        self.rounds += 1
+        self.stats[interaction.user.id]["_defend_bonus"] = 0.5
+        self.log.append(f"{interaction.user.display_name} braces for impact")
+        self.turn = (self.p2 if interaction.user.id == self.p1.id else self.p1).id
+        await interaction.response.edit_message(embed=self.build_embed(), view=self)
+
+    # ─── Spell ────────────────────────────────────────────────────────────────
+    @button(label="Spell", style=ButtonStyle.success)
+    async def cast_spell(self, interaction, _):
+        if interaction.user.id != self.turn:
+            return await interaction.response.send_message("Not your turn!", ephemeral=True)
+
+        known = await self.cog.parent.config.user(interaction.user).spells()  # list[str]
+        if not known:
+            return await interaction.response.send_message("No spells learned.", ephemeral=True)
+
+        # send ephemeral select menu
+        await interaction.response.send_message(
+            "Select a spell:", view=SpellSelectView(self, known),
+            ephemeral=True
+        )
+
+    # ─── Skill ─────────────────────────────────────────────────────────────
+    @button(label="Skill", style=ButtonStyle.success)
+    async def skill_button(self, interaction, _):
+        if interaction.user.id != self.turn:
+            return await interaction.response.send_message("Not your turn!", ephemeral=True)
+
+        # fetch known skills from Config
+        known = await self.cog.parent.config.user(interaction.user).skills()
+        if not known:
+            return await interaction.response.send_message("You haven’t learned any skills.", ephemeral=True)
+
+        # fire off an ephemeral selection menu
+        await interaction.response.send_message(
+            "Choose a skill to use:", 
+            view=SkillSelectView(self, known),
+            ephemeral=True
+        )
+
+    # ─── Item ─────────────────────────────────────────────────────────────────
+    @button(label="Item", style=ButtonStyle.primary)
+    async def use_item(self, interaction, _):
+        if interaction.user.id != self.turn:
+            return await interaction.response.send_message("Not your turn!", ephemeral=True)
+
+        state = await self.cog.parent.config.user(interaction.user).all()
+        inv = {iid: qty for iid, qty in state["inventory"].items() if items.get(iid).stats.get("heal", 0) > 0}
+        if not inv:
+            return await interaction.response.send_message("No healing items.", ephemeral=True)
+
+        options = [
+            SelectOption(label=items[i].name, value=i, description=f"Heal {items[i].stats['heal']} HP")
+            for i in inv
+        ]
+        await interaction.response.send_message(
+            "Select an item to use:", view=ItemSelectView(self, options),
+            ephemeral=True
+        )
+
+    # ─── Forfeit ──────────────────────────────────────────────────────────────
+    @button(label="Forfeit", style=ButtonStyle.danger)
+    async def forfeit(self, interaction, _):
+        if interaction.user.id not in (self.p1.id, self.p2.id):
+            return await interaction.response.send_message("Not your duel!", ephemeral=True)
+
+        winner = self.p2 if interaction.user.id == self.p1.id else self.p1
+        return await self.end_duel(interaction, winner=winner)
+
+    # ─── End Duel ─────────────────────────────────────────────────────────────
+    async def end_duel(self, interaction, winner: Member):
+        # disable all buttons
+        for btn in self.children:
+            btn.disabled = True
+
+        loser = self.p2 if winner.id == self.p1.id else self.p1
+        self.log.append(f"🏆 {winner.display_name} wins!")
+
+        # payout wager
+        cfg = self.cog.parent.config
+        if self.wager > 0:
+            winner_state = await cfg.user(winner).all()
+            await cfg.user(winner).update({"gold": winner_state["gold"] + self.wager*2})
+
+        # persist both players' remaining HP & MP
+        for m in (self.p1, self.p2):
+            stat = self.stats[m.id]
+            await cfg.user(m).update({
+                "hp": stat["hp"],
+                "mp": stat["mp"]
+            })
+
+        await interaction.response.edit_message(embed=self.build_embed(), view=self)
+        self.stop()
+
+class SpellSelect(Select):
+    def __init__(self, view_ref: DuelView, known_spells: list[str]):
+        opts = [
+            SelectOption(label=spells[s].name, value=s)
+            for s in known_spells if spells.get(s)
+        ]
+        super().__init__(placeholder="Choose a spell…", min_values=1, max_values=1, options=opts)
+        self.view_ref = view_ref
+
+    async def callback(self, interaction):
+        view = self.view_ref
+        spell_id = self.values[0]
+        user   = interaction.user
+        stat   = view.stats[user.id]
+        sp_def = spells.get(spell_id)
+
+        # MP check
+        if stat["mp"] < sp_def.cost:
+            return await interaction.response.send_message("Not enough MP", ephemeral=True)
+
+        stat["mp"] -= sp_def.cost
+        if _roll_hit(stat["accuracy"], view.stats[(view.p2 if user.id==view.p1.id else view.p1).id]["evasion"]):
+            dmg = _calc_damage(stat["attack"]+sp_def.power,
+                               view.stats[(view.p2 if user.id==view.p1.id else view.p1).id]["defense"],
+                               _roll_crit())
+            target = view.p2 if user.id == view.p1.id else view.p1
+            view.stats[target.id]["hp"] = max(0, view.stats[target.id]["hp"] - dmg)
+            view.log.append(f"{user.display_name} casts {sp_def.name} for {dmg}")
+        else:
+            view.log.append(f"{sp_def.name} missed")
+
+        if view.stats[target.id]["hp"] <= 0:
+            return await view.end_duel(interaction, winner=user)
+
+        # switch turn
+        view.turn = target.id
+        await interaction.response.edit_message(embed=view.build_embed(), view=view)
+
+class SpellSelectView(View):
+    def __init__(self, duel_view, known_spells):
+        super().__init__(timeout=30)
+        self.add_item(SpellSelect(duel_view, known_spells))
+
+class ItemSelect(Select):
+    def __init__(self, options):
+        super().__init__(placeholder="Choose item…", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction):
+        view = self.view.parent  # DuelView is parent of this View
+        item_id = self.values[0]
+        user    = interaction.user
+        stat    = view.stats[user.id]
+        # heal
+        amount = items[item_id].stats["heal"]
+        stat["hp"] = min(stat["max_hp"], stat["hp"] + amount)
+        # consume from config
+        cfg = view.cog.parent.config.user(user)
+        state = await cfg.all()
+        inv = state["inventory"]
+        inv[item_id] -= 1
+        if inv[item_id] == 0:
+            inv.pop(item_id)
+        await cfg.inventory.set(inv)
+
+        view.log.append(f"{user.display_name} uses {items[item_id].name} for {amount} HP")
+        # switch turn
+        view.turn = (view.p2 if user.id == view.p1.id else view.p1).id
+        await interaction.response.edit_message(embed=view.build_embed(), view=view)
+
+class ItemSelectView(View):
+    def __init__(self, duel_view, options):
+        super().__init__(timeout=30)
+        self.add_item(ItemSelect(options))
+        
+class SkillSelect(Select):
+    def __init__(self, view_ref: DuelView, known_skills: list[str]):
+        options = [
+            SelectOption(label=sk.title(), value=sk)
+            for sk in known_skills
+        ]
+        super().__init__(
+            placeholder="Select a skill…",
+            min_values=1, max_values=1,
+            options=options
+        )
+        self.view_ref = view_ref
+
+    async def callback(self, interaction):
+        view = self.view_ref
+        user = interaction.user
+        skill_id = self.values[0]
+        attacker = user
+        defender = view.p2 if user.id == view.p1.id else view.p1
+
+        # snapshot stats
+        atk = view.stats[attacker.id]
+        df  = view.stats[defender.id]
+
+        # Placeholder: scale attack by 1.5x for skills
+        crit = _roll_crit()
+        raw = atk["attack"] * 1.5
+        dmg = _calc_damage(int(raw), df["defense"], crit)
+
+        df["hp"] = max(0, df["hp"] - dmg)
+        view.log.append(f"{attacker.display_name} uses **{skill_id}** for {dmg}{' crit' if crit else ''}")
+
+        # check for end
+        if df["hp"] <= 0:
+            return await view.end_duel(interaction, winner=attacker)
+
+        # switch turn
+        view.turn = defender.id
+        await interaction.response.edit_message(embed=view.build_embed(), view=view)
+
+class SkillSelectView(View):
+    def __init__(self, duel_view: DuelView, known_skills: list[str]):
+        super().__init__(timeout=30)
+        self.add_item(SkillSelect(duel_view,         
