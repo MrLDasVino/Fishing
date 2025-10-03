@@ -874,7 +874,7 @@ class PlayerCommands(commands.Cog):
 
         await ctx.send(
             f"🎁 {sender.display_name} gave {quantity}× **{name}** to {target.display_name}."
-                
+        )        
         
 
 class ShopView(View):
