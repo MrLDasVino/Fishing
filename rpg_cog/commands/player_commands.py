@@ -1877,4 +1877,4 @@ class SkillSelect(Select):
 class SkillSelectView(View):
     def __init__(self, duel_view: DuelView, known_skills: list[str]):
         super().__init__(timeout=30)
-        self.add_item(SkillSelect(duel_view,         
+        self.add_item(SkillSelect(duel_view, known_skills))         
