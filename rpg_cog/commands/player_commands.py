@@ -2,7 +2,7 @@
 import discord
 import random
 from collections import defaultdict
-from discord import ButtonStyle, Color, Embed, SelectOption
+from discord import ButtonStyle, Color, Embed, SelectOption, Member
 from discord.ui import View, Button, button, Select
 from redbot.core import commands
 from typing import Optional
@@ -802,7 +802,79 @@ class PlayerCommands(commands.Cog):
         equip_embed.set_image(url=GENERAL_EQUIP_BANNER)
         
         # 3) Send it with the view
-        await ctx.send(embed=equip_embed, view=SlotSelectView(self, ctx, state))  
+        await ctx.send(embed=equip_embed, view=SlotSelectView(self, ctx, state))
+
+    @rpg.group(name="give", invoke_without_command=True)
+    async def rpg_give(self, ctx):
+        """
+        Give gold or items to another player.
+        """
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @rpg_give.command(name="gold")
+    async def give_gold(self, ctx, target: Member, amount: int):
+        """
+        Transfer gold to someone else.
+        Usage: [p]rpg give gold @User 50
+        """
+        sender = ctx.author
+        # ensure both states exist
+        await self.parent.ensure_player_state(sender)
+        await self.parent.ensure_player_state(target)
+
+        cfg_s = self.parent.config.user(sender)
+        cfg_t = self.parent.config.user(target)
+        state_s = await cfg_s.all()
+        state_t = await cfg_t.all()
+
+        if amount <= 0 or state_s["gold"] < amount:
+            return await ctx.send("❌ You don’t have enough gold.")
+
+        # perform transfer
+        await cfg_s.update({"gold": state_s["gold"] - amount})
+        await cfg_t.update({"gold": state_t["gold"] + amount})
+
+        await ctx.send(f"💰 {sender.display_name} gave {amount}g to {target.display_name}.")
+
+    @rpg_give.command(name="item")
+    async def give_item(self, ctx, target: Member, item_id: str, quantity: int = 1):
+        """
+        Give items from your inventory.
+        Usage: [p]rpg give item @User potion_common 2
+        """
+        sender = ctx.author
+        await self.parent.ensure_player_state(sender)
+        await self.parent.ensure_player_state(target)
+
+        cfg_s = self.parent.config.user(sender)
+        cfg_t = self.parent.config.user(target)
+        state_s = await cfg_s.all()
+        state_t = await cfg_t.all()
+
+        inv_s = state_s.get("inventory", {})
+        have = inv_s.get(item_id, 0)
+        if quantity <= 0 or have < quantity:
+            return await ctx.send("❌ You don’t have that many items to give.")
+
+        # remove from sender
+        inv_s[item_id] = have - quantity
+        if inv_s[item_id] == 0:
+            inv_s.pop(item_id)
+        await cfg_s.inventory.set(inv_s)
+
+        # add to recipient
+        inv_t = state_t.setdefault("inventory", {})
+        inv_t[item_id] = inv_t.get(item_id, 0) + quantity
+        await cfg_t.inventory.set(inv_t)
+
+        # human-friendly name
+        item_def = items.get(item_id)
+        name = item_def.name if item_def else item_id
+
+        await ctx.send(
+            f"🎁 {sender.display_name} gave {quantity}× **{name}** to {target.display_name}."
+                
         
 
 class ShopView(View):
