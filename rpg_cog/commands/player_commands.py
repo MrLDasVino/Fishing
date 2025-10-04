@@ -523,7 +523,7 @@ class PlayerCommands(commands.Cog):
                  eid,
                  known_spells=s.get("spells", []),
                  known_skills=s.get("skills", []),
-             )
+            )
             await interaction.response.edit_message(
                 embed=view.build_embed(), view=view
             )
@@ -621,7 +621,13 @@ class PlayerCommands(commands.Cog):
             "magic_attack":  state.get("magic_attack", 0),
             "magic_defense": state.get("magic_defense", 0),
         }
-        view = CombatView(ctx, player_stats, eid, state.get("spells", []))
+        view = CombatView(
+            ctx,
+            player_stats,
+            eid,
+            known_spells=state.get("spells", []),
+            known_skills=state.get("skills", []),
+        )
         await ctx.send(embed=view.build_embed(), view=view)
 
 
