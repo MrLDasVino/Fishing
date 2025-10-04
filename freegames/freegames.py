@@ -72,7 +72,6 @@ class freegames(commands.Cog):
 
         if end_date_raw:
             try:
-                # Attempt ISO parse; if success, format to friendly timestamp.
                 dt = datetime.fromisoformat(end_date_raw.replace("Z", "+00:00"))
                 embed.add_field(name="Ends At (UTC)", value=dt.strftime("%Y-%m-%d %H:%M UTC"), inline=False)
             except Exception:
@@ -123,12 +122,10 @@ class freegames(commands.Cog):
                 if channel:
                     mention = f"<@&{role_id}>"
                     try:
-                        # Send a single message with mention so role gets pinged, then follow with embeds.
                         await channel.send(mention + " New giveaways posted:")
                     except Exception:
                         log.exception("Failed to send role mention message in guild %s", gid)
 
-                    # Send up to MAX_EMBEDS_PER_POLL embeds, each in its own message to allow richer presentation.
                     for item in new_items[:MAX_EMBEDS_PER_POLL]:
                         embed = self._make_embed_for_item(item)
                         try:
@@ -228,3 +225,69 @@ class freegames(commands.Cog):
             task.cancel()
         await self.config.guild(ctx.guild).running.set(False)
         await ctx.send("Stopped polling for giveaways.")
+
+    @freegames.command(name="test")
+    @checks.admin_or_permissions(manage_guild=True)
+    async def fg_test(self, ctx, commit: Optional[bool] = False):
+        """Fetch current giveaways and post any new ones into this channel.
+
+        Usage:
+        [p]freegames test            - posts current unseen giveaways here (does NOT update seen_ids)
+        [p]freegames test true       - posts and marks those giveaways as seen (updates seen_ids)
+        """
+        guild = ctx.guild
+        cfg = await self.config.guild(guild).all()
+        platforms = cfg["platforms"]
+        types = cfg["types"]
+        seen_ids = set(cfg["seen_ids"] or [])
+
+        params = {}
+        if platforms:
+            params["platform"] = ".".join(platforms)
+        if types:
+            params["type"] = ".".join(types)
+
+        try:
+            giveaways = await self._fetch_giveaways(params)
+        except Exception as e:
+            log.exception("Error fetching giveaways for test in guild %s: %s", guild.id, e)
+            await ctx.send("Failed to fetch giveaways from GamerPower.")
+            return
+
+        new_items = []
+        for item in giveaways:
+            gid_str = str(item.get("id") or item.get("giveaway_id") or item.get("title"))
+            if gid_str not in seen_ids:
+                new_items.append((gid_str, item))
+
+        if not new_items:
+            await ctx.send("No new giveaways found with your current filters.")
+            return
+
+        mention = f"<@&{cfg['role_id']}>" if cfg.get("role_id") else ""
+        try:
+            # Send single mention message in the command channel to ensure ping (if role configured)
+            if mention:
+                await ctx.send(mention + " New giveaways (test):")
+            else:
+                await ctx.send("New giveaways (test):")
+        except Exception:
+            log.exception("Failed to send mention message during test in guild %s", guild.id)
+
+        posted_ids = []
+        for gid_str, item in new_items[:MAX_EMBEDS_PER_POLL]:
+            embed = self._make_embed_for_item(item)
+            try:
+                await ctx.send(embed=embed)
+                posted_ids.append(gid_str)
+            except Exception:
+                log.exception("Failed to send test embed in guild %s for item %s", guild.id, item.get("title"))
+
+        if commit and posted_ids:
+            # merge posted ids into seen_ids and persist
+            seen_ids.update(posted_ids)
+            await self.config.guild(guild).seen_ids.set(list(seen_ids))
+            await ctx.send(f"Marked {len(posted_ids)} giveaways as seen.")
+        else:
+            await ctx.send(f"Posted {len(posted_ids)} giveaways (not marked as seen).")
+
