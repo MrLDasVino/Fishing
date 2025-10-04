@@ -938,11 +938,32 @@ class PlayerCommands(commands.Cog):
         await ctx.send(f"💰 {sender.display_name} gave {amount}g to {target.display_name}.")
 
     @rpg_give.command(name="item")
-    async def give_item(self, ctx, target: Member, item_id: str, quantity: int = 1):
+    async def give_item(self, ctx, target: Member, *item_name_parts: str):
         """
-        Give items from your inventory.
-        Usage: [p]rpg give item @User potion_common 2
+        Give items from your inventory by name.
+        Usage: [p]rpg give item @User healing potion 2
         """
+        # 1) Must specify at least a name
+        if not item_name_parts:
+            return await ctx.send("❌ You must specify an item name.")
+
+        # 2) If last token is a number, treat it as quantity
+        if item_name_parts[-1].isdigit():
+            quantity = int(item_name_parts[-1])
+            name_parts = item_name_parts[:-1]
+        else:
+            quantity = 1
+            name_parts = item_name_parts
+
+        if not name_parts:
+            return await ctx.send("❌ Invalid syntax; no item name found.")
+
+        # 3) Build the internal ID (e.g. "healing_potion")
+        item_id = "_".join(name_parts).lower()
+        item_def = items.get(item_id)
+        if not item_def:
+            return await ctx.send(f"❌ No such item: `{item_id}`")
+            
         sender = ctx.author
         await self.parent.ensure_player_state(sender)
         await self.parent.ensure_player_state(target)
@@ -970,7 +991,7 @@ class PlayerCommands(commands.Cog):
 
         # human-friendly name
         item_def = items.get(item_id)
-        name = item_def.name if item_def else item_id
+        name = item_def.name
 
         await ctx.send(
             f"🎁 {sender.display_name} gave {quantity}× **{name}** to {target.display_name}."
