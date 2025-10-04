@@ -136,7 +136,7 @@ class freegames(commands.Cog):
                 if channel:
                     mention = f"<@&{role_id}>"
                     try:
-                        await channel.send(mention + " New giveaways posted:")
+                        await channel.send(mention + " Check out this free stuff:")
                     except Exception:
                         log.exception("Failed to send role mention message in guild %s", gid)
 
