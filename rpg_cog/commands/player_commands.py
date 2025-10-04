@@ -517,7 +517,7 @@ class PlayerCommands(commands.Cog):
                 "magic_attack":  s.get("magic_attack", 0),
                 "magic_defense": s.get("magic_defense", 0),
             }
-             view = CombatView(
+            view = CombatView(
                  self.ctx,
                  player_stats,
                  eid,
