@@ -3,6 +3,7 @@ import asyncio
 import aiohttp
 import logging
 import discord
+import random
 from datetime import datetime
 
 from redbot.core import commands, Config, checks
@@ -69,7 +70,7 @@ class freegames(commands.Cog):
             title=title,
             url=url,
             description=(description[:300] + "…") if len(description) > 300 else (description or "No description"),
-            color=0x2ECC71,
+            color=random,
         )
         embed.add_field(name="Platforms", value=str(platforms), inline=True)
         embed.add_field(name="Type", value=str(gtype), inline=True)
