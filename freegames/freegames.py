@@ -162,6 +162,7 @@ class freegames(commands.Cog):
             await ctx.send_help(ctx.command)
 
     @freegames.command(name="setchannel")
+    @checks.admin_or_permissions(manage_guild=True)
     async def fg_setchannel(self, ctx, channel: Optional[commands.TextChannelConverter]):
         """Set the channel where notifications will be posted."""
         cid = channel.id if channel else None
@@ -169,6 +170,7 @@ class freegames(commands.Cog):
         await ctx.send(f"Channel set to {channel.mention if channel else 'None'}.")
 
     @freegames.command(name="setrole")
+    @checks.admin_or_permissions(manage_guild=True)
     async def fg_setrole(self, ctx, role: Optional[commands.RoleConverter]):
         """Set the role to ping for new giveaways."""
         rid = role.id if role else None
@@ -176,6 +178,7 @@ class freegames(commands.Cog):
         await ctx.send(f"Role set to {role.mention if role else 'None'}.")
 
     @freegames.command(name="setplatforms")
+    @checks.admin_or_permissions(manage_guild=True)
     async def fg_setplatforms(self, ctx, *, platforms: Optional[str] = None):
         """Set platforms separated by spaces or leave empty to clear. Examples: pc steam epic-games-store"""
         vals = platforms.split() if platforms else []
@@ -183,6 +186,7 @@ class freegames(commands.Cog):
         await ctx.send(f"Platforms set to: {', '.join(vals) if vals else 'None'}.")
 
     @freegames.command(name="settypes")
+    @checks.admin_or_permissions(manage_guild=True)
     async def fg_settypes(self, ctx, *, types: Optional[str] = None):
         """Set giveaway types separated by spaces or leave empty to clear. Examples: game loot beta"""
         vals = types.split() if types else []
@@ -190,6 +194,7 @@ class freegames(commands.Cog):
         await ctx.send(f"Types set to: {', '.join(vals) if vals else 'None'}.")
 
     @freegames.command(name="setinterval")
+    @checks.admin_or_permissions(manage_guild=True)
     async def fg_setinterval(self, ctx, seconds: int):
         """Set poll interval in seconds."""
         if seconds < 30:
@@ -199,6 +204,7 @@ class freegames(commands.Cog):
         await ctx.send(f"Polling interval set to {seconds} seconds.")
 
     @freegames.command(name="status")
+    @checks.admin_or_permissions(manage_guild=True)
     async def fg_status(self, ctx):
         """Show current configuration."""
         cfg = await self.config.guild(ctx.guild).all()
@@ -218,6 +224,7 @@ class freegames(commands.Cog):
         await ctx.send(embed=None, content=embed_text)
 
     @freegames.command(name="start")
+    @checks.admin_or_permissions(manage_guild=True)
     async def fg_start(self, ctx):
         """Start the polling task for this guild."""
         cfg = await self.config.guild(ctx.guild).all()
@@ -230,6 +237,7 @@ class freegames(commands.Cog):
         await ctx.send("Started polling for giveaways.")
 
     @freegames.command(name="stop")
+    @checks.admin_or_permissions(manage_guild=True)
     async def fg_stop(self, ctx):
         """Stop the polling task for this guild."""
         cfg = await self.config.guild(ctx.guild).all()
@@ -306,4 +314,29 @@ class freegames(commands.Cog):
             await ctx.send(f"Marked {len(posted_ids)} giveaways as seen.")
         else:
             await ctx.send(f"Posted {len(posted_ids)} giveaways (not marked as seen).")
+            
+    @freegames.command(name="clearseen")
+    @checks.admin_or_permissions(manage_guild=True)
+    async def fg_clearseen(self, ctx):
+        """Clear all stored seen giveaway IDs so giveaways can be reposted."""
+        await self.config.guild(ctx.guild).seen_ids.set([])
+        await ctx.send("Cleared all stored seen giveaway IDs. Old giveaways may be posted again.")
+
+    @freegames.command(name="removeseen")
+    @checks.admin_or_permissions(manage_guild=True)
+    async def fg_removeseen(self, ctx, *, giveaway_id: str):
+        """Remove a single giveaway ID from seen list so it can be posted again.
+
+        Usage: [p]freegames removeseen <giveaway_id>
+        You can pass the numeric id used by the API or the string fallback key the cog stored.
+        """
+        cfg = await self.config.guild(ctx.guild).all()
+        seen = list(cfg.get("seen_ids") or [])
+        giveaway_id = str(giveaway_id)
+        if giveaway_id not in seen:
+            await ctx.send(f"ID `{giveaway_id}` not found in seen list.")
+            return
+        seen.remove(giveaway_id)
+        await self.config.guild(ctx.guild).seen_ids.set(seen)
+        await ctx.send(f"Removed `{giveaway_id}` from seen IDs. It may be posted again."            
 
