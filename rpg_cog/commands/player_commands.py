@@ -253,13 +253,6 @@ class CombatView(View):
         self.player_stats["_defend_bonus"] = 0.5
         await self.enemy_turn(interaction)
 
-    @button(label="Skill", style=discord.ButtonStyle.success)
-    async def skill(self, interaction: discord.Interaction, _):
-        if interaction.user != self.player:
-            return await interaction.response.send_message("Not your battle!", ephemeral=True)
-        self.log.append("No skills yet.")
-        await interaction.response.edit_message(embed=self.build_embed(), view=self)
-
     @button(label="Item", style=discord.ButtonStyle.primary)
     async def item(self, interaction: discord.Interaction, _):
         if interaction.user != self.player:
