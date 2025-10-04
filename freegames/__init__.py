@@ -1,5 +1,5 @@
-from .freegames import freegames 
+from .freegames import freegames  # noqa
 
-def setup(bot):
+async def setup(bot):
     cog = freegames(bot)
-    bot.add_cog(cog)
+    await bot.add_cog(cog)
