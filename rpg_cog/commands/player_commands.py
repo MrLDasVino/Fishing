@@ -1955,26 +1955,25 @@ class SkillSelect(Select):
 
         sk_def = skills.get(skill_id)
         
-         # ── Weapon requirement check ────────────────────────────
-         # fetch full user state from Config
-         cfg = view.ctx.cog.parent.config.user(user)
-         state = await cfg.all()
-         equipped = state["equipment"].get("weapon")
-         if sk_def.allowed_weapon_types:
-             if not equipped:
-                 return await interaction.response.send_message(
-                     f"You must equip a weapon to use **{sk_def.name}**.",
-                     ephemeral=True
-                 )
-             wdef = items.get(equipped)
-             wt = getattr(wdef, "weapon_type", None)
-             if wt not in sk_def.allowed_weapon_types:
-                 req = ", ".join(sk_def.allowed_weapon_types)
-                 return await interaction.response.send_message(
-                     f"**{sk_def.name}** requires: {req}.",
-                     ephemeral=True
-                 )
-         # ───────────────────────────────────────────────────────        
+        # ── Weapon requirement check ────────────────────────────
+        cfg = view.ctx.cog.parent.config.user(user)
+        state = await cfg.all()
+        equipped = state["equipment"].get("weapon")
+        if sk_def.allowed_weapon_types:
+            if not equipped:
+                return await interaction.response.send_message(
+                    f"You must equip a weapon to use **{sk_def.name}**.",
+                    ephemeral=True
+                )
+            wdef = items.get(equipped)
+            wt = getattr(wdef, "weapon_type", None)
+            if wt not in sk_def.allowed_weapon_types:
+                req = ", ".join(sk_def.allowed_weapon_types)
+                return await interaction.response.send_message(
+                    f"**{sk_def.name}** requires: {req}.",
+                    ephemeral=True
+                )
+        # ───────────────────────────────────────────────────────       
 
         # MP check
         stat = view.stats[user.id]
