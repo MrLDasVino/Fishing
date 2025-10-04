@@ -63,24 +63,38 @@ class freegames(commands.Cog):
         gtype = item.get("type") or "Unknown"
         worth = item.get("worth") or "N/A"
         image = item.get("image") or None
-        end_date_raw = item.get("end_date") or item.get("end_time") or None
+        end_date_raw = item.get("end_date") or item.get("end_time") or item.get("end_at") or None
 
-        embed = discord.Embed(title=title, url=url, description=description[:300] or "No description", color=0x2ECC71)
+        embed = discord.Embed(
+            title=title,
+            url=url,
+            description=(description[:300] + "…") if len(description) > 300 else (description or "No description"),
+            color=0x2ECC71,
+        )
         embed.add_field(name="Platforms", value=str(platforms), inline=True)
         embed.add_field(name="Type", value=str(gtype), inline=True)
         embed.add_field(name="Worth", value=str(worth), inline=True)
 
+        # If there's an end date, try to parse and add Discord timestamps
         if end_date_raw:
             try:
+                # Support ISO formats with or without Z
                 dt = datetime.fromisoformat(end_date_raw.replace("Z", "+00:00"))
-                embed.add_field(name="Ends At (UTC)", value=dt.strftime("%Y-%m-%d %H:%M UTC"), inline=False)
+                unix_ts = int(dt.timestamp())
+                # Add a field showing both full absolute time and relative time using Discord timestamp formatting
+                embed.add_field(
+                    name="Ends",
+                    value=f"<t:{unix_ts}:F>\n(<t:{unix_ts}:R>)",
+                    inline=False,
+                )
             except Exception:
-                embed.add_field(name="Ends At", value=str(end_date_raw), inline=False)
+                # Fallback: display raw string if parsing fails
+                embed.add_field(name="Ends", value=str(end_date_raw), inline=False)
 
+        # Use image as banner if available
         if image:
-            embed.set_thumbnail(url=image)
+            embed.set_image(url=image)
 
-        embed.set_footer(text="Provided by GamerPower")
         return embed
 
     async def _poll_loop(self, guild):
