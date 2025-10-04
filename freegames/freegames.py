@@ -338,5 +338,5 @@ class freegames(commands.Cog):
             return
         seen.remove(giveaway_id)
         await self.config.guild(ctx.guild).seen_ids.set(seen)
-        await ctx.send(f"Removed `{giveaway_id}` from seen IDs. It may be posted again."            
-
+        await ctx.send(f"Removed `{giveaway_id}` from seen IDs. It may be posted again.")          
+       
