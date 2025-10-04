@@ -115,10 +115,10 @@ class CombatView(View):
         embed.add_field(
             name=f"{self.player.display_name} ⚔️",
             value=(
-                f"HP: {p_hp}/{p_max}  `{bar(p_fill)}`\n"
-                f"MP: {self.player_stats['mp']}/{self.player_stats['max_mp']}  `{bar(int(self.player_stats['mp']/self.player_stats['max_mp']*10))}`\n"
-                f"Atk: {self.player_stats['attack']}  Def: {self.player_stats['defense']}"
-                f"MAtk: {self.player_stats['magic_attack']}  MDef: {self.player_stats['magic_defense']}"                
+                f"❤️ HP: {p_hp}/{p_max}  `{bar(p_fill)}`\n"
+                f"🔷 MP: {self.player_stats['mp']}/{self.player_stats['max_mp']}  `{bar(mp_fill)}`\n\n"
+                f"⚔️ Attack: {self.player_stats['attack']}    🛡️ Defense: {self.player_stats['defense']}\n"
+                f"🔮 M.Attack: {self.player_stats['magic_attack']}    🛡️ M.Defense: {self.player_stats['magic_defense']}"                
             ),
             inline=False
         )
@@ -260,7 +260,7 @@ class CombatView(View):
         self.log.append("No items yet.")
         await interaction.response.edit_message(embed=self.build_embed(), view=self)
 
-    @button(label="Escape", style=discord.ButtonStyle.danger)
+    @button(label="Escape", style=discord.ButtonStyle.danger, row=1)
     async def escape(self, interaction: discord.Interaction, _):
         if interaction.user != self.player:
             return await interaction.response.send_message("Not your battle!", ephemeral=True)
