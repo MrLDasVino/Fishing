@@ -426,8 +426,27 @@ class SkillSelect(discord.ui.Select):
         view = self.view_ref
         skill_id = self.values[0]
         sk_def = skills.get(skill_id)
+        
+        # ── Weapon requirement check ────────────────────────────────────
+        # fetch the player’s equipment state
+        state = await view.ctx.cog.parent.config.user(view.player).all()
+        equipped_weapon_id = state["equipment"].get("weapon")
+        if sk_def.allowed_weapon_types:
+            if not equipped_weapon_id:
+                return await interaction.response.send_message(
+                    f"You need a weapon equipped to use **{sk_def.name}**.",
+                    ephemeral=True
+                )
+            weapon_def = items.get(equipped_weapon_id)
+            wt = getattr(weapon_def, "weapon_type", None)
+            if wt not in sk_def.allowed_weapon_types:
+                return await interaction.response.send_message(
+                    f"**{sk_def.name}** requires a {sk_def.allowed_weapon_types[0]} weapon.",
+                    ephemeral=True
+                )
+        # ────────────────────────────────────────────────────────────────        
 
-        # 1) MP check
+        # MP check
         if view.player_stats["mp"] < sk_def.cost:
             view.push_log(f"Not enough MP for {sk_def.name}.")
             return await interaction.response.edit_message(
@@ -1935,6 +1954,27 @@ class SkillSelect(Select):
         defender = view.p2 if user.id == view.p1.id else view.p1
 
         sk_def = skills.get(skill_id)
+        
+         # ── Weapon requirement check ────────────────────────────
+         # fetch full user state from Config
+         cfg = view.ctx.cog.parent.config.user(user)
+         state = await cfg.all()
+         equipped = state["equipment"].get("weapon")
+         if sk_def.allowed_weapon_types:
+             if not equipped:
+                 return await interaction.response.send_message(
+                     f"You must equip a weapon to use **{sk_def.name}**.",
+                     ephemeral=True
+                 )
+             wdef = items.get(equipped)
+             wt = getattr(wdef, "weapon_type", None)
+             if wt not in sk_def.allowed_weapon_types:
+                 req = ", ".join(sk_def.allowed_weapon_types)
+                 return await interaction.response.send_message(
+                     f"**{sk_def.name}** requires: {req}.",
+                     ephemeral=True
+                 )
+         # ───────────────────────────────────────────────────────        
 
         # MP check
         stat = view.stats[user.id]

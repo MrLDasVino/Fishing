@@ -8,6 +8,7 @@ class ItemDef:
     name: str
     description: str
     rarity: str
+    weapon_type: Optional[str] = None
     stats: Dict[str, int] = field(default_factory=dict)
 
     #  make this item wearable in one of these slots
@@ -96,4 +97,5 @@ class SkillDef:
     name: str
     description: str
     power: float          # damage multiplier, e.g. 1.5
-    cost: int = 0   
+    cost: int = 0
+    allowed_weapon_types: List[str] = field(default_factory=list)

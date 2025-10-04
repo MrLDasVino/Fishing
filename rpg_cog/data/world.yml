@@ -15,6 +15,7 @@ items:
     description: A rusted dagger.
     rarity: common
     equip_slot: weapon
+    weapon_type: one-handed
     modifiers:
       attack: 2
       accuracy: 0.05   
@@ -197,9 +198,11 @@ skills:
     description: Strike all enemies in melee for 1.2× damage.
     power: 1.2
     cost: 8
+    allowed_weapon_types: ["two-handed"]
     
   - id: quick_slash
     name: Quick Slash
     description: Fast strike with no cooldown penalty.
     power: 1.0
     cost: 8
+    allowed_weapon_types: ["one-handed", "offhand"]
