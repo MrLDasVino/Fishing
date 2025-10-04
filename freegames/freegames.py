@@ -340,3 +340,46 @@ class freegames(commands.Cog):
         await self.config.guild(ctx.guild).seen_ids.set(seen)
         await ctx.send(f"Removed `{giveaway_id}` from seen IDs. It may be posted again.")          
        
+    @freegames.command(name="listseen")
+    @checks.admin_or_permissions(manage_guild=True)
+    async def fg_listseen(self, ctx, *, query: Optional[str] = None):
+        """List stored seen giveaway IDs. Optionally filter by a substring.
+
+        Usage:
+        [p]freegames listseen                - shows all seen IDs (paged)
+        [p]freegames listseen 12345         - shows only IDs containing '12345'
+        """
+        cfg = await self.config.guild(ctx.guild).all()
+        seen = list(cfg.get("seen_ids") or [])
+
+        if query:
+            seen = [s for s in seen if query in str(s)]
+
+        if not seen:
+            await ctx.send("No seen IDs stored.")
+            return
+
+        # prepare lines and chunk them into messages under Discord limit
+        header = f"Stored seen IDs ({len(seen)} total):\n"
+        lines = [str(x) for x in seen]
+
+        # Build pages that do not exceed 2000 characters
+        pages = []
+        current = header
+        for line in lines:
+            # +1 for newline
+            if len(current) + len(line) + 1 > 1990:
+                pages.append(current)
+                current = ""
+            current += line + "\n"
+        if current:
+            pages.append(current)
+
+        # Send pages with simple pagination header if multiple pages exist
+        total = len(pages)
+        for idx, page in enumerate(pages, start=1):
+            if total > 1:
+                await ctx.send(f"Page {idx}/{total}\n{page}")
+            else:
+                await ctx.send(page)
+       
