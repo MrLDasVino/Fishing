@@ -102,6 +102,7 @@ class CombatView(View):
         e_max = self.enemy_def.hp
 
         p_fill = int((p_hp / p_max) * 10)
+        mp_fill = int((self.player_stats["mp"] / self.player_stats["max_mp"]) * 10)
         e_fill = int((e_hp / e_max) * 10)
 
         embed = discord.Embed(
