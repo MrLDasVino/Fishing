@@ -158,6 +158,8 @@ class freegames(commands.Cog):
     @commands.group(name="freegames", invoke_without_command=True)
     async def freegames(self, ctx):
         """FreeGames notifier configuration commands."""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
 
     @freegames.command(name="setchannel")
     async def fg_setchannel(self, ctx, channel: Optional[commands.TextChannelConverter]):
