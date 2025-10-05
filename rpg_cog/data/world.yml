@@ -29,7 +29,7 @@ enemies:
     base_xp: 25
     gold_range: [5, 15]
     loot_table:
-      - item_id: potion_common
+      - item_id: healing_potion
         weight: 70
         min_qty: 1
         max_qty: 1
@@ -145,7 +145,7 @@ regions:
     travel_text: "Smoke curls from tiny chimneys as villagers wave you down cobblestone lanes."    
     min_level: 2
     description: "Small cottages dot the winding roads."
-    level_range: [1, 4]
+    level_range: [2, 4]
     enemies:
       - bandit
       - rat
