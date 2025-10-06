@@ -227,18 +227,25 @@ class WordCloudCog(commands.Cog):
         # 4) Overlay custom emojis
         async with aiohttp.ClientSession() as session:
             for entry in layout:
-                # entry[0] is always the word string
-                word = entry[0]
-                if not word.startswith("custom_"):
+                # entry[0] might be a str or a 1-tuple, so normalize
+                raw_word = entry[0]
+                if isinstance(raw_word, tuple):
+                    word = raw_word[0]
+                else:
+                    word = raw_word
+    
+                # skip anything that isn’t our custom emoji token
+                if not isinstance(word, str) or not word.startswith("custom_"):
                     continue
-
-                # unpack either a 6-tuple or 5-tuple
-                # 6-tuple: (word, freq, font_size, position, orientation, color)
-                # 5-tuple: (word, font_size, position, orientation, color)
+    
+                # unpack: WordCloud uses 6-tuples (with freq) or 5-tuples (no freq)
                 if len(entry) == 6:
                     _, _, font_size, position, orientation, color = entry
-                else:
+                elif len(entry) == 5:
                     _, font_size, position, orientation, color = entry
+                else:
+                    # unexpected format
+                    continue
 
                 # extract emoji ID
                 _, rest = word.split("custom_", 1)
