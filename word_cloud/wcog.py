@@ -56,6 +56,12 @@ class WordCloudCog(commands.Cog):
     def __init__(self, bot: Red):
         self.bot = bot
         self.db_ready = False
+        import aiohttp
+        from collections import OrderedDict
+
+        self._session = aiohttp.ClientSession()
+        self._emoji_cache: OrderedDict[str, Image.Image] = OrderedDict()
+        self._cache_max = 200
         self._autogen_task = self.bot.loop.create_task(self._ensure_db_and_task())
 
     async def _ensure_db_and_task(self):
@@ -91,6 +97,7 @@ class WordCloudCog(commands.Cog):
     async def cog_unload(self):
         if self._autogen_task:
             self._autogen_task.cancel()
+        await self._session.close()            
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -253,8 +260,8 @@ class WordCloudCog(commands.Cog):
         base_img = wc.to_image().convert("RGBA")
     
         # 5) Paste each custom emoji PNG at its saved spot
-        async with aiohttp.ClientSession() as session:
-            for entry in emoji_entries:
+        session = self._session
+        for entry in emoji_entries:
                 raw = entry[0]
                 token = raw[0] if isinstance(raw, tuple) else raw
     
@@ -267,22 +274,29 @@ class WordCloudCog(commands.Cog):
                 # parse out the ID from "custom_name:ID"
                 _, rest = token.split("custom_", 1)
                 _, eid = rest.split(":", 1)
+            if eid in self._emoji_cache:
+                em = self._emoji_cache[eid]
+                self._emoji_cache.move_to_end(eid)
+            else:
                 url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
-    
                 try:
                     async with session.get(url) as resp:
                         data = await resp.read()
                         em = Image.open(io.BytesIO(data)).convert("RGBA")
                 except Exception:
                     continue
-    
-                # Pillow 10+ uses Resampling.LANCZOS
+
+                # resize with LANCZOS (Pillow 10+ compatible)
                 try:
                     resample = Image.Resampling.LANCZOS
                 except AttributeError:
                     resample = Image.LANCZOS
-    
                 em = em.resize((font_size, font_size), resample)
+
+                # insert into LRU cache & evict oldest if needed
+                self._emoji_cache[eid] = em
+                if len(self._emoji_cache) > self._cache_max:
+                    self._emoji_cache.popitem(last=False)
                 x, y = position
                 base_img.paste(em, (x, y), em)
     
