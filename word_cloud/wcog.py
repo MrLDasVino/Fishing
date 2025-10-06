@@ -9,6 +9,7 @@ import discord
 from PIL import Image, ImageDraw
 import os
 import aiohttp
+from collections import OrderedDict
 from wordcloud import WordCloud
 
 from redbot.core import commands, checks
@@ -260,45 +261,49 @@ class WordCloudCog(commands.Cog):
         base_img = wc.to_image().convert("RGBA")
     
         # 5) Paste each custom emoji PNG at its saved spot
-        session = self._session
-        for entry in emoji_entries:
-                raw = entry[0]
-                token = raw[0] if isinstance(raw, tuple) else raw
-    
-                # unpack size & position
-                if len(entry) == 6:
-                    _, _, font_size, position, orientation, color = entry
-                else:
-                    _, font_size, position, orientation, color = entry
-    
-                # parse out the ID from "custom_name:ID"
-                _, rest = token.split("custom_", 1)
-                _, eid = rest.split(":", 1)
-            if eid in self._emoji_cache:
-                em = self._emoji_cache[eid]
-                self._emoji_cache.move_to_end(eid)
-            else:
-                url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
-                try:
-                    async with session.get(url) as resp:
-                        data = await resp.read()
-                        em = Image.open(io.BytesIO(data)).convert("RGBA")
-                except Exception:
-                    continue
+    session = self._session
+    for entry in emoji_entries:
+        raw = entry[0]
+        token = raw[0] if isinstance(raw, tuple) else raw
 
-                # resize with LANCZOS (Pillow 10+ compatible)
-                try:
-                    resample = Image.Resampling.LANCZOS
-                except AttributeError:
-                    resample = Image.LANCZOS
-                em = em.resize((font_size, font_size), resample)
+        # unpack size & position
+        if len(entry) == 6:
+            _, _, font_size, position, orientation, color = entry
+        else:
+            _, font_size, position, orientation, color = entry
 
-                # insert into LRU cache & evict oldest if needed
-                self._emoji_cache[eid] = em
-                if len(self._emoji_cache) > self._cache_max:
-                    self._emoji_cache.popitem(last=False)
-                x, y = position
-                base_img.paste(em, (x, y), em)
+        # extract emoji ID
+        _, rest = token.split("custom_", 1)
+        _, eid = rest.split(":", 1)
+
+        # LRU cache lookup
+        if eid in self._emoji_cache:
+            em = self._emoji_cache[eid]
+            self._emoji_cache.move_to_end(eid)
+        else:
+            url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
+            try:
+                async with session.get(url) as resp:
+                    data = await resp.read()
+                    em = Image.open(io.BytesIO(data)).convert("RGBA")
+            except Exception:
+                continue
+
+            # resize with LANCZOS (Pillow 10+ compatible)
+            try:
+                resample = Image.Resampling.LANCZOS
+            except AttributeError:
+                resample = Image.LANCZOS
+            em = em.resize((font_size, font_size), resample)
+
+            # insert into cache & evict oldest if needed
+            self._emoji_cache[eid] = em
+            if len(self._emoji_cache) > self._cache_max:
+                self._emoji_cache.popitem(last=False)
+
+        # paste the emoji over the wordcloud
+        x, y = position
+        base_img.paste(em, (x, y), em)
     
         # 6) Save & return
         base_img.save(buf, format="PNG")
