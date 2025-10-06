@@ -195,15 +195,15 @@ class WordCloudCog(commands.Cog):
         - custom Discord emojis pasted over
         """
         buf = io.BytesIO()
-
+    
         # 1) Empty case
         if not frequencies:
             img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
             img.save(buf, format="PNG")
             buf.seek(0)
             return buf
-
-        # 2) Build WordCloud with emoji-capable font if available
+    
+        # 2) Build WordCloud
         wc_kwargs = {
             "width": width,
             "height": height,
@@ -215,66 +215,81 @@ class WordCloudCog(commands.Cog):
         if EMOJI_FONT:
             wc_kwargs["font_path"] = EMOJI_FONT
             wc_kwargs["min_font_size"] = 10
-
+    
         wc = WordCloud(**wc_kwargs)
         wc.generate_from_frequencies(frequencies)
-        wc.recolor(color_func=random_color_func, random_state=random.Random(42))
-
+    
+        # Recolor: make custom_* text fully transparent
+        def cloud_color(word, font_size, position, orientation, random_state=None, **kwargs):
+            if word.startswith("custom_"):
+                return "rgba(0, 0, 0, 0)"
+            return random_color_func(word, font_size, position, orientation, random_state=random_state)
+        wc.recolor(color_func=cloud_color, random_state=random.Random(42))
+    
         # 3) Convert to PIL image and grab layout
         img = wc.to_image().convert("RGBA")
         layout = wc.layout_
-
+    
+        # ─── INSERT: Set up drawing context for text erasure ───────────────
+        from PIL import ImageFont, ImageDraw
+        draw = ImageDraw.Draw(img)
+        # ────────────────────────────────────────────────────────────────────
+    
         # 4) Overlay custom emojis
         async with aiohttp.ClientSession() as session:
             for entry in layout:
-                # entry[0] might be a str or a 1-tuple, so normalize
-                raw_word = entry[0]
-                if isinstance(raw_word, tuple):
-                    word = raw_word[0]
-                else:
-                    word = raw_word
+                # Normalize token name
+                raw = entry[0]
+                word = raw[0] if isinstance(raw, tuple) else raw
     
-                # skip anything that isn’t our custom emoji token
+                # Only handle custom_* tokens
                 if not isinstance(word, str) or not word.startswith("custom_"):
                     continue
     
-                # unpack: WordCloud uses 6-tuples (with freq) or 5-tuples (no freq)
+                # Unpack data (font_size, position, orientation, color)
                 if len(entry) == 6:
                     _, _, font_size, position, orientation, color = entry
                 elif len(entry) == 5:
                     _, font_size, position, orientation, color = entry
                 else:
-                    # unexpected format
                     continue
-
-                # extract emoji ID
+    
+                # ─── INSERT: Erase the bare “custom_…” text underlay ───────────
+                try:
+                    font = ImageFont.truetype(wc.font_path, font_size)
+                    bbox = draw.textbbox(position, word, font=font)
+                    img.paste((0, 0, 0, 0), bbox)
+                except Exception:
+                    pass
+                # ─────────────────────────────────────────────────────────────────
+    
+                # Download and paste the real emoji PNG
                 _, rest = word.split("custom_", 1)
                 _, eid = rest.split(":", 1)
-
-                # fetch & paste the emoji image
                 url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
+    
                 try:
                     async with session.get(url) as resp:
                         data = await resp.read()
                         em = Image.open(io.BytesIO(data)).convert("RGBA")
                 except Exception:
                     continue
-
+    
+                # Resize with LANCZOS (fallback for Pillow 10+)
                 try:
                     resample = Image.Resampling.LANCZOS
                 except AttributeError:
                     resample = Image.LANCZOS
-                    
                 em = em.resize((font_size, font_size), resample)
-                
+    
+                # Paste the actual emoji image
                 x, y = position
                 img.paste(em, (x, y), em)
-
+    
         # 5) Save & return
         img.save(buf, format="PNG")
         buf.seek(0)
         return buf
-
 
 
     async def _maybe_autogen_loop(self):
