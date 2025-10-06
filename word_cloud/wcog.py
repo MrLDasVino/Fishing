@@ -260,7 +260,13 @@ class WordCloudCog(commands.Cog):
                 except Exception:
                     continue
 
-                em = em.resize((font_size, font_size), Image.ANTIALIAS)
+                try:
+                    resample = Image.Resampling.LANCZOS
+                except AttributeError:
+                    resample = Image.LANCZOS
+                    
+                em = em.resize((font_size, font_size), resample)
+                
                 x, y = position
                 img.paste(em, (x, y), em)
 
