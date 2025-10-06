@@ -99,19 +99,24 @@ class WordCloudCog(commands.Cog):
         if not message.guild:
             return
 
-        content = message.content or ""
+        raw = message.content or ""
         tokens = []
 
-        # Extract custom Discord emojis first and normalize them
-        for m in CUSTOM_EMOJI_RE.finditer(content):
+        # 1) Pull out custom emojis, record them, and strip them from the text
+        def _repl_custom(m):
             name, eid = m.groups()
             tokens.append(f"custom_{name}:{eid}")
+            return ""
+        text = CUSTOM_EMOJI_RE.sub(_repl_custom, raw)
 
-        # Extract unicode emojis
-        tokens.extend(UNICODE_EMOJI_RE.findall(content))
+        # 2) Pull out unicode emojis, record them, and strip them
+        def _repl_unicode(m):
+            tokens.append(m.group(0))
+            return ""
+        text = UNICODE_EMOJI_RE.sub(_repl_unicode, text)
 
-        # Extract words
-        for m in WORD_REGEX.finditer(content.lower()):
+        # 3) Now extract only real words from the cleaned‐up text
+        for m in WORD_REGEX.finditer(text.lower()):
             w = m.group(0)
             if w in STOPWORDS:
                 continue
