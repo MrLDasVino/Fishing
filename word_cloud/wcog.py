@@ -1,6 +1,7 @@
 import asyncio
 import random
 import io
+import os
 import aiosqlite
 import regex as re
 from datetime import datetime
