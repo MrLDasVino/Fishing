@@ -52,18 +52,22 @@ def random_color_func(word, font_size, position, orientation, random_state=None,
     return "rgb({}, {}, {})".format(random.randint(0,255), random.randint(0,255), random.randint(0,255))
 
 class WordCloudCog(commands.Cog):
-    """Track words and emojis per-user and per-guild, render transparent PNG word-clouds."""
-
     def __init__(self, bot: Red):
         self.bot = bot
         self.db_ready = False
-        import aiohttp
-        from collections import OrderedDict
 
+        # persistent HTTP session & LRU cache
         self._session = aiohttp.ClientSession()
         self._emoji_cache: OrderedDict[str, Image.Image] = OrderedDict()
         self._cache_max = 200
+
         self._autogen_task = self.bot.loop.create_task(self._ensure_db_and_task())
+
+    async def cog_unload(self):
+        if self._autogen_task:
+            self._autogen_task.cancel()
+        # close persistent session
+        await self._session.close()
 
     async def _ensure_db_and_task(self):
         await self.init_db()
@@ -201,26 +205,18 @@ class WordCloudCog(commands.Cog):
         return {r[0]: r[1] for r in rows}
 
     async def _render_wordcloud_image(self, frequencies: dict, width=1200, height=675):
-        """
-        Render a wordcloud PNG with:
-        - transparent background
-        - real Unicode emojis via EMOJI_FONT
-        - custom Discord emojis pasted over
-        """
         import io
-        import aiohttp
         from PIL import Image
         from wordcloud import WordCloud
+
         buf = io.BytesIO()
-    
-        # 1) Handle empty case
         if not frequencies:
             img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
             img.save(buf, format="PNG")
             buf.seek(0)
             return buf
-    
-        # 2) Build & generate full WordCloud layout (including custom_* tokens)
+
+        # build and generate full layout
         wc_kwargs = {
             "width": width,
             "height": height,
@@ -232,22 +228,19 @@ class WordCloudCog(commands.Cog):
         if EMOJI_FONT:
             wc_kwargs["font_path"] = EMOJI_FONT
             wc_kwargs["min_font_size"] = 10
-    
+
         wc = WordCloud(**wc_kwargs)
         wc.generate_from_frequencies(frequencies)
-    
-        # recolor words; we’ll draw emojis separately
         wc.recolor(
-            color_func=lambda word, *args, **kwargs: random_color_func(word, *args, **kwargs)
-            if not str(word).startswith("custom_")
+            color_func=lambda w, *a, **k: random_color_func(w, *a, **k)
+            if not str(w).startswith("custom_")
             else "rgba(0,0,0,0)",
             random_state=random.Random(42),
         )
-    
-        # 3) Split layout_ into real words vs custom emoji tokens
+
+        # split layout
         full_layout = wc.layout_
-        word_entries = []
-        emoji_entries = []
+        word_entries, emoji_entries = [], []
         for entry in full_layout:
             raw = entry[0]
             token = raw[0] if isinstance(raw, tuple) else raw
@@ -255,61 +248,60 @@ class WordCloudCog(commands.Cog):
                 emoji_entries.append(entry)
             else:
                 word_entries.append(entry)
-    
-        # 4) Draw only the real words
+
+        # render words only
         wc.layout_ = word_entries
         base_img = wc.to_image().convert("RGBA")
-    
-        # 5) Paste each custom emoji PNG at its saved spot
-    session = self._session
-    for entry in emoji_entries:
-        raw = entry[0]
-        token = raw[0] if isinstance(raw, tuple) else raw
 
-        # unpack size & position
-        if len(entry) == 6:
-            _, _, font_size, position, orientation, color = entry
-        else:
-            _, font_size, position, orientation, color = entry
+        # overlay emojis with persistent session & LRU cache
+        session = self._session
+        for entry in emoji_entries:
+            raw = entry[0]
+            token = raw[0] if isinstance(raw, tuple) else raw
 
-        # extract emoji ID
-        _, rest = token.split("custom_", 1)
-        _, eid = rest.split(":", 1)
+            # unpack size & position
+            if len(entry) == 6:
+                _, _, font_size, position, orientation, color = entry
+            else:
+                _, font_size, position, orientation, color = entry
 
-        # LRU cache lookup
-        if eid in self._emoji_cache:
-            em = self._emoji_cache[eid]
-            self._emoji_cache.move_to_end(eid)
-        else:
-            url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
-            try:
-                async with session.get(url) as resp:
-                    data = await resp.read()
-                    em = Image.open(io.BytesIO(data)).convert("RGBA")
-            except Exception:
-                continue
+            # extract emoji ID
+            _, rest = token.split("custom_", 1)
+            _, eid = rest.split(":", 1)
 
-            # resize with LANCZOS (Pillow 10+ compatible)
-            try:
-                resample = Image.Resampling.LANCZOS
-            except AttributeError:
-                resample = Image.LANCZOS
-            em = em.resize((font_size, font_size), resample)
+            # cache lookup
+            if eid in self._emoji_cache:
+                em = self._emoji_cache[eid]
+                self._emoji_cache.move_to_end(eid)
+            else:
+                url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
+                try:
+                    async with session.get(url) as resp:
+                        data = await resp.read()
+                        em = Image.open(io.BytesIO(data)).convert("RGBA")
+                except Exception:
+                    continue
 
-            # insert into cache & evict oldest if needed
-            self._emoji_cache[eid] = em
-            if len(self._emoji_cache) > self._cache_max:
-                self._emoji_cache.popitem(last=False)
+                # resize with LANCZOS
+                try:
+                    resample = Image.Resampling.LANCZOS
+                except AttributeError:
+                    resample = Image.LANCZOS
+                em = em.resize((font_size, font_size), resample)
 
-        # paste the emoji over the wordcloud
-        x, y = position
-        base_img.paste(em, (x, y), em)
-    
-        # 6) Save & return
+                # insert & evict oldest
+                self._emoji_cache[eid] = em
+                if len(self._emoji_cache) > self._cache_max:
+                    self._emoji_cache.popitem(last=False)
+
+            # paste emoji on top
+            x, y = position
+            base_img.paste(em, (x, y), em)
+
+        # save and return
         base_img.save(buf, format="PNG")
         buf.seek(0)
         return buf
-
 
 
     async def _maybe_autogen_loop(self):
