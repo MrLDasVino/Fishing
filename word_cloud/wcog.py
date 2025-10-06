@@ -462,26 +462,36 @@ class WordCloudCog(commands.Cog):
         except Exception:
             await ctx.send("Failed to send image; check my permissions.")
 
-    @wordcloud.command()
+    @wordcloud.command(name="stats")
     async def stats(self, ctx: commands.Context, limit: int = 20):
         """Show top words/emojis for guild."""
         await self.init_db()
         async with aiosqlite.connect(DB_PATH) as db:
-            cur = await db.execute("SELECT token, SUM(count) as count FROM counts WHERE guild_id = ? GROUP BY token ORDER BY count DESC LIMIT ?", (ctx.guild.id, limit))
+            cur = await db.execute(
+                "SELECT token, SUM(count) AS count "
+                "FROM counts WHERE guild_id = ? "
+                "GROUP BY token ORDER BY count DESC LIMIT ?",
+                (ctx.guild.id, limit),
+            )
             rows = await cur.fetchall()
+
         if not rows:
-            await ctx.send("No data yet.")
-            return
-        # helper: turn "custom_name:id" into "<:name:id>" so Discord shows the emoji
+            return await ctx.send("No data yet.")
+
+        # Helper: turn custom_<name>:<id> into a real emoji mention
         def display_token(token: str) -> str:
             if token.startswith("custom_"):
-                # token = "custom_name:123456789012345678"
+                # token format: "custom_name:123456789012345678"
                 name, eid = token.split("custom_", 1)[1].split(":", 1)
                 return f"<:{name}:{eid}>"
             return token
 
+        # Build lines with the display_token helper
         lines = [f"{display_token(token)}: {count}" for token, count in rows]
+
+        # Send in a code box for alignment
         await ctx.send(box("\n".join(lines)))
+
 
     @wordcloud.command()
     async def reset(self, ctx: commands.Context):
