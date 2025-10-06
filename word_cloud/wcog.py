@@ -224,7 +224,6 @@ class WordCloudCog(commands.Cog):
         img = wc.to_image().convert("RGBA")
         layout = wc.layout_
 
-        # 4) Overlay custom emojis
         async with aiohttp.ClientSession() as session:
             for entry in layout:
                 # entry[0] is always the word string
@@ -232,7 +231,7 @@ class WordCloudCog(commands.Cog):
                 if not word.startswith("custom_"):
                     continue
 
-                # handle both 6-tuple and 5-tuple layouts
+                # unpack either 6- or 5-length tuples
                 if len(entry) == 6:
                     _, _, font_size, position, orientation, color = entry
                 else:
@@ -255,6 +254,12 @@ class WordCloudCog(commands.Cog):
                 em = em.resize((font_size, font_size), Image.ANTIALIAS)
                 x, y = position
                 img.paste(em, (x, y), em)
+
+        # Save & return
+        img.save(buf, format="PNG")
+        buf.seek(0)
+        return buf
+
 
 
         # 5) Save & return
