@@ -225,13 +225,19 @@ class WordCloudCog(commands.Cog):
         #  Convert to image and get the raw layout
         img = wc.to_image().convert("RGBA")
         draw = ImageDraw.Draw(img)
-        layout = wc.layout_  # list of tuples: (word, freq, font_size, position, orientation, color)
-
-        #  Overlay custom Discord emojis
+        layout = wc.layout_
         async with aiohttp.ClientSession() as session:
-            for word, freq, font_size, position, orientation, color in layout:
+            for entry in layout:
+                # entry may be 5 or 6 elements: (word, [freq], font_size, position, orientation, color)
+                word = entry[0]
                 if not word.startswith("custom_"):
                     continue
+
+                # pull out font_size and position regardless of tuple length
+                if len(entry) == 6:
+                    _, _, font_size, position, orientation, color = entry
+                else:
+                    _, font_size, position, orientation, color = entry
 
                 # Extract name and ID
                 _, rest = word.split("custom_", 1)
