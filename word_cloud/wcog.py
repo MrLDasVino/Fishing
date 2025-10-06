@@ -232,9 +232,11 @@ class WordCloudCog(commands.Cog):
         wc = WordCloud(**wc_kwargs)
         wc.generate_from_frequencies(frequencies)
         wc.recolor(
-            color_func=lambda w, *a, **k: random_color_func(w, *a, **k)
-            if not str(w).startswith("custom_")
-            else "rgba(0,0,0,0)",
+            color_func=lambda word, font_size, position, orientation, random_state=None, **kwargs: (
+                "rgba(0,0,0,0)"
+                if str(word).startswith("custom_")
+                else random_color_func(word, font_size, position, orientation, random_state=random_state)
+            ),
             random_state=random.Random(42),
         )
 
