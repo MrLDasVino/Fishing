@@ -16,12 +16,12 @@ from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box
 
 # pick up the system’s emoji font
- _EMOJI_CANDIDATES = [
-     "/usr/share/fonts/truetype/ancient-scripts/Symbola_hint.ttf",   
-     "/usr/share/fonts/truetype/ancient-fonts/Symbola.ttf",          
-     "/usr/share/fonts/truetype/noto/NotoEmoji-Regular.ttf",
-     "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
- ]
+_EMOJI_CANDIDATES = [
+    "/usr/share/fonts/truetype/ancient-scripts/Symbola_hint.ttf",   
+    "/usr/share/fonts/truetype/ancient-fonts/Symbola.ttf",          
+    "/usr/share/fonts/truetype/noto/NotoEmoji-Regular.ttf",
+    "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
+]
 for p in _EMOJI_CANDIDATES:
     if os.path.isfile(p):
         EMOJI_FONT = p
