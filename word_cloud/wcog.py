@@ -6,12 +6,15 @@ import regex as re
 from datetime import datetime
 
 import discord
-from PIL import Image
+from PIL import Image, ImageDraw
+import aiohttp
 from wordcloud import WordCloud
 
 from redbot.core import commands, checks
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box
+
+EMOJI_FONT = "/usr/share/fonts/truetype/noto/NotoEmoji-Regular.ttf"
 
 DB_PATH = "wordcloud_data.sqlite3"
 
@@ -173,30 +176,71 @@ class WordCloudCog(commands.Cog):
 
     async def _render_wordcloud_image(self, frequencies: dict, width=1200, height=675):
         """
-        Render a wordcloud PNG with a transparent background and return BytesIO.
+        Render a wordcloud PNG with:
+        - transparent background
+        - real Unicode emojis via EMOJI_FONT
+        - custom Discord emojis pasted over
         """
         buf = io.BytesIO()
+
+        # 1) Empty case
         if not frequencies:
             img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
             img.save(buf, format="PNG")
             buf.seek(0)
             return buf
 
+        # 2) Generate layout using an emoji-capable font
         wc = WordCloud(
             width=width,
             height=height,
             mode="RGBA",
             background_color=None,
             prefer_horizontal=0.9,
-            collocations=False
+            collocations=False,
+            font_path=EMOJI_FONT              # ← use emoji font
         )
         wc.generate_from_frequencies(frequencies)
         wc.recolor(color_func=random_color_func, random_state=random.Random(42))
 
+        # 3) Convert to image and get the raw layout
         img = wc.to_image().convert("RGBA")
+        draw = ImageDraw.Draw(img)
+        layout = wc.layout_  # list of tuples: (word, freq, font_size, position, orientation, color)
+
+        # 4) Overlay custom Discord emojis
+        async with aiohttp.ClientSession() as session:
+            for word, freq, font_size, position, orientation, color in layout:
+                if not word.startswith("custom_"):
+                    continue
+
+                # Extract name and ID
+                _, rest = word.split("custom_", 1)
+                name, eid = rest.split(":")
+
+                # Fetch the PNG from Discord CDN
+                url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
+                try:
+                    async with session.get(url) as resp:
+                        data = await resp.read()
+                        em = Image.open(io.BytesIO(data)).convert("RGBA")
+                except Exception:
+                    continue
+
+                # Resize emoji to match font size
+                em = em.resize((font_size, font_size), Image.ANTIALIAS)
+
+                # Paste it over the layout position
+                x, y = position
+                img.paste(em, (x, y), em)
+                # Optional: clear the underlying text
+                draw.rectangle([x, y, x + font_size, y + font_size], fill=(0, 0, 0, 0))
+
+        # 5) Return the final PNG
         img.save(buf, format="PNG")
         buf.seek(0)
         return buf
+
 
     async def _maybe_autogen_loop(self):
         await self.bot.wait_until_ready()
