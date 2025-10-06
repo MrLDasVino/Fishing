@@ -96,6 +96,13 @@ class WordCloudCog(commands.Cog):
                     autogen_channel INTEGER
                 )"""
             )
+            await db.execute(
+                """CREATE TABLE IF NOT EXISTS ignored_channels (
+                       guild_id   INTEGER,
+                       channel_id INTEGER,
+                       PRIMARY KEY (guild_id, channel_id)
+                   )"""
+            )            
             await db.commit()
         self.db_ready = True
 
@@ -110,6 +117,15 @@ class WordCloudCog(commands.Cog):
             return
         if not message.guild:
             return
+        # ─── skip if channel is ignored ───────────────────────────
+        await self.init_db()
+        async with aiosqlite.connect(DB_PATH) as db:
+            cur = await db.execute(
+                "SELECT 1 FROM ignored_channels WHERE guild_id = ? AND channel_id = ?",
+                (message.guild.id, message.channel.id),
+            )
+            if await cur.fetchone():
+                return            
 
         raw = message.content or ""
         tokens = []
@@ -147,6 +163,15 @@ class WordCloudCog(commands.Cog):
         message = reaction.message
         if not message.guild:
             return
+        # skip ignored channel
+        await self.init_db()
+        async with aiosqlite.connect(DB_PATH) as db:
+            cur = await db.execute(
+                "SELECT 1 FROM ignored_channels WHERE guild_id = ? AND channel_id = ?",
+                (message.guild.id, message.channel.id),
+            )
+            if await cur.fetchone():
+                return            
         e = reaction.emoji
         if isinstance(e, str):
             token = e  # unicode emoji
@@ -344,6 +369,64 @@ class WordCloudCog(commands.Cog):
         """Wordcloud management commands."""
         if ctx.invoked_subcommand is None:
             await ctx.send_help()
+            
+    @wordcloud.command(name="ignore")
+    @checks.admin()
+    async def ignore(self, ctx, channel: discord.TextChannel):
+        """Ignore data collection in a channel."""
+        await self.init_db()
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                "INSERT OR IGNORE INTO ignored_channels (guild_id, channel_id) VALUES (?, ?)",
+                (ctx.guild.id, channel.id),
+            )
+            await db.commit()
+        await ctx.send(f"Ignoring data in {channel.mention}.")
+
+    @wordcloud.command(name="unignore")
+    @checks.admin()
+    async def unignore(self, ctx, channel: discord.TextChannel):
+        """Stop ignoring a channel."""
+        await self.init_db()
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                "DELETE FROM ignored_channels WHERE guild_id = ? AND channel_id = ?",
+                (ctx.guild.id, channel.id),
+            )
+            await db.commit()
+        await ctx.send(f"Resumed data collection in {channel.mention}.")
+
+    @wordcloud.command(name="ignored")
+    @checks.admin()
+    async def ignored(self, ctx):
+        """List all ignored channels."""
+        await self.init_db()
+        async with aiosqlite.connect(DB_PATH) as db:
+            cur = await db.execute(
+                "SELECT channel_id FROM ignored_channels WHERE guild_id = ?",
+                (ctx.guild.id,),
+            )
+            rows = await cur.fetchall()
+        if not rows:
+            return await ctx.send("No ignored channels.")
+        mentions = []
+        for (cid,) in rows:
+            ch = ctx.guild.get_channel(cid)
+            mentions.append(ch.mention if ch else f"<#{cid}>")
+        await ctx.send("Ignored channels: " + ", ".join(mentions))
+
+    @wordcloud.command(name="me")
+    async def me(self, ctx):
+        """Generate your personal wordcloud."""
+        freqs = await self._get_frequencies_for_user(ctx.guild.id, ctx.author.id)
+        if not freqs:
+            return await ctx.send("No data collected for you yet.")
+        buf = await self._render_wordcloud_image(freqs)
+        await ctx.send(
+            content=f"Wordcloud for {ctx.author.display_name}",
+            file=discord.File(fp=buf, filename="wordcloud.png"),
+        )
+            
 
     @wordcloud.command()
     async def generate(self, ctx: commands.Context, *members: discord.Member):
