@@ -1,4 +1,4 @@
-from .wordcloud import setup
+from .wcog import setup
 
 async def setup(bot):
     """Async setup used by Red 3.5+ to add the cog."""
