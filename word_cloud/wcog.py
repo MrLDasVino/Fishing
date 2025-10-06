@@ -220,28 +220,29 @@ class WordCloudCog(commands.Cog):
         wc.generate_from_frequencies(frequencies)
         wc.recolor(color_func=random_color_func, random_state=random.Random(42))
 
-        # 3) Convert to PIL image
+        # 3) Convert to PIL image and grab layout
         img = wc.to_image().convert("RGBA")
-        layout = wc.layout_  # list of 5- or 6-element tuples
+        layout = wc.layout_
 
         # 4) Overlay custom emojis
         async with aiohttp.ClientSession() as session:
             for entry in layout:
-                # entry may be (word, font_size, position, orientation, color)
-                # or    (word, freq, font_size, position, orientation, color)
-                if len(entry) == 6:
-                    word, _, font_size, position, orientation, color = entry
-                else:
-                    word, font_size, position, orientation, color = entry
-
+                # entry[0] is always the word string
+                word = entry[0]
                 if not word.startswith("custom_"):
                     continue
 
-                # pull name & ID
+                # handle both 6-tuple and 5-tuple layouts
+                if len(entry) == 6:
+                    _, _, font_size, position, orientation, color = entry
+                else:
+                    _, font_size, position, orientation, color = entry
+
+                # extract name & ID
                 _, rest = word.split("custom_", 1)
                 name, eid = rest.split(":")
 
-                # fetch emoji PNG
+                # fetch the emoji PNG
                 url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
                 try:
                     async with session.get(url) as resp:
@@ -254,6 +255,7 @@ class WordCloudCog(commands.Cog):
                 em = em.resize((font_size, font_size), Image.ANTIALIAS)
                 x, y = position
                 img.paste(em, (x, y), em)
+
 
         # 5) Save & return
         img.save(buf, format="PNG")
