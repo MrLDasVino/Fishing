@@ -196,14 +196,14 @@ class WordCloudCog(commands.Cog):
         """
         buf = io.BytesIO()
 
-        # Empty case
+        # 1) Empty case
         if not frequencies:
             img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
             img.save(buf, format="PNG")
             buf.seek(0)
             return buf
 
-        # build args, only set font_path if we found a scalable font
+        # 2) Build WordCloud with emoji-capable font only if found
         wc_kwargs = {
             "width": width,
             "height": height,
@@ -214,36 +214,34 @@ class WordCloudCog(commands.Cog):
         }
         if EMOJI_FONT:
             wc_kwargs["font_path"] = EMOJI_FONT
-            wc_kwargs["min_font_size"] = 10    # avoid too-small pixel sizes
-
-        wc = WordCloud(**wc_kwargs)
+            wc_kwargs["min_font_size"] = 10
 
         wc = WordCloud(**wc_kwargs)
         wc.generate_from_frequencies(frequencies)
         wc.recolor(color_func=random_color_func, random_state=random.Random(42))
 
-        #  Convert to image and get the raw layout
+        # 3) Convert to PIL image
         img = wc.to_image().convert("RGBA")
-        draw = ImageDraw.Draw(img)
-        layout = wc.layout_
+        layout = wc.layout_  # list of 5- or 6-element tuples
+
+        # 4) Overlay custom emojis
         async with aiohttp.ClientSession() as session:
             for entry in layout:
-                # entry may be 5 or 6 elements: (word, [freq], font_size, position, orientation, color)
-                word = entry[0]
+                # entry may be (word, font_size, position, orientation, color)
+                # or    (word, freq, font_size, position, orientation, color)
+                if len(entry) == 6:
+                    word, _, font_size, position, orientation, color = entry
+                else:
+                    word, font_size, position, orientation, color = entry
+
                 if not word.startswith("custom_"):
                     continue
 
-                # pull out font_size and position regardless of tuple length
-                if len(entry) == 6:
-                    _, _, font_size, position, orientation, color = entry
-                else:
-                    _, font_size, position, orientation, color = entry
-
-                # Extract name and ID
+                # pull name & ID
                 _, rest = word.split("custom_", 1)
                 name, eid = rest.split(":")
 
-                # Fetch the PNG from Discord CDN
+                # fetch emoji PNG
                 url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
                 try:
                     async with session.get(url) as resp:
@@ -252,16 +250,12 @@ class WordCloudCog(commands.Cog):
                 except Exception:
                     continue
 
-                # Resize emoji to match font size
+                # resize & paste
                 em = em.resize((font_size, font_size), Image.ANTIALIAS)
-
-                # Paste it over the layout position
                 x, y = position
                 img.paste(em, (x, y), em)
-                # Optional: clear the underlying text
-                draw.rectangle([x, y, x + font_size, y + font_size], fill=(0, 0, 0, 0))
 
-        #  Return the final PNG
+        # 5) Save & return
         img.save(buf, format="PNG")
         buf.seek(0)
         return buf
