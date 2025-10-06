@@ -337,5 +337,4 @@ class WordCloudCog(commands.Cog):
 async def setup(bot):
     cog = WordCloudCog(bot)
     await bot.add_cog(cog)
-    # Start the background task
     bot.loop.create_task(cog._maybe_autogen_loop())
