@@ -464,37 +464,77 @@ class WordCloudCog(commands.Cog):
 
     @wordcloud.command(name="stats")
     async def stats(self, ctx: commands.Context, limit: int = 20):
-        """Show top words/emojis for guild."""
+        """Show top emojis and words for guild, paginated by reactions."""
         await self.init_db()
         async with aiosqlite.connect(DB_PATH) as db:
             cur = await db.execute(
                 "SELECT token, SUM(count) AS count "
                 "FROM counts WHERE guild_id = ? "
                 "GROUP BY token ORDER BY count DESC LIMIT ?",
-                (ctx.guild.id, limit),
+                (ctx.guild.id, limit * 2),  # fetch extra to split pages
             )
             rows = await cur.fetchall()
 
         if not rows:
             return await ctx.send("No data yet.")
 
-        # Helper: turn custom_<name>:<id> into a real emoji mention
+        # Helpers
         def display_token(token: str) -> str:
             if token.startswith("custom_"):
-                # token format: "custom_name:123456789012345678"
                 name, eid = token.split("custom_", 1)[1].split(":", 1)
                 return f"<:{name}:{eid}>"
             return token
 
-        # Build lines with the display_token helper
-        lines = [f"{display_token(token)}: {count}" for token, count in rows]
-        
-        embed = discord.Embed(
-            title="WordCloud Stats",
-            description="\n".join(lines),
+        # Split rows into emojis vs words
+        emojis = [(display_token(tok), cnt) for tok, cnt in rows if tok.startswith("custom_")]
+        words  = [(tok, cnt)            for tok, cnt in rows if not tok.startswith("custom_")]
+
+        # Build two pages
+        embed_emoji = discord.Embed(
+            title="📊 Top Emojis",
+            description="\n".join(f"{t}: {c}" for t, c in emojis[:limit]) or "None",
             color=discord.Color.random(),
         )
-        await ctx.send(embed=embed)
+        embed_words = discord.Embed(
+            title="📊 Top Words",
+            description="\n".join(f"{t}: {c}" for t, c in words[:limit]) or "None",
+            color=discord.Color.random(),
+        )
+        pages = [embed_emoji, embed_words]
+
+        # Send first page and add reactions
+        message = await ctx.send(embed=pages[0])
+        await message.add_reaction("◀️")
+        await message.add_reaction("▶️")
+
+        # Reaction check: only the invoker can flip pages
+        def check(reaction, user):
+            return (
+                user == ctx.author
+                and reaction.message.id == message.id
+                and str(reaction.emoji) in ("◀️", "▶️")
+            )
+
+        page = 0
+        # Listen for reactions
+        try:
+            while True:
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
+                # Flip page
+                if str(reaction.emoji) == "▶️":
+                    page = (page + 1) % len(pages)
+                else:
+                    page = (page - 1) % len(pages)
+                await message.edit(embed=pages[page])
+                # Remove the user's reaction for cleanliness
+                await message.remove_reaction(reaction.emoji, user)
+        except asyncio.TimeoutError:
+            # Timeout: remove controls (optional)
+            try:
+                await message.clear_reactions()
+            except Exception:
+                pass
+
 
 
     @wordcloud.command()
