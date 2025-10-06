@@ -203,7 +203,7 @@ class WordCloudCog(commands.Cog):
             buf.seek(0)
             return buf
 
-        # 2) Build WordCloud with emoji-capable font only if found
+        # 2) Build WordCloud with emoji-capable font if available
         wc_kwargs = {
             "width": width,
             "height": height,
@@ -222,25 +222,27 @@ class WordCloudCog(commands.Cog):
 
         # 3) Convert to PIL image and grab layout
         img = wc.to_image().convert("RGBA")
-        layout = wc.layout_  # 5- or 6-element entries
+        layout = wc.layout_  # list of tuples
 
         # 4) Overlay custom emojis
         async with aiohttp.ClientSession() as session:
             for entry in layout:
-                # entry[0] is always the word
+                # entry[0] is always the word string
                 word = entry[0]
                 if not word.startswith("custom_"):
                     continue
 
-                # unpack 6-tuple vs 5-tuple
+                # unpack font_size & position by tuple length
                 if len(entry) == 6:
                     _, _, font_size, position, orientation, color = entry
                 else:
                     _, font_size, position, orientation, color = entry
 
-                # fetch & paste emoji
+                # extract emoji ID
                 _, rest = word.split("custom_", 1)
                 _, eid = rest.split(":", 1)
+
+                # fetch & paste emoji
                 url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
                 try:
                     async with session.get(url) as resp:
@@ -257,7 +259,6 @@ class WordCloudCog(commands.Cog):
         img.save(buf, format="PNG")
         buf.seek(0)
         return buf
-
 
 
     async def _maybe_autogen_loop(self):
