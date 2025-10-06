@@ -472,7 +472,15 @@ class WordCloudCog(commands.Cog):
         if not rows:
             await ctx.send("No data yet.")
             return
-        lines = [f"{r[0]}: {r[1]}" for r in rows]
+        # helper: turn "custom_name:id" into "<:name:id>" so Discord shows the emoji
+        def display_token(token: str) -> str:
+            if token.startswith("custom_"):
+                # token = "custom_name:123456789012345678"
+                name, eid = token.split("custom_", 1)[1].split(":", 1)
+                return f"<:{name}:{eid}>"
+            return token
+
+        lines = [f"{display_token(token)}: {count}" for token, count in rows]
         await ctx.send(box("\n".join(lines)))
 
     @wordcloud.command()
