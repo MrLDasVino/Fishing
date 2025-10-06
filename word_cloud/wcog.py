@@ -14,7 +14,18 @@ from redbot.core import commands, checks
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box
 
-EMOJI_FONT = "/usr/share/fonts/truetype/noto/NotoEmoji-Regular.ttf"
+# pick up the system’s emoji font
+_EMOJI_CANDIDATES = [
+    "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
+    "/usr/share/fonts/truetype/noto/NotoEmoji-Regular.ttf",
+    "/usr/share/fonts/truetype/emoji/NotoColorEmoji.ttf",
+]
+for path in _EMOJI_CANDIDATES:
+    if os.path.isfile(path):
+        EMOJI_FONT = path
+        break
+else:
+    EMOJI_FONT = None
 
 DB_PATH = "wordcloud_data.sqlite3"
 
@@ -183,32 +194,35 @@ class WordCloudCog(commands.Cog):
         """
         buf = io.BytesIO()
 
-        # 1) Empty case
+        # Empty case
         if not frequencies:
             img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
             img.save(buf, format="PNG")
             buf.seek(0)
             return buf
 
-        # 2) Generate layout using an emoji-capable font
-        wc = WordCloud(
-            width=width,
-            height=height,
-            mode="RGBA",
-            background_color=None,
-            prefer_horizontal=0.9,
-            collocations=False,
-            font_path=EMOJI_FONT              # ← use emoji font
-        )
+        # Build WordCloud args only including font_path if the file exists
+        wc_kwargs = {
+            "width": width,
+            "height": height,
+            "mode": "RGBA",
+            "background_color": None,
+            "prefer_horizontal": 0.9,
+            "collocations": False,
+        }
+        if EMOJI_FONT:
+            wc_kwargs["font_path"] = EMOJI_FONT
+
+        wc = WordCloud(**wc_kwargs)
         wc.generate_from_frequencies(frequencies)
         wc.recolor(color_func=random_color_func, random_state=random.Random(42))
 
-        # 3) Convert to image and get the raw layout
+        #  Convert to image and get the raw layout
         img = wc.to_image().convert("RGBA")
         draw = ImageDraw.Draw(img)
         layout = wc.layout_  # list of tuples: (word, freq, font_size, position, orientation, color)
 
-        # 4) Overlay custom Discord emojis
+        #  Overlay custom Discord emojis
         async with aiohttp.ClientSession() as session:
             for word, freq, font_size, position, orientation, color in layout:
                 if not word.startswith("custom_"):
@@ -236,7 +250,7 @@ class WordCloudCog(commands.Cog):
                 # Optional: clear the underlying text
                 draw.rectangle([x, y, x + font_size, y + font_size], fill=(0, 0, 0, 0))
 
-        # 5) Return the final PNG
+        #  Return the final PNG
         img.save(buf, format="PNG")
         buf.seek(0)
         return buf
