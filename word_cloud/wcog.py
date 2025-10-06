@@ -17,13 +17,13 @@ from redbot.core.utils.chat_formatting import box
 
 # pick up the system’s emoji font
 _EMOJI_CANDIDATES = [
-    "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
-    "/usr/share/fonts/truetype/noto/NotoEmoji-Regular.ttf",
-    "/usr/share/fonts/truetype/emoji/NotoColorEmoji.ttf",
+    "/usr/share/fonts/truetype/ancient-fonts/Symbola.ttf",      # after `fonts-symbola` install
+    "/usr/share/fonts/truetype/noto/NotoEmoji-Regular.ttf",     # if you ever add a scalable NotoEmoji
+    "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",       # color emoji (fallback)
 ]
-for path in _EMOJI_CANDIDATES:
-    if os.path.isfile(path):
-        EMOJI_FONT = path
+for p in _EMOJI_CANDIDATES:
+    if os.path.isfile(p):
+        EMOJI_FONT = p
         break
 else:
     EMOJI_FONT = None
@@ -202,7 +202,7 @@ class WordCloudCog(commands.Cog):
             buf.seek(0)
             return buf
 
-        # Build WordCloud args only including font_path if the file exists
+        # build args, only set font_path if we found a scalable font
         wc_kwargs = {
             "width": width,
             "height": height,
@@ -213,6 +213,9 @@ class WordCloudCog(commands.Cog):
         }
         if EMOJI_FONT:
             wc_kwargs["font_path"] = EMOJI_FONT
+            wc_kwargs["min_font_size"] = 10    # avoid too-small pixel sizes
+
+        wc = WordCloud(**wc_kwargs)
 
         wc = WordCloud(**wc_kwargs)
         wc.generate_from_frequencies(frequencies)
