@@ -1,13 +1,13 @@
 import asyncio
 import random
 import io
-import os
 import aiosqlite
 import regex as re
 from datetime import datetime
 
 import discord
 from PIL import Image, ImageDraw
+import os
 import aiohttp
 from wordcloud import WordCloud
 
@@ -222,26 +222,25 @@ class WordCloudCog(commands.Cog):
 
         # 3) Convert to PIL image and grab layout
         img = wc.to_image().convert("RGBA")
-        layout = wc.layout_
+        layout = wc.layout_  # 5- or 6-element entries
 
+        # 4) Overlay custom emojis
         async with aiohttp.ClientSession() as session:
             for entry in layout:
-                # entry[0] is always the word string
+                # entry[0] is always the word
                 word = entry[0]
                 if not word.startswith("custom_"):
                     continue
 
-                # unpack either 6- or 5-length tuples
+                # unpack 6-tuple vs 5-tuple
                 if len(entry) == 6:
                     _, _, font_size, position, orientation, color = entry
                 else:
                     _, font_size, position, orientation, color = entry
 
-                # extract name & ID
+                # fetch & paste emoji
                 _, rest = word.split("custom_", 1)
-                name, eid = rest.split(":")
-
-                # fetch the emoji PNG
+                _, eid = rest.split(":", 1)
                 url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
                 try:
                     async with session.get(url) as resp:
@@ -250,22 +249,15 @@ class WordCloudCog(commands.Cog):
                 except Exception:
                     continue
 
-                # resize & paste
                 em = em.resize((font_size, font_size), Image.ANTIALIAS)
                 x, y = position
                 img.paste(em, (x, y), em)
-
-        # Save & return
-        img.save(buf, format="PNG")
-        buf.seek(0)
-        return buf
-
-
 
         # 5) Save & return
         img.save(buf, format="PNG")
         buf.seek(0)
         return buf
+
 
 
     async def _maybe_autogen_loop(self):
