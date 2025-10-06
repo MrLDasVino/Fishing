@@ -14,7 +14,7 @@ from wordcloud import WordCloud
 
 from redbot.core import commands, checks
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import box
+
 
 # pick up the system’s emoji font
 _EMOJI_CANDIDATES = [
@@ -488,9 +488,13 @@ class WordCloudCog(commands.Cog):
 
         # Build lines with the display_token helper
         lines = [f"{display_token(token)}: {count}" for token, count in rows]
-
-        # Send in a code box for alignment
-        await ctx.send(box("\n".join(lines)))
+        
+        embed = discord.Embed(
+            title="WordCloud Stats",
+            description="\n".join(lines),
+            color=discord.Color.random(),
+        )
+        await ctx.send(embed=embed)
 
 
     @wordcloud.command()
