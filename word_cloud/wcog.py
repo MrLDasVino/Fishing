@@ -364,7 +364,6 @@ class WordCloudCog(commands.Cog):
                         setattr(self, key, now)
 
     @commands.group()
-    @checks.admin()
     async def wordcloud(self, ctx: commands.Context):
         """Wordcloud management commands."""
         if ctx.invoked_subcommand is None:
@@ -538,6 +537,7 @@ class WordCloudCog(commands.Cog):
 
 
     @wordcloud.command()
+    @checks.admin()
     async def reset(self, ctx: commands.Context):
         """Reset stored counts for this guild."""
         await self.init_db()
@@ -548,6 +548,7 @@ class WordCloudCog(commands.Cog):
         await ctx.send("Word counts reset for this guild.")
 
     @wordcloud.command()
+    @checks.admin()
     async def set_autogen(self, ctx: commands.Context, enabled: bool):
         """Enable or disable periodic generation."""
         await self.init_db()
@@ -560,6 +561,7 @@ class WordCloudCog(commands.Cog):
         await ctx.send(f"Autogen set to {enabled}.")
 
     @wordcloud.command()
+    @checks.admin()
     async def set_autogen_channel(self, ctx: commands.Context, channel: discord.TextChannel = None):
         """Set channel where autogen will post. If omitted sets current channel."""
         ch = channel or ctx.channel
@@ -573,6 +575,7 @@ class WordCloudCog(commands.Cog):
         await ctx.send(f"Autogen channel set to {ch.mention}")
 
     @wordcloud.command()
+    @checks.admin()
     async def set_autogen_interval(self, ctx: commands.Context, seconds: int):
         """Set autogen interval in seconds (minimum 60)."""
         if seconds < 60:
