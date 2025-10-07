@@ -97,11 +97,20 @@ class RadioBrowser(commands.Cog):
 
     @radio.command(name="random")
     async def radio_random(self, ctx: commands.Context):
-        url = "http://api.radio-browser.info/json/stations/random"
-        async with self.session.get(url) as resp:
-            if resp.status != 200:
-                return await ctx.send("❌ Error fetching a random station.")
-            station = await resp.json()
+        """Fetch a random radio station."""
+        url = "https://api.radio-browser.info/json/stations/random"
+        try:
+            async with self.session.get(url, timeout=10) as resp:
+                text = await resp.text()
+                if resp.status != 200:
+                    # Log the raw response for debugging
+                    await ctx.send(f"❌ HTTP {resp.status} from Radio-Browser:\n```{text}```")
+                    return
+                station = await resp.json()
+        except Exception as e:
+            # This catches timeouts, connection errors, bad JSON, etc.
+            await ctx.send(f"❌ Network error fetching random station: `{e}`")
+            return
 
         stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
         embed = discord.Embed(title="🎲 Random Radio Station", color=discord.Color.purple())
