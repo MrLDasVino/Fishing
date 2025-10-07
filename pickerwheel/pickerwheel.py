@@ -164,17 +164,33 @@ class PickerWheel(commands.Cog):
                 draw.pieslice([10, 10, size-10, size-10], start, end, fill=col, outline="black")
 
                 mid = math.radians((start + end) / 2)
-                tx = center + (radius / 2) * math.cos(mid)
-                ty = center + (radius / 2) * math.sin(mid)
-                label = opt if len(opt) <= 15 else opt[:15] + "…"
+        # 1) wrap or truncate so text width < arc length
+        raw = opt
+        label = raw if len(raw) <= 15 else raw[:12] + "…"
+        arc_len = radius * math.radians(sector)
+        font = self.font
+        # measure with bbox
+        def measure(txt):
+            try:
+                b = draw.textbbox((0,0), txt, font=font)
+                return b[2]-b[0], b[3]-b[1]
+            except AttributeError:
+                return font.getsize(txt)
+        w, h = measure(label)
+        # if still too long, shrink font until it fits
+        while w > arc_len and font.size > 8:
+            font = ImageFont.truetype(font.path, font.size - 1)
+            w, h = measure(label)
 
-                # Compute text size using textbbox (fallback to font.getsize)
-                try:
-                    bbox = draw.textbbox((0, 0), label, font=self.font)
-                    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
-                except AttributeError:
-                    w, h = self.font.getsize(label)
-                draw.text((tx - w/2, ty - h/2), label, font=self.font, fill="black")
+        # 2) render text on its own img and rotate upright
+        tx = center + (radius + 10) * math.cos(mid_ang)
+        ty = center + (radius + 10) * math.sin(mid_ang)
+        text_im = Image.new("RGBA", (w, h), (0,0,0,0))
+        td = ImageDraw.Draw(text_im)
+        td.text((0,0), label, font=font, fill="black")
+        # rotate so text is always horizontal
+        rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
+        im.paste(rot, (int(tx - rot.width/2), int(ty - rot.height/2)), rot)
 
             imgs.append(im.convert("P"))
 
