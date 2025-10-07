@@ -16,7 +16,7 @@ class RadioBrowser(commands.Cog):
       • radio random
     """
 
-    API_BASE = "https://api.radio-browser.info/json"
+    API_BASE = "https://all.api.radio-browser.info/json"
 
     def __init__(self, bot):
         self.bot = bot
@@ -61,8 +61,8 @@ class RadioBrowser(commands.Cog):
         try:
             async with self.session.get(url, params=params, timeout=8) as resp:
                 if resp.status != 200:
-                    text = await resp.text()
-                    logger.error(f"Search HTTP {resp.status}: {text[:200]}")
+                    body = await resp.text()
+                    logger.error(f"Search HTTP {resp.status}: {body[:200]}")
                     return await ctx.send("❌ Error fetching stations. Try again later.")
                 data = await resp.json()
         except Exception as e:
@@ -118,9 +118,9 @@ class RadioBrowser(commands.Cog):
         try:
             async with self.session.get(url, timeout=8) as resp:
                 if resp.status != 200:
-                    text = await resp.text()
-                    logger.error(f"Random HTTP {resp.status}: {text[:200]}")
-                    snippet = text[:500] + ("... (truncated)" if len(text) > 500 else "")
+                    body = await resp.text()
+                    logger.error(f"Random HTTP {resp.status}: {body[:200]}")
+                    snippet = body[:500] + ("... (truncated)" if len(body) > 500 else "")
                     return await ctx.send(f"❌ HTTP {resp.status} from Radio-Browser:\n```{snippet}```")
                 station = await resp.json()
         except Exception as e:
