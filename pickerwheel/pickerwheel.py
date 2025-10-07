@@ -163,7 +163,7 @@ class PickerWheel(commands.Cog):
                 end = start + sector
                 draw.pieslice([10, 10, size-10, size-10], start, end, fill=col, outline="black")
 
-                mid = math.radians((start + end) / 2)
+                mid_ang = math.radians((start + end) / 2)
         # 1) wrap or truncate so text width < arc length
         raw = opt
         label = raw if len(raw) <= 15 else raw[:12] + "…"
@@ -192,7 +192,7 @@ class PickerWheel(commands.Cog):
         rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
         im.paste(rot, (int(tx - rot.width/2), int(ty - rot.height/2)), rot)
 
-            imgs.append(im.convert("P"))
+        imgs.append(im.convert("P"))
 
         bio = io.BytesIO()
         imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
