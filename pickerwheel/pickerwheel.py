@@ -17,7 +17,7 @@ class PickerWheel(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890)
         self.config.register_guild(**self.DEFAULT_CONFIG)
-        # use a bolder, larger TTF font for readability
+        # Use a bold, larger TTF font for maximum readability
         self.font = ImageFont.truetype(
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20
         )
@@ -202,7 +202,7 @@ class PickerWheel(commands.Cog):
                     stroke_fill=outline_fill,
                 )
 
-                # rotate text upright and paste with white halo
+                # rotate text upright and paste with a soft white halo
                 rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
                 px, py = int(tx - rot.width / 2), int(ty - rot.height / 2)
                 halo = Image.new("RGBA", rot.size, (255, 255, 255, 180))
@@ -216,7 +216,6 @@ class PickerWheel(commands.Cog):
         imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
         bio.seek(0)
         return bio
-
 
 async def setup(bot):
     await bot.add_cog(PickerWheel(bot))
