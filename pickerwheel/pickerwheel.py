@@ -160,58 +160,77 @@ class PickerWheel(commands.Cog):
         sector = 360 / len(options)
         colors = self._get_colors(len(options))
         imgs = []
-
+    
         for frame in range(frames):
             offset = (frame / frames) * 360
-
+    
             # transparent canvas
             im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
             draw = ImageDraw.Draw(im)
-
-            # draw each slice + label
+    
             for idx, (opt, col) in enumerate(zip(options, colors)):
+                # draw slice
                 start = idx * sector + offset
                 end = start + sector
-                draw.pieslice([10, 10, size - 10, size - 10],
-                              start, end, fill=col, outline=(0, 0, 0))
-
+                draw.pieslice(
+                    [10, 10, size - 10, size - 10],
+                    start, end,
+                    fill=col,
+                    outline=(0, 0, 0),
+                )
+    
+                # label inside
                 mid_ang = math.radians((start + end) / 2)
                 inner_r = radius * 0.6
                 tx = center + inner_r * math.cos(mid_ang)
                 ty = center + inner_r * math.sin(mid_ang)
                 label = opt if len(opt) <= 12 else opt[:12] + "…"
-
+    
+                # pick text color for contrast
                 bri = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
                 fg = "black" if bri > 128 else "white"
                 bg = "white" if fg == "black" else "black"
-
+    
+                # measure text
                 x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
                 w, h = x1 - x0, y1 - y0
-                text_im = Image.new("RGBA", (w + 4, h + 4), (0, 0, 0, 0))
+    
+                # render with extra padding so rotation won't cut off edges
+                pad = 8
+                text_im = Image.new("RGBA", (w + pad*2, h + pad*2), (0, 0, 0, 0))
                 td = ImageDraw.Draw(text_im)
-                td.text((2, 2), label, font=self.font,
-                        fill=fg, stroke_width=1, stroke_fill=bg)
-
+                td.text(
+                    (pad, pad),
+                    label,
+                    font=self.font,
+                    fill=fg,
+                    stroke_width=2,
+                    stroke_fill=bg,
+                )
+    
+                # rotate back to horizontal
                 rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
-                px, py = int(tx - rot.width/2), int(ty - rot.height/2)
+                px = int(tx - rot.width / 2)
+                py = int(ty - rot.height / 2)
                 im.paste(rot, (px, py), rot)
-
-            # draw the static pointer arrow at top-center
+    
+            # draw static pointer arrow at top
             arrow_w, arrow_h = 30, 20
             triangle = [
                 (center - arrow_w // 2, 0),
                 (center + arrow_w // 2, 0),
-                (center, arrow_h)
+                (center, arrow_h),
             ]
             draw.polygon(triangle, fill=(0, 0, 0), outline=(255, 255, 255))
-
-            # keep RGBA so transparency & true-color survive
+    
+            # keep RGBA frames
             imgs.append(im)
-
+    
         bio = io.BytesIO()
-        imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
+        imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
         bio.seek(0)
         return bio
+
 
 
 async def setup(bot):
