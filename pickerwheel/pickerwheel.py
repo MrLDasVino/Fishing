@@ -11,7 +11,10 @@ from redbot.core import commands, Config
 class PickerWheel(commands.Cog):
     """Multiple named wheels with admin-only management and bulk adds."""
 
-    DEFAULT_CONFIG = {"wheels": {}}
+    DEFAULT_CONFIG = {
+        "wheels": {},         # your existing wheel→[options]
+        "wheel_images": {},   # NEW: wheel→{label→image URL}
+    }
 
     def __init__(self, bot):
         self.bot = bot
@@ -144,7 +147,43 @@ class PickerWheel(commands.Cog):
         gif = await self._make_wheel_gif(opts, frames, duration, winner_idx)
         file = discord.File(fp=gif, filename="wheel.gif")
         await ctx.send(f"🎉 **{key}** stops on **{winner}**!", file=file)
+        
+    @pickerwheel.command(name="image")
+    async def image(self, ctx, wheel: str, *, label: str):
+        """
+        Attach an image to use as the background for one slice.
+        Usage: [p]pickerwheel image <wheel_name> <exact_label>
+        (attach a PNG/JPG to your command)
+        """
+        if not ctx.message.attachments:
+            return await ctx.send("🚫 Please attach an image file.")
+        url = ctx.message.attachments[0].url
 
+        all_imgs = await self.config.guild(ctx.guild).wheel_images()
+        imgs = all_imgs.get(wheel.lower(), {})
+        imgs[label] = url
+        all_imgs[wheel.lower()] = imgs
+        await self.config.guild(ctx.guild).wheel_images.set(all_imgs)
+
+        await ctx.send(f"✅ Set custom image for **{label}** on wheel **{wheel}**.")        
+
+    async def _fetch_image(self, url: str) -> Image.Image:
+        """
+        Download & cache a URL → PIL RGBA image.
+        Reuses self._img_cache to avoid repeated HTTP hits.
+        """
+        if not hasattr(self, "_img_cache"):
+            self._img_cache = {}
+
+        if url in self._img_cache:
+            return self._img_cache[url]
+
+        async with aiohttp.ClientSession() as sess:
+            async with sess.get(url) as resp:
+                data = await resp.read()
+        img = Image.open(io.BytesIO(data)).convert("RGBA")
+        self._img_cache[url] = img
+        return img
 
     def _get_colors(self, n):
         """Generate n random bright RGB colors."""
@@ -156,7 +195,7 @@ class PickerWheel(commands.Cog):
             v = random.uniform(0.7, 1.0)
             r, g, b = colorsys.hsv_to_rgb(h, s, v)
             cols.append((int(r * 255), int(g * 255), int(b * 255)))
-        return cols
+        return cols                
 
     async def _make_wheel_gif(self, options, frames, duration, winner_idx):
         size = 500
@@ -166,80 +205,72 @@ class PickerWheel(commands.Cog):
         colors = self._get_colors(len(options))
         imgs = []
 
-        # total turns + just enough so the slice midpoint ends up at 270° (top)
+        # pull image-URL map for this wheel
+        wheel_name = self.current_wheel_name  # or pass it in
+        all_imgs = await self.config.guild(ctx.guild).wheel_images()
+        img_map = all_imgs.get(wheel_name, {})
+
+        # compute final offset to land winner at 12 o’clock
         rotations = 3
         mid_deg = (winner_idx + 0.5) * sector
-        # 270° in PIL is straight up — this lines the chosen slice under the arrow
-        delta = (270 - mid_deg) % 360
-        final_offset = rotations * 360 + delta
+        final_offset = rotations * 360 + (270 - mid_deg)
 
         for frame in range(frames):
             t = frame / (frames - 1)
-            # ← now we spin forward, not backward
             offset = t * final_offset
 
             im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
             draw = ImageDraw.Draw(im)
 
-            # draw slices + labels
+            # draw each slice
             for idx, (opt, col) in enumerate(zip(options, colors)):
                 start = idx * sector + offset
                 end = start + sector
-                draw.pieslice(
-                    [10, 10, size - 10, size - 10],
-                    start, end,
-                    fill=col,
-                    outline=(0, 0, 0),
-                )
 
-                # label inside at 60% radius
-                ang = math.radians((start + end) / 2)
-                tx = center + math.cos(ang) * (radius * 0.6)
-                ty = center + math.sin(ang) * (radius * 0.6)
-                label = opt if len(opt) <= 12 else opt[:12] + "…"
+                # 1) If we have an image for this slice, paste it masked
+                url = img_map.get(opt)
+                if url:
+                    src = await self._fetch_image(url)
+                    # scale to circle-diameter
+                    dia = size - 20
+                    bg = src.resize((dia, dia), Image.LANCZOS)
 
-                # pick contrasting text color
-                bri = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
-                fg = "black" if bri > 128 else "white"
-                bg = "white" if fg == "black" else "black"
+                    # create a full-size mask & draw the wedge
+                    mask = Image.new("L", (size, size), 0)
+                    md = ImageDraw.Draw(mask)
+                    md.pieslice([10, 10, size-10, size-10], start, end, fill=255)
 
-                # measure and pad for rotation
-                x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
-                w, h = x1 - x0, y1 - y0
-                pad = 8
-                text_im = Image.new("RGBA", (w + pad*2, h + pad*2), (0, 0, 0, 0))
-                td = ImageDraw.Draw(text_im)
-                td.text(
-                    (pad, pad),
-                    label,
-                    font=self.font,
-                    fill=fg,
-                    stroke_width=2,
-                    stroke_fill=bg,
-                )
+                    # crop mask to bg’s region then paste
+                    mask_crop = mask.crop((10, 10, size-10, size-10))
+                    im.paste(bg, (10, 10), mask_crop)
 
-                # rotate text back to horizontal
-                rot = text_im.rotate(-math.degrees(ang), expand=True)
-                px = int(tx - rot.width / 2)
-                py = int(ty - rot.height / 2)
-                im.paste(rot, (px, py), rot)
+                    # outline the wedge
+                    draw.arc([10, 10, size-10, size-10], start, end, fill=(0,0,0))
+                else:
+                    # fallback to solid color
+                    draw.pieslice([10, 10, size-10, size-10],
+                                  start, end,
+                                  fill=col, outline=(0,0,0))
 
-            # draw the fixed arrow at the top
+                # 2) draw the label inside… (reuse your padded-and-rotated text code)
+
+            # draw the static pointer arrow at 12 o’clock
             arrow_w, arrow_h = 30, 20
             triangle = [
-                (center - arrow_w // 2, 0),
-                (center + arrow_w // 2, 0),
+                (center - arrow_w//2, 0),
+                (center + arrow_w//2, 0),
                 (center, arrow_h),
             ]
-            draw.polygon(triangle, fill=(0, 0, 0), outline=(255, 255, 255))
+            draw.polygon(triangle, fill=(0,0,0), outline=(255,255,255))
 
             imgs.append(im)
 
-        # build a fully RGBA GIF so colors & transparency survive
+        # save the GIF
         bio = io.BytesIO()
-        imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
+        imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
         bio.seek(0)
         return bio
+
 
 
 
