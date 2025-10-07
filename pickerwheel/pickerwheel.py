@@ -142,11 +142,13 @@ class PickerWheel(commands.Cog):
         await ctx.send(f"🎉 **{key}** stops on **{winner}**!", file=file)
 
     def _get_colors(self, n):
-        """Generate n evenly spaced, vibrant rainbow colors."""
+        """Generate n random bright RGB colors."""
         cols = []
-        for i in range(n):
-            h = i / n
-            s, v = 0.8, 0.9
+        for _ in range(n):
+            # pick a random hue, high saturation & brightness
+            h = random.random()
+            s = random.uniform(0.6, 1.0)
+            v = random.uniform(0.7, 1.0)
             r, g, b = colorsys.hsv_to_rgb(h, s, v)
             cols.append((int(r * 255), int(g * 255), int(b * 255)))
         return cols
@@ -158,62 +160,54 @@ class PickerWheel(commands.Cog):
         sector = 360 / len(options)
         colors = self._get_colors(len(options))
         imgs = []
-    
+
         for frame in range(frames):
             offset = (frame / frames) * 360
-    
-            # Start with a transparent canvas
+
+            # transparent canvas
             im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
             draw = ImageDraw.Draw(im)
-    
+
+            # draw each slice + label
             for idx, (opt, col) in enumerate(zip(options, colors)):
-                # 1) Draw slice
                 start = idx * sector + offset
                 end = start + sector
-                draw.pieslice(
-                    [10, 10, size - 10, size - 10],
-                    start, end,
-                    fill=col,
-                    outline=(0, 0, 0)
-                )
-    
-                # 2) Compute label position *inside* the wheel
+                draw.pieslice([10, 10, size - 10, size - 10],
+                              start, end, fill=col, outline=(0, 0, 0))
+
                 mid_ang = math.radians((start + end) / 2)
                 inner_r = radius * 0.6
                 tx = center + inner_r * math.cos(mid_ang)
                 ty = center + inner_r * math.sin(mid_ang)
-    
-                # 3) Truncate label
                 label = opt if len(opt) <= 12 else opt[:12] + "…"
-    
-                # 4) Pick black/white for contrast + 1px stroke
-                brightness = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
-                fill = "black" if brightness > 128 else "white"
-                stroke = "white" if fill == "black" else "black"
-    
-                # 5) Render text onto its own small RGBA image
+
+                bri = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
+                fg = "black" if bri > 128 else "white"
+                bg = "white" if fg == "black" else "black"
+
                 x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
                 w, h = x1 - x0, y1 - y0
                 text_im = Image.new("RGBA", (w + 4, h + 4), (0, 0, 0, 0))
                 td = ImageDraw.Draw(text_im)
-                td.text(
-                    (2, 2),
-                    label,
-                    font=self.font,
-                    fill=fill,
-                    stroke_width=1,
-                    stroke_fill=stroke,
-                )
-    
-                # 6) Rotate text back to horizontal
+                td.text((2, 2), label, font=self.font,
+                        fill=fg, stroke_width=1, stroke_fill=bg)
+
                 rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
                 px, py = int(tx - rot.width/2), int(ty - rot.height/2)
                 im.paste(rot, (px, py), rot)
-    
-            # 7) Keep RGBA (transparent) – don’t convert to P or RGB
+
+            # draw the static pointer arrow at top-center
+            arrow_w, arrow_h = 30, 20
+            triangle = [
+                (center - arrow_w // 2, 0),
+                (center + arrow_w // 2, 0),
+                (center, arrow_h)
+            ]
+            draw.polygon(triangle, fill=(0, 0, 0), outline=(255, 255, 255))
+
+            # keep RGBA so transparency & true-color survive
             imgs.append(im)
-    
-        # Let imageio handle RGBA → GIF (it will pick a palette with transparency)
+
         bio = io.BytesIO()
         imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
         bio.seek(0)
