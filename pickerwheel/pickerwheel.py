@@ -151,71 +151,74 @@ class PickerWheel(commands.Cog):
             cols.append((int(r * 255), int(g * 255), int(b * 255)))
         return cols
 
-    async def _make_wheel_gif(self, options, frames, duration):
-        size = 500
-        center = size // 2
-        radius = center - 10
-        sector = 360 / len(options)
-        colors = self._get_colors(len(options))
-        imgs = []
+async def _make_wheel_gif(self, options, frames, duration):
+    size = 500
+    center = size // 2
+    radius = center - 10
+    sector = 360 / len(options)
+    colors = self._get_colors(len(options))
+    imgs = []
 
-        for frame in range(frames):
-            offset = (frame / frames) * 360
-            im = Image.new("RGBA", (size, size), (255, 255, 255, 0))
-            draw = ImageDraw.Draw(im)
+    for frame in range(frames):
+        offset = (frame / frames) * 360
 
-            for idx, (opt, col) in enumerate(zip(options, colors)):
-                # draw colored slice
-                start = idx * sector + offset
-                end = start + sector
-                draw.pieslice(
-                    [10, 10, size - 10, size - 10],
-                    start, end,
-                    fill=col,
-                    outline=(0, 0, 0),
-                )
+        # Start with a transparent canvas
+        im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(im)
 
-                # label midpoint
-                mid_ang = math.radians((start + end) / 2)
-                tx = center + (radius + 15) * math.cos(mid_ang)
-                ty = center + (radius + 15) * math.sin(mid_ang)
+        for idx, (opt, col) in enumerate(zip(options, colors)):
+            # 1) Draw slice
+            start = idx * sector + offset
+            end = start + sector
+            draw.pieslice(
+                [10, 10, size - 10, size - 10],
+                start, end,
+                fill=col,
+                outline=(0, 0, 0)
+            )
 
-                # truncate label
-                label = opt if len(opt) <= 12 else opt[:12] + "…"
+            # 2) Compute label position *inside* the wheel
+            mid_ang = math.radians((start + end) / 2)
+            inner_r = radius * 0.6
+            tx = center + inner_r * math.cos(mid_ang)
+            ty = center + inner_r * math.sin(mid_ang)
 
-                # pick contrasting text color
-                brightness = 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
-                text_fill = "black" if brightness > 128 else "white"
-                outline_fill = "white" if text_fill == "black" else "black"
+            # 3) Truncate label
+            label = opt if len(opt) <= 12 else opt[:12] + "…"
 
-                # measure text
-                x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
-                w, h = x1 - x0, y1 - y0
-                text_im = Image.new("RGBA", (w + 4, h + 4), (0, 0, 0, 0))
-                td = ImageDraw.Draw(text_im)
-                td.text(
-                    (2, 2),
-                    label,
-                    font=self.font,
-                    fill=text_fill,
-                    stroke_width=1,
-                    stroke_fill=outline_fill,
-                )
+            # 4) Pick black/white for contrast + 1px stroke
+            brightness = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
+            fill = "black" if brightness > 128 else "white"
+            stroke = "white" if fill == "black" else "black"
 
-                # rotate text back to horizontal
-                rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
-                px, py = int(tx - rot.width/2), int(ty - rot.height/2)
-                halo = Image.new("RGBA", rot.size, (255, 255, 255, 180))
-                mask = rot.split()[3]
-                im.paste(halo, (px, py), mask)
-                im.paste(rot, (px, py), rot)
+            # 5) Render text onto its own small RGBA image
+            x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
+            w, h = x1 - x0, y1 - y0
+            text_im = Image.new("RGBA", (w + 4, h + 4), (0, 0, 0, 0))
+            td = ImageDraw.Draw(text_im)
+            td.text(
+                (2, 2),
+                label,
+                font=self.font,
+                fill=fill,
+                stroke_width=1,
+                stroke_fill=stroke,
+            )
 
-            imgs.append(im.convert("RGB"))
+            # 6) Rotate text back to horizontal
+            rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
+            px, py = int(tx - rot.width/2), int(ty - rot.height/2)
+            im.paste(rot, (px, py), rot)
 
-        bio = io.BytesIO()
-        imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
-        bio.seek(0)
-        return bio
+        # 7) Keep RGBA (transparent) – don’t convert to P or RGB
+        imgs.append(im)
+
+    # Let imageio handle RGBA → GIF (it will pick a palette with transparency)
+    bio = io.BytesIO()
+    imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
+    bio.seek(0)
+    return bio
+
 
 async def setup(bot):
     await bot.add_cog(PickerWheel(bot))
