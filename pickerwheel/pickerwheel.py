@@ -125,28 +125,51 @@ class PickerWheel(commands.Cog):
         await ctx.send(f"🧹 Cleared wheel **{key}**.")
 
     @pickerwheel.command()
-    async def spin(self, ctx, name: str, frames: int = 30, duration: float = 3.0):
+    async def spin(self, ctx, name: str, frames: int    async def spin(self, ctx, name: str, frames: int = 30, duration: float = 3.0):
+        """
+        Spin = 30, duration: float = 3.0):
         """
         Spin the specified wheel.
         frames: total frames in the GIF
+        duration: total the specified wheel.
+        frames: total frames in the GIF
         duration: total seconds of animation
         """
-        key = name.lower()
+        wheel_name = name.lower()
+        wheels = await self.config.guild(ctx seconds of animation
+        """
+        wheel_name = name.lower()
         wheels = await self.config.guild(ctx.guild).wheels()
-        if key not in wheels:
-            return await ctx.send(f"❌ No wheel named **{key}**.")
-        opts = wheels[key]
+        if wheel_name not in wheels:
+            return await ctx.send(f.guild).wheels()
+        if wheel_name not in wheels:
+            return await ctx.send(f"❌ No wheel named **{wheel_name}**.")
+        opts"❌ No wheel named **{wheel_name}**.")
+        opts = wheels[wheel_name]
         if len(opts) < 2:
-            return await ctx.send("Need at least two options to spin.")
+            return = wheels[wheel_name]
+        if len(opts) < 2:
+            return await ctx.send(" await ctx.send("Need at least two options to spin.")
 
-        # 1) Choose a random winner index
+        # 1Need at least two options to spin.")
+
+        # 1) pick an index to win
+        winner_idx = random.randrange(len(opts))
+       ) pick an index to win
         winner_idx = random.randrange(len(opts))
         winner = opts[winner_idx]
 
-        # 2) Pass it into the GIF generator
-        gif = await self._make_wheel_gif(opts, frames, duration, winner_idx)
-        file = discord.File(fp=gif, filename="wheel.gif")
-        await ctx.send(f"🎉 **{key}** stops on **{winner}**!", file=file)
+        # 2) pass ctx and wheel_name winner = opts[winner_idx]
+
+        # 2) pass ctx and wheel_name into the GIF generator
+        gif = await self._make_wheel into the GIF generator
+        gif = await self._make_wheel_gif(ctx, wheel_name, opts, frames, duration, winner_idx)
+        file = discord.File_gif(ctx, wheel_name, opts, frames, duration, winner_idx)
+       (fp=gif, filename="wheel.gif")
+        await ctx.send(f file = discord.File(fp=gif, filename="wheel.gif")
+        await ctx.send(f"🎉 **{wheel_name}** stops on **{"🎉 **{wheel_name}** stops on **{winner}**!", file=file)
+        
+    async def _make_wheelwinner}**!", file=file)    
         
     @pickerwheel.command(name="image")
     async def image(self, ctx, wheel: str, *, label: str):
@@ -197,7 +220,21 @@ class PickerWheel(commands.Cog):
             cols.append((int(r * 255), int(g * 255), int(b * 255)))
         return cols                
 
-    async def _make_wheel_gif(self, options, frames, duration, winner_idx):
+    async def _make_wheel_gif(
+        self,
+        ctx,
+        wheel_name: str,
+        options_gif(
+        self,
+        ctx,
+        wheel_name: str,
+        options: list[str],
+        frames: int,
+       : list[str],
+        frames: int,
+        duration: float,
+        winner_idx: int,
+    ):
         size = 500
         center = size // 2
         radius = center - 10
@@ -205,15 +242,15 @@ class PickerWheel(commands.Cog):
         colors = self._get_colors(len(options))
         imgs = []
 
-        # pull image-URL map for this wheel
-        wheel_name = self.current_wheel_name  # or pass it in
+        # Load the per-wheel image map from config
         all_imgs = await self.config.guild(ctx.guild).wheel_images()
         img_map = all_imgs.get(wheel_name, {})
 
-        # compute final offset to land winner at 12 o’clock
+        # compute total rotation so the chosen slice lands at 12 o’clock (270°)
         rotations = 3
         mid_deg = (winner_idx + 0.5) * sector
-        final_offset = rotations * 360 + (270 - mid_deg)
+        delta = (270 - mid_deg) % 360
+        final_offset = rotations * 360 + delta
 
         for frame in range(frames):
             t = frame / (frames - 1)
@@ -222,56 +259,65 @@ class PickerWheel(commands.Cog):
             im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
             draw = ImageDraw.Draw(im)
 
-            # draw each slice
             for idx, (opt, col) in enumerate(zip(options, colors)):
                 start = idx * sector + offset
                 end = start + sector
 
-                # 1) If we have an image for this slice, paste it masked
+                # If there’s a custom image, mask & paste it
                 url = img_map.get(opt)
                 if url:
                     src = await self._fetch_image(url)
-                    # scale to circle-diameter
                     dia = size - 20
                     bg = src.resize((dia, dia), Image.LANCZOS)
 
-                    # create a full-size mask & draw the wedge
                     mask = Image.new("L", (size, size), 0)
                     md = ImageDraw.Draw(mask)
-                    md.pieslice([10, 10, size-10, size-10], start, end, fill=255)
-
-                    # crop mask to bg’s region then paste
-                    mask_crop = mask.crop((10, 10, size-10, size-10))
-                    im.paste(bg, (10, 10), mask_crop)
-
-                    # outline the wedge
+                    md.pieslice([10, 10, size - 10, size - 10],
+                                start, end, fill=255)
+                    im.paste(bg, (10, 10), mask.crop((10, 10, size-10, size-10)))
                     draw.arc([10, 10, size-10, size-10], start, end, fill=(0,0,0))
                 else:
-                    # fallback to solid color
-                    draw.pieslice([10, 10, size-10, size-10],
+                    # fallback to flat color
+                    draw.pieslice([10, 10, size - 10, size - 10],
                                   start, end,
-                                  fill=col, outline=(0,0,0))
+                                  fill=col, outline=(0, 0, 0))
 
-                # 2) draw the label inside… (reuse your padded-and-rotated text code)
+                # draw the slice’s label (your padded‐and‐rotated text code)
+                ang = math.radians((start + end) / 2)
+                tx = center + math.cos(ang) * (radius * 0.6)
+                ty = center + math.sin(ang) * (radius * 0.6)
+                label = opt if len(opt) <= 12 else opt[:12] + "…"
+                bri = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
+                fg = "black" if bri > 128 else "white"
+                bgc = "white" if fg == "black" else "black"
+                x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
+                w, h = x1 - x0, y1 - y0
+                pad = 8
+                text_im = Image.new("RGBA", (w + pad*2, h + pad*2), (0, 0, 0, 0))
+                td = ImageDraw.Draw(text_im)
+                td.text((pad, pad), label, font=self.font,
+                        fill=fg, stroke_width=2, stroke_fill=bgc)
+                rot = text_im.rotate(-math.degrees(ang), expand=True)
+                px = int(tx - rot.width / 2)
+                py = int(ty - rot.height / 2)
+                im.paste(rot, (px, py), rot)
 
-            # draw the static pointer arrow at 12 o’clock
+            # draw the fixed arrow at top
             arrow_w, arrow_h = 30, 20
             triangle = [
-                (center - arrow_w//2, 0),
-                (center + arrow_w//2, 0),
+                (center - arrow_w // 2, 0),
+                (center + arrow_w // 2, 0),
                 (center, arrow_h),
             ]
-            draw.polygon(triangle, fill=(0,0,0), outline=(255,255,255))
+            draw.polygon(triangle, fill=(0, 0, 0), outline=(255, 255, 255))
 
             imgs.append(im)
 
-        # save the GIF
+        # build & return the GIF
         bio = io.BytesIO()
-        imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
+        imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
         bio.seek(0)
         return bio
-
-
 
 
 async def setup(bot):
