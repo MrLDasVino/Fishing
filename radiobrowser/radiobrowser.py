@@ -16,12 +16,12 @@ class RadioBrowser(commands.Cog):
       • [p]radio random
     """
 
-    # Primary + regional JSON endpoints for failover
+    # JSON endpoints for failover (each ends with '/json/')
     API_BASES = [
-        "https://api.radio-browser.info/json",
-        "https://fi1.api.radio-browser.info/json",
-        "https://de1.api.radio-browser.info/json",
-        "https://nl1.api.radio-browser.info/json",
+        "https://api.radio-browser.info/json/",
+        "https://fi1.api.radio-browser.info/json/",
+        "https://de1.api.radio-browser.info/json/",
+        "https://nl1.api.radio-browser.info/json/",
     ]
 
     def __init__(self, bot):
@@ -39,17 +39,17 @@ class RadioBrowser(commands.Cog):
         if self.session and not self.session.closed:
             await self.session.close()
 
-    async def _api_get(self, path: str, params: dict):
+    async def _api_get(self, endpoint: str, params: dict):
         """
         Try each base URL in turn until we get a non-502 response.
-        Returns (data, error_message) where data is the parsed JSON or None,
-        and error_message is a string to display/log on total failure.
+        Returns (data, error_message).
         """
-        assert self.session, "Session not initialized"
-
+        assert self.session, "HTTP session not initialized"
         last_error = None
+
         for base in self.API_BASES:
-            url = f"{base}/{path}"
+            url = f"{base}{endpoint}"
+            logger.debug("Requesting %s with params %s", url, params)
             try:
                 async with self.session.get(url, params=params, timeout=10) as resp:
                     text = await resp.text()
@@ -62,11 +62,10 @@ class RadioBrowser(commands.Cog):
                         return None, f"HTTP {resp.status} from Radio Browser"
                     return await resp.json(), None
             except Exception as e:
-                logger.exception("Error fetching %s from %s", path, base)
+                logger.exception("Error fetching %s from %s", endpoint, base)
                 last_error = str(e)
                 continue
 
-        # All endpoints failed
         return None, last_error or "Unknown error fetching from Radio Browser"
 
     @commands.group(name="radio", invoke_without_command=True)
@@ -100,7 +99,6 @@ class RadioBrowser(commands.Cog):
         if not data:
             return await ctx.send(f"No stations found for **{field}: {query}**.")
 
-        # Cache results for this user
         self._search_cache[ctx.author.id] = data
 
         embed = discord.Embed(
