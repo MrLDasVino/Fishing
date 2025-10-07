@@ -1,6 +1,5 @@
 import aiohttp
 import logging
-import random
 
 from redbot.core import commands
 import discord
@@ -17,9 +16,9 @@ class RadioBrowser(commands.Cog):
       • radio random
     """
 
-    # Try the main API host first, then fall back to clusters
+    # Try the DNS-balanced host first, then explicit clusters
     API_BASES = [
-        "https://api.radio-browser.info/json",
+        "https://all.api.radio-browser.info/json",
         "https://de1.api.radio-browser.info/json",
         "https://fr1.api.radio-browser.info/json",
         "https://nl1.api.radio-browser.info/json",
@@ -33,9 +32,11 @@ class RadioBrowser(commands.Cog):
         self._search_cache: dict[int, list[dict]] = {}
 
     async def cog_load(self):
+        """Initialize HTTP session when the cog loads."""
         self.session = aiohttp.ClientSession()
 
     async def cog_unload(self):
+        """Close HTTP session when the cog unloads."""
         if self.session:
             await self.session.close()
 
@@ -65,10 +66,10 @@ class RadioBrowser(commands.Cog):
         params = {field: query, "limit": 10}
         data = None
 
-        # Rotate through hosts until one succeeds
         for base in self.API_BASES:
             try:
-                async with self.session.get(f"{base}/stations/search", params=params, timeout=8) as resp:
+                url = f"{base}/stations/search"
+                async with self.session.get(url, params=params, timeout=8) as resp:
                     text = await resp.text()
                     if resp.status == 200:
                         data = await resp.json()
@@ -129,7 +130,8 @@ class RadioBrowser(commands.Cog):
 
         for base in self.API_BASES:
             try:
-                async with self.session.get(f"{base}/stations/random", timeout=8) as resp:
+                url = f"{base}/stations/random"
+                async with self.session.get(url, timeout=8) as resp:
                     text = await resp.text()
                     if resp.status == 200:
                         station = await resp.json()
