@@ -1,5 +1,6 @@
 import aiohttp
 import logging
+import random
 
 from redbot.core import commands
 import discord
@@ -16,11 +17,17 @@ class RadioBrowser(commands.Cog):
       • radio random
     """
 
+    CLUSTERS = [
+        "https://de1.api.radio-browser.info/json",
+        "https://fr1.api.radio-browser.info/json",
+        "https://nl1.api.radio-browser.info/json",
+        "https://us1.api.radio-browser.info/json",
+        "https://br1.api.radio-browser.info/json",
+    ]
+
     def __init__(self, bot):
         self.bot = bot
         self.session: aiohttp.ClientSession | None = None
-        # Cluster host supporting HTTPS
-        self.api_base = "https://de1.api.radio-browser.info/json"
         self._search_cache: dict[int, list[dict]] = {}
 
     async def cog_load(self):
@@ -55,13 +62,21 @@ class RadioBrowser(commands.Cog):
         else:
             field, query = "name", " ".join(args)
 
-        url = f"{self.api_base}/stations/search"
+        # Pick a random cluster for search
+        base = random.choice(self.CLUSTERS)
+        url = f"{base}/stations/search"
         params = {field: query, "limit": 10}
-        async with self.session.get(url, params=params) as resp:
-            if resp.status != 200:
-                logger.error(f"Search HTTP {resp.status}: {await resp.text()}")
-                return await ctx.send("❌ Error fetching stations. Try again later.")
-            data = await resp.json()
+
+        try:
+            async with self.session.get(url, params=params, timeout=10) as resp:
+                text = await resp.text()
+                if resp.status != 200:
+                    logger.error(f"Search HTTP {resp.status} @ {base}: {text}")
+                    return await ctx.send("❌ Error fetching stations. Try again later.")
+                data = await resp.json()
+        except Exception as e:
+            logger.exception("Network error during search")
+            return await ctx.send(f"❌ Network error fetching stations: `{e}`")
 
         if not data:
             return await ctx.send(f"No stations found for **{field}: {query}**.")
@@ -91,7 +106,6 @@ class RadioBrowser(commands.Cog):
         cache = self._search_cache.get(ctx.author.id)
         if not cache:
             return await ctx.send("You have no recent search. Use `[p]radio search <query>` first.")
-
         if not 1 <= number <= len(cache):
             return await ctx.send(f"Pick a number between 1 and {len(cache)}.")
 
@@ -108,23 +122,31 @@ class RadioBrowser(commands.Cog):
 
     @radio.command(name="random")
     async def radio_random(self, ctx: commands.Context):
-        """Fetch a completely random radio station."""
-        url = f"{self.api_base}/stations/random"
-        try:
-            async with self.session.get(url, timeout=10) as resp:
-                full_text = await resp.text()
-                if resp.status != 200:
-                    logger.error(f"Radio random HTTP {resp.status} response: {full_text}")
-                    snippet = full_text[:500]
-                    if len(full_text) > 500:
-                        snippet += "\n... (truncated)"
-                    return await ctx.send(
-                        f"❌ HTTP {resp.status} from Radio-Browser:\n```{snippet}```"
-                    )
-                station = await resp.json()
-        except Exception as e:
-            logger.exception("Error fetching random station")
-            return await ctx.send(f"❌ Network error fetching random station: `{e}`")
+        """Fetch a completely random radio station, retrying across clusters on 502 errors."""
+        station = None
+        # try each cluster in random order until one succeeds
+        for base in random.sample(self.CLUSTERS, len(self.CLUSTERS)):
+            url = f"{base}/stations/random"
+            try:
+                async with self.session.get(url, timeout=10) as resp:
+                    full_text = await resp.text()
+                    if resp.status == 200:
+                        station = await resp.json()
+                        break
+                    # specific retry on 502
+                    if resp.status == 502:
+                        logger.warning(f"Cluster {base} returned 502, trying next")
+                        continue
+                    # other errors: log and break to report back
+                    logger.error(f"Random HTTP {resp.status} @ {base}: {full_text[:200]}")
+                    snippet = full_text[:500] + ("... (truncated)" if len(full_text) > 500 else "")
+                    return await ctx.send(f"❌ HTTP {resp.status} from Radio-Browser:\n```{snippet}```")
+            except Exception as e:
+                logger.exception(f"Error fetching random from cluster {base}")
+                continue
+
+        if not station:
+            return await ctx.send("❌ Could not fetch from any Radio-Browser cluster. Please try again later.")
 
         title = station.get("name", "Random station")
         stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
