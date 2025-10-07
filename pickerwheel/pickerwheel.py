@@ -136,8 +136,10 @@ class PickerWheel(commands.Cog):
         if len(opts) < 2:
             return await ctx.send("Need at least two options to spin.")
 
-        winner = random.choice(opts)
-        gif = await self._make_wheel_gif(opts, frames, duration)
+        winner_idx = random.randrange(len(opts))
+        winner = opts[winner_idx]
+
+        gif = await self._make_wheel_gif(opts, frames, duration, winner_idx)
         file = discord.File(fp=gif, filename="wheel.gif")
         await ctx.send(f"🎉 **{key}** stops on **{winner}**!", file=file)
 
@@ -153,23 +155,28 @@ class PickerWheel(commands.Cog):
             cols.append((int(r * 255), int(g * 255), int(b * 255)))
         return cols
 
-    async def _make_wheel_gif(self, options, frames, duration):
+    async def _make_wheel_gif(self, options, frames, duration, winner_idx):
         size = 500
         center = size // 2
         radius = center - 10
         sector = 360 / len(options)
         colors = self._get_colors(len(options))
         imgs = []
-    
+
+        # Compute total rotation so the chosen slice lands under the arrow (at 90°)
+        rotations = 3
+        mid_angle = winner_idx * sector + sector / 2
+        final_offset = rotations * 360 + (90 - mid_angle)
+
         for frame in range(frames):
-            offset = (frame / frames) * 360
-    
-            # transparent canvas
+            # Interpolate from 0 → final_offset
+            offset = frame / (frames - 1) * final_offset
+
             im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
             draw = ImageDraw.Draw(im)
-    
+
             for idx, (opt, col) in enumerate(zip(options, colors)):
-                # draw slice
+                # 1) Draw slice
                 start = idx * sector + offset
                 end = start + sector
                 draw.pieslice(
@@ -178,24 +185,24 @@ class PickerWheel(commands.Cog):
                     fill=col,
                     outline=(0, 0, 0),
                 )
-    
-                # label inside
+
+                # 2) Compute label position inside
                 mid_ang = math.radians((start + end) / 2)
                 inner_r = radius * 0.6
                 tx = center + inner_r * math.cos(mid_ang)
                 ty = center + inner_r * math.sin(mid_ang)
                 label = opt if len(opt) <= 12 else opt[:12] + "…"
-    
-                # pick text color for contrast
+
+                # 3) Choose contrasting text + stroke
                 bri = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
                 fg = "black" if bri > 128 else "white"
                 bg = "white" if fg == "black" else "black"
-    
-                # measure text
+
+                # 4) Measure text
                 x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
                 w, h = x1 - x0, y1 - y0
-    
-                # render with extra padding so rotation won't cut off edges
+
+                # 5) Render with padding to avoid clipping on rotate
                 pad = 8
                 text_im = Image.new("RGBA", (w + pad*2, h + pad*2), (0, 0, 0, 0))
                 td = ImageDraw.Draw(text_im)
@@ -207,14 +214,14 @@ class PickerWheel(commands.Cog):
                     stroke_width=2,
                     stroke_fill=bg,
                 )
-    
-                # rotate back to horizontal
+
+                # 6) Rotate back to horizontal
                 rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
                 px = int(tx - rot.width / 2)
                 py = int(ty - rot.height / 2)
                 im.paste(rot, (px, py), rot)
-    
-            # draw static pointer arrow at top
+
+            # 7) Draw the static pointer arrow at top-center
             arrow_w, arrow_h = 30, 20
             triangle = [
                 (center - arrow_w // 2, 0),
@@ -222,14 +229,15 @@ class PickerWheel(commands.Cog):
                 (center, arrow_h),
             ]
             draw.polygon(triangle, fill=(0, 0, 0), outline=(255, 255, 255))
-    
-            # keep RGBA frames
+
             imgs.append(im)
-    
+
+        # 8) Build GIF with full RGBA frames (preserves color + transparency)
         bio = io.BytesIO()
         imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
         bio.seek(0)
         return bio
+
 
 
 
