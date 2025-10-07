@@ -6,32 +6,29 @@ import discord
 
 logger = logging.getLogger(__name__)
 
-
 class RadioBrowser(commands.Cog):
     """
     Search and fetch radio stations from Radio Browser.
     Commands:
-      • radio search [name|country|tag|language] <query>
-      • radio pick <number>
-      • radio random
+      • [p]radio search [name|country|tag|language] <query>
+      • [p]radio pick <number>
+      • [p]radio random
     """
 
-    # Use the DNS-balanced JSON endpoint
-    API_BASE = "https://all.api.radio-browser.info/json"
+    # Use the DNS-balanced HTTP JSON endpoint (avoids SSL/DNS hiccups)
+    API_BASE = "http://all.api.radio-browser.info/json"
 
     def __init__(self, bot):
         self.bot = bot
-        self.session: aiohttp.ClientSession | None = None
+        # Required by Radio-Browser or you'll get 403 responses
+        headers = {"User-Agent": "RedbotRadioCog/1.0 (+https://github.com/YourRepo)"}
+        self.session = aiohttp.ClientSession(headers=headers)
         self._search_cache: dict[int, list[dict]] = {}
 
-    async def cog_load(self):
-        """Initialize HTTP session when the cog loads."""
-        self.session = aiohttp.ClientSession()
-
-    async def cog_unload(self):
-        """Close HTTP session when the cog unloads."""
-        if self.session:
-            await self.session.close()
+    def cog_unload(self):
+        # Cleanly close the session when the cog is unloaded
+        if not self.session.closed:
+            self.bot.loop.create_task(self.session.close())
 
     @commands.group(name="radio", invoke_without_command=True)
     async def radio(self, ctx: commands.Context):
@@ -57,13 +54,13 @@ class RadioBrowser(commands.Cog):
             field, query = "name", " ".join(args)
 
         url = f"{self.API_BASE}/stations/search"
-        params = {field: query, "limit": 10}
+        params = {field: query, "limit": 10, "hidebroken": True}
 
         try:
             async with self.session.get(url, params=params, timeout=10) as resp:
                 if resp.status != 200:
-                    body = await resp.text()
-                    logger.error(f"Search HTTP {resp.status}: {body[:200]}")
+                    text = await resp.text()
+                    logger.error(f"Search HTTP {resp.status}: {text[:200]}")
                     return await ctx.send("❌ Error fetching stations. Try again later.")
                 data = await resp.json()
         except Exception as e:
@@ -79,12 +76,12 @@ class RadioBrowser(commands.Cog):
             color=discord.Color.green(),
         )
         for idx, station in enumerate(data, start=1):
+            name = station.get("name", "Unknown")
+            country = station.get("country", "Unknown")
+            language = station.get("language", "Unknown")
             embed.add_field(
-                name=f"{idx}. {station.get('name', 'Unknown')}",
-                value=(
-                    f"Country: {station.get('country', 'Unknown')} | "
-                    f"Language: {station.get('language', 'Unknown')}"
-                ),
+                name=f"{idx}. {name}",
+                value=f"Country: {country} | Language: {language}",
                 inline=False,
             )
         embed.set_footer(text="Type [p]radio pick <number> to get the stream URL")
@@ -105,45 +102,4 @@ class RadioBrowser(commands.Cog):
         stream = station.get("url_resolved") or station.get("url") or "No URL available"
         embed = discord.Embed(
             title=station.get("name", "Unknown station"),
-            color=discord.Color.blue(),
-        )
-        embed.add_field(name="🔗 Stream URL", value=stream, inline=False)
-        embed.add_field(name="🌍 Country", value=station.get("country", "Unknown"), inline=True)
-        embed.add_field(name="🗣️ Language", value=station.get("language", "Unknown"), inline=True)
-        await ctx.send(embed=embed)
-
-    @radio.command(name="random")
-    async def radio_random(self, ctx: commands.Context):
-        """
-        Fetch a completely random station by using the search endpoint
-        with order=random & limit=1.
-        """
-        url = f"{self.API_BASE}/stations/search"
-        params = {"order": "random", "limit": 1}
-
-        try:
-            async with self.session.get(url, params=params, timeout=10) as resp:
-                if resp.status != 200:
-                    body = await resp.text()
-                    logger.error(f"Random via search HTTP {resp.status}: {body[:200]}")
-                    snippet = body[:500] + ("... (truncated)" if len(body) > 500 else "")
-                    return await ctx.send(f"❌ HTTP {resp.status} from Radio-Browser:\n```{snippet}```")
-                data = await resp.json()
-        except Exception as e:
-            logger.exception("Network error during random fetch")
-            return await ctx.send(f"❌ Network error fetching random station: `{e}`")
-
-        if not data:
-            return await ctx.send("❌ No station returned. Try again later.")
-
-        station = data[0]
-        title = station.get("name", "Random station")
-        stream = station.get("url_resolved") or station.get("url") or "No URL available"
-        country = station.get("country", "Unknown")
-        language = station.get("language", "Unknown")
-
-        embed = discord.Embed(title="🎲 Random Radio Station", color=discord.Color.purple())
-        embed.add_field(name=title, value=f"[Listen here]({stream})", inline=False)
-        embed.add_field(name="🌍 Country", value=country, inline=True)
-        embed.add_field(name="🗣️ Language", value=language, inline=True)
-        await ctx.send(embed=embed)
+            color=discord.Color
