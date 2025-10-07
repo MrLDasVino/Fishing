@@ -136,6 +136,56 @@ class PickerWheel(commands.Cog):
         )
         file = discord.File(fp=gif, filename="wheel.gif")
         await ctx.send(f"🎉 **{wheel_name}** stops on **{winner}**!", file=file)
+        
+    @pickerwheel.command(name="removeimage")
+    async def removeimage(self, ctx, wheel: str, *, label: str):
+        """
+        Remove a custom image from one slice.
+        Usage: [p]pickerwheel removeimage <wheel_name> <exact_label>
+        """
+        wheel_key = wheel.lower()
+        all_imgs = await self.config.guild(ctx.guild).wheel_images()
+        imgs = all_imgs.get(wheel_key, {})
+
+        if label not in imgs:
+            return await ctx.send(f"❌ No image set for **{label}** on wheel **{wheel_key}**.")
+
+        # remove the entry
+        imgs.pop(label)
+        if imgs:
+            all_imgs[wheel_key] = imgs
+        else:
+            all_imgs.pop(wheel_key)
+
+        await self.config.guild(ctx.guild).wheel_images.set(all_imgs)
+        await ctx.send(f"🗑 Removed custom image for **{label}** on wheel **{wheel_key}**.")
+
+    @pickerwheel.command(name="listimages")
+    async def listimages(self, ctx, wheel: str = None):
+        """
+        List wheels with custom images, or the images for one wheel.
+        Usage: 
+          [p]pickerwheel listimages              → shows all wheels that have images  
+          [p]pickerwheel listimages <wheel_name> → lists labels↔URLs for that wheel
+        """
+        all_imgs = await self.config.guild(ctx.guild).wheel_images()
+        if not all_imgs:
+            return await ctx.send("No custom images set on any wheel.")
+
+        # list all wheels w/ counts
+        if wheel is None:
+            lines = [f"{w}: {len(imgs)} image(s)" for w, imgs in all_imgs.items() if imgs]
+            return await ctx.send("**Wheels with custom images:**\n" + "\n".join(lines))
+
+        # list images for a specific wheel
+        wheel_key = wheel.lower()
+        imgs = all_imgs.get(wheel_key, {})
+        if not imgs:
+            return await ctx.send(f"No custom images set on wheel **{wheel_key}**.")
+
+        lines = [f"{label}: {url}" for label, url in imgs.items()]
+        await ctx.send(f"**Custom images on `{wheel_key}`:**\n" + "\n".join(lines))
+        
 
     @pickerwheel.command(name="image")
     async def image(self, ctx, wheel: str, *, label: str):
