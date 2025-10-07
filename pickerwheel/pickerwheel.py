@@ -17,7 +17,7 @@ class PickerWheel(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890)
         self.config.register_guild(**self.DEFAULT_CONFIG)
-        # Use a bold, larger TTF font for maximum readability
+        # bold, larger font for readability
         self.font = ImageFont.truetype(
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20
         )
@@ -165,7 +165,7 @@ class PickerWheel(commands.Cog):
             draw = ImageDraw.Draw(im)
 
             for idx, (opt, col) in enumerate(zip(options, colors)):
-                # draw slice
+                # draw colored slice
                 start = idx * sector + offset
                 end = start + sector
                 draw.pieslice(
@@ -175,7 +175,7 @@ class PickerWheel(commands.Cog):
                     outline=(0, 0, 0),
                 )
 
-                # label position
+                # label midpoint
                 mid_ang = math.radians((start + end) / 2)
                 tx = center + (radius + 15) * math.cos(mid_ang)
                 ty = center + (radius + 15) * math.sin(mid_ang)
@@ -183,12 +183,12 @@ class PickerWheel(commands.Cog):
                 # truncate label
                 label = opt if len(opt) <= 12 else opt[:12] + "…"
 
-                # choose text color for contrast
-                brightness = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
+                # pick contrasting text color
+                brightness = 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
                 text_fill = "black" if brightness > 128 else "white"
                 outline_fill = "white" if text_fill == "black" else "black"
 
-                # measure and render text with stroke
+                # measure text
                 x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
                 w, h = x1 - x0, y1 - y0
                 text_im = Image.new("RGBA", (w + 4, h + 4), (0, 0, 0, 0))
@@ -202,9 +202,9 @@ class PickerWheel(commands.Cog):
                     stroke_fill=outline_fill,
                 )
 
-                # rotate text upright and paste with a soft white halo
+                # rotate text back to horizontal
                 rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
-                px, py = int(tx - rot.width / 2), int(ty - rot.height / 2)
+                px, py = int(tx - rot.width/2), int(ty - rot.height/2)
                 halo = Image.new("RGBA", rot.size, (255, 255, 255, 180))
                 mask = rot.split()[3]
                 im.paste(halo, (px, py), mask)
@@ -213,7 +213,7 @@ class PickerWheel(commands.Cog):
             imgs.append(im.convert("P"))
 
         bio = io.BytesIO()
-        imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
+        imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
         bio.seek(0)
         return bio
 
