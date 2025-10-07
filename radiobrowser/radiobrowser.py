@@ -19,6 +19,8 @@ class RadioBrowser(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.session: aiohttp.ClientSession | None = None
+        # Cluster host supporting HTTPS
+        self.api_base = "https://de1.api.radio-browser.info/json"
         self._search_cache: dict[int, list[dict]] = {}
 
     async def cog_load(self):
@@ -32,15 +34,18 @@ class RadioBrowser(commands.Cog):
 
     @commands.group(name="radio", invoke_without_command=True)
     async def radio(self, ctx: commands.Context):
-        await ctx.send(
-            "Usage:\n"
-            "`[p]radio search [name|country|tag|language] <query>`\n"
-            "`[p]radio pick <number>`\n"
-            "`[p]radio random`"
-        )
+        """Group command for Radio Browser integration."""
+        await ctx.send_help()
 
     @radio.command(name="search")
     async def radio_search(self, ctx: commands.Context, *args):
+        """
+        Search stations by name (default), country, tag or language.
+        Examples:
+          • [p]radio search Beatles
+          • [p]radio search country Germany
+          • [p]radio search tag rock
+        """
         if not args:
             return await ctx.send("Please provide something to search for.")
 
@@ -50,10 +55,11 @@ class RadioBrowser(commands.Cog):
         else:
             field, query = "name", " ".join(args)
 
-        url = "https://api.radio-browser.info/json/stations/search"
+        url = f"{self.api_base}/stations/search"
         params = {field: query, "limit": 10}
         async with self.session.get(url, params=params) as resp:
             if resp.status != 200:
+                logger.error(f"Search HTTP {resp.status}: {await resp.text()}")
                 return await ctx.send("❌ Error fetching stations. Try again later.")
             data = await resp.json()
 
@@ -79,6 +85,9 @@ class RadioBrowser(commands.Cog):
 
     @radio.command(name="pick")
     async def radio_pick(self, ctx: commands.Context, number: int):
+        """
+        Pick one station from your last search results by its index.
+        """
         cache = self._search_cache.get(ctx.author.id)
         if not cache:
             return await ctx.send("You have no recent search. Use `[p]radio search <query>` first.")
@@ -99,15 +108,13 @@ class RadioBrowser(commands.Cog):
 
     @radio.command(name="random")
     async def radio_random(self, ctx: commands.Context):
-        """Fetch a random radio station."""
-        url = "https://api.radio-browser.info/json/stations/random"
+        """Fetch a completely random radio station."""
+        url = f"{self.api_base}/stations/random"
         try:
             async with self.session.get(url, timeout=10) as resp:
                 full_text = await resp.text()
                 if resp.status != 200:
-                    # Log full response
                     logger.error(f"Radio random HTTP {resp.status} response: {full_text}")
-                    # Truncate for Discord
                     snippet = full_text[:500]
                     if len(full_text) > 500:
                         snippet += "\n... (truncated)"
@@ -123,6 +130,7 @@ class RadioBrowser(commands.Cog):
         stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
         country = station.get("country", "Unknown")
         language = station.get("language", "Unknown")
+
         embed = discord.Embed(title="🎲 Random Radio Station", color=discord.Color.purple())
         embed.add_field(name=title, value=f"[Listen here]({stream_url})", inline=False)
         embed.add_field(name="🌍 Country", value=country, inline=True)
