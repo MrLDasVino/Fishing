@@ -2,10 +2,12 @@ import io
 import math
 import random
 import re
-from PIL import Image, ImageDraw, ImageFont, ImageColor
+import colorsys
+from PIL import Image, ImageDraw, ImageFont
 import imageio
 import discord
 from redbot.core import commands, Config
+
 
 class PickerWheel(commands.Cog):
     """Multiple named wheels with admin-only management and bulk adds."""
@@ -24,8 +26,6 @@ class PickerWheel(commands.Cog):
         """Create, manage, and spin named wheels."""
         if not ctx.invoked_subcommand:
             await ctx.send_help()
-
-    #── Management Commands (Admins Only) ────────────────────────────────────
 
     @pickerwheel.command()
     @commands.has_guild_permissions(administrator=True)
@@ -85,8 +85,6 @@ class PickerWheel(commands.Cog):
         wheels = await self.config.guild(ctx.guild).wheels()
         if key not in wheels:
             return await ctx.send(f"❌ No wheel named **{key}**.")
-
-        # Split on commas or semicolons, strip whitespace
         parts = [p.strip() for p in re.split(r"[;,]", raw_items) if p.strip()]
         wheels[key].extend(parts)
         await self.config.guild(ctx.guild).wheels.set(wheels)
@@ -121,8 +119,6 @@ class PickerWheel(commands.Cog):
         await self.config.guild(ctx.guild).wheels.set(wheels)
         await ctx.send(f"🧹 Cleared wheel **{key}**.")
 
-    #── Spin Command (Everyone) ─────────────────────────────────────────────
-
     @pickerwheel.command()
     async def spin(self, ctx, name: str, frames: int = 30, duration: float = 3.0):
         """
@@ -143,7 +139,16 @@ class PickerWheel(commands.Cog):
         file = discord.File(fp=gif, filename="wheel.gif")
         await ctx.send(f"🎉 **{key}** stops on **{winner}**!", file=file)
 
-    #── Internal GIF Generation ─────────────────────────────────────────────
+    def _get_colors(self, n):
+        """Generate n bright, random RGB colors."""
+        cols = []
+        for _ in range(n):
+            h = random.random()              # random hue
+            s = random.uniform(0.6, 1.0)     # saturated
+            v = random.uniform(0.7, 1.0)     # bright
+            r, g, b = colorsys.hsv_to_rgb(h, s, v)
+            cols.append((int(r*255), int(g*255), int(b*255)))
+        return cols
 
     async def _make_wheel_gif(self, options, frames, duration):
         size = 500
@@ -152,64 +157,61 @@ class PickerWheel(commands.Cog):
         sector = 360 / len(options)
         colors = self._get_colors(len(options))
         imgs = []
-    
-        for i in range(frames):
-            offset = (i / frames) * 360
+
+        for frame in range(frames):
+            offset = (frame / frames) * 360
             im = Image.new("RGBA", (size, size), (255, 255, 255, 0))
             draw = ImageDraw.Draw(im)
-    
+
             for idx, (opt, col) in enumerate(zip(options, colors)):
+                # draw slice
                 start = idx * sector + offset
                 end = start + sector
-                draw.pieslice([10, 10, size - 10, size - 10],
-                              start, end, fill=col, outline="black")
-    
-                # midpoint angle for label
+                draw.pieslice(
+                    [10, 10, size - 10, size - 10],
+                    start, end,
+                    fill=col,
+                    outline=(0, 0, 0),
+                )
+
+                # label position
                 mid_ang = math.radians((start + end) / 2)
-    
-                # truncate to 15 chars
-                label = opt if len(opt) <= 15 else opt[:12] + "…"
-                arc_len = radius * math.radians(sector)
-    
-                # measure helper
-                def measure(txt, fnt):
-                    try:
-                        b = draw.textbbox((0, 0), txt, font=fnt)
-                        return b[2] - b[0], b[3] - b[1]
-                    except AttributeError:
-                        return fnt.getsize(txt)
-    
-                # shrink font if needed
-                fnt = self.font
-                w, h = measure(label, fnt)
-                while w > arc_len and getattr(fnt, "size", 0) > 8:
-                    fnt = ImageFont.truetype(fnt.path, fnt.size - 1)
-                    w, h = measure(label, fnt)
-    
-                # draw label on its own layer and rotate upright
-                tx = center + (radius + 10) * math.cos(mid_ang)
-                ty = center + (radius + 10) * math.sin(mid_ang)
-                text_im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+                tx = center + (radius + 15) * math.cos(mid_ang)
+                ty = center + (radius + 15) * math.sin(mid_ang)
+
+                # truncate and choose text color
+                label = opt if len(opt) <= 12 else opt[:12] + "…"
+                brightness = 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
+                text_fill = "black" if brightness > 128 else "white"
+                outline_fill = "white" if text_fill == "black" else "black"
+
+                # render text + stroke
+                x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
+                w, h = x1 - x0, y1 - y0
+                text_im = Image.new("RGBA", (w + 4, h + 4), (0, 0, 0, 0))
                 td = ImageDraw.Draw(text_im)
-                td.text((0, 0), label, font=fnt, fill="black")
+                td.text(
+                    (2, 2),
+                    label,
+                    font=self.font,
+                    fill=text_fill,
+                    stroke_width=1,
+                    stroke_fill=outline_fill,
+                )
                 rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
-                im.paste(rot, (int(tx - rot.width / 2), int(ty - rot.height / 2)), rot)
-    
-            # ← This append must be *inside* the i-loop, *after* all slices are drawn
+                im.paste(
+                    rot,
+                    (int(tx - rot.width/2), int(ty - rot.height/2)),
+                    rot,
+                )
+
             imgs.append(im.convert("P"))
-    
-        # write out the full sequence of frames
+
         bio = io.BytesIO()
-        imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
+        imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
         bio.seek(0)
         return bio
 
 
-    def _get_colors(self, n):
-        def pastel(i):
-            h = i / n * 360
-            return ImageColor.getrgb(f"hsv({h},80%,90%)")
-        return [pastel(i) for i in range(n)]
-
-def setup(bot):
-    bot.add_cog(PickerWheel(bot))
+async def setup(bot):
+    await bot.add_cog(PickerWheel(bot))
