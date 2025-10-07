@@ -16,7 +16,8 @@ class RadioBrowser(commands.Cog):
       • radio random
     """
 
-    API_BASE = "https://api.radio-browser.info/json"
+    # Use the DNS-balanced JSON endpoint
+    API_BASE = "https://all.api.radio-browser.info/json"
 
     def __init__(self, bot):
         self.bot = bot
@@ -24,11 +25,9 @@ class RadioBrowser(commands.Cog):
         self._search_cache: dict[int, list[dict]] = {}
 
     async def cog_load(self):
-        """Initialize HTTP session when the cog loads."""
         self.session = aiohttp.ClientSession()
 
     async def cog_unload(self):
-        """Close HTTP session when the cog unloads."""
         if self.session:
             await self.session.close()
 
@@ -57,6 +56,7 @@ class RadioBrowser(commands.Cog):
 
         url = f"{self.API_BASE}/stations/search"
         params = {field: query, "limit": 10}
+
         try:
             async with self.session.get(url, params=params, timeout=10) as resp:
                 if resp.status != 200:
@@ -71,7 +71,6 @@ class RadioBrowser(commands.Cog):
         if not data:
             return await ctx.send(f"No stations found for **{field}: {query}**.")
 
-        # Cache results per user
         self._search_cache[ctx.author.id] = data
         embed = discord.Embed(
             title=f"Results — {field.title()}: {query}",
@@ -113,25 +112,34 @@ class RadioBrowser(commands.Cog):
 
     @radio.command(name="random")
     async def radio_random(self, ctx: commands.Context):
-        """Fetch a completely random radio station via search ordering."""
-        url = f"{self.API_BASE}/stations/search"
-        params = {"order": "random", "limit": 1}
+        """Fetch a completely random radio station."""
+
+        # 1) Try the dedicated random endpoint.
+        random_url = f"{self.API_BASE}/stations/random"
+        station = None
         try:
-            async with self.session.get(url, params=params, timeout=10) as resp:
-                if resp.status != 200:
-                    text = await resp.text()
-                    logger.error(f"Random via search HTTP {resp.status}: {text[:200]}")
-                    snippet = text[:500] + ("... (truncated)" if len(text) > 500 else "")
-                    return await ctx.send(f"❌ HTTP {resp.status} from Radio-Browser:\n```{snippet}```")
-                data = await resp.json()
-        except Exception as e:
-            logger.exception("Network error during random fetch")
-            return await ctx.send(f"❌ Network error fetching random station: `{e}`")
+            async with self.session.get(random_url, timeout=10) as resp:
+                if resp.status == 200 and "application/json" in resp.headers.get("Content-Type", ""):
+                    station = await resp.json()
+        except Exception:
+            logger.exception(f"Error fetching random via {random_url}")
 
-        if not data:
-            return await ctx.send("❌ No station returned. Try again later.")
+        # 2) Fallback: use search ordered by random & limit 1
+        if not station:
+            search_url = f"{self.API_BASE}/stations/search"
+            params = {"order": "random", "limit": 1}
+            try:
+                async with self.session.get(search_url, params=params, timeout=10) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if isinstance(data, list) and data:
+                            station = data[0]
+            except Exception:
+                logger.exception(f"Error fetching random via search at {search_url}")
 
-        station = data[0]
+        if not station:
+            return await ctx.send("❌ Could not fetch a random station. Try again later.")
+
         title = station.get("name", "Random station")
         stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
         country = station.get("country", "Unknown")
