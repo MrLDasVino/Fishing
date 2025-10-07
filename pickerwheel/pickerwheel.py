@@ -325,32 +325,39 @@ class PickerWheel(commands.Cog):
             
             ZOOM_FRAMES = 5
             if frame >= frames - ZOOM_FRAMES:
-                # ramp t2 from 0→1 over the last ZOOM_FRAMES
+                # 0→1 ramp
                 t2 = (frame - (frames - ZOOM_FRAMES)) / (ZOOM_FRAMES - 1)
-                zoom = 1.0 + 0.1 * t2   # final zoom = 1.1× (10% larger)
+                zoom = 1.0 + 0.1 * t2  # up to +10%
 
-                # build a mask for just the winning sector
+                # compute slice angles
                 start_win = winner_idx * sector + offset
                 end_win   = start_win + sector
+
+                # full‐canvas mask and isolated slice
                 mask = Image.new("L", (size, size), 0)
                 mdraw = ImageDraw.Draw(mask)
                 mdraw.pieslice([10,10,size-10,size-10], start_win, end_win, fill=255)
-
-                # isolate that slice
                 slice_im = Image.new("RGBA", (size, size), (0,0,0,0))
                 slice_im.paste(im, (0,0), mask)
 
-                # resize (zoom) the isolated slice
-                new_dim = int(size * zoom)
-                slice_zoom = slice_im.resize((new_dim, new_dim), resample=Image.LANCZOS)
+                # crop to the wheel‐inner square (remove border)
+                bbox = (10, 10, size - 10, size - 10)
+                slice_crop = slice_im.crop(bbox)
+                mask_crop  = mask.crop(bbox)
 
-                # center it back onto the wheel
-                dx = (size - new_dim) // 2
-                dy = (size - new_dim) // 2
+                # zoom that cropped region
+                orig = size - 20
+                new_sz = int(orig * zoom)
+                slice_zoom = slice_crop.resize((new_sz, new_sz), Image.LANCZOS)
+                mask_zoom  = mask_crop.resize((new_sz, new_sz), Image.LANCZOS)
+
+                # compute top‐left so zoom stays centered
+                dx = 10 - (new_sz - orig)//2
+                dy = 10 - (new_sz - orig)//2
                 overlay = Image.new("RGBA", (size, size), (0,0,0,0))
-                overlay.paste(slice_zoom, (dx, dy), slice_zoom)
+                overlay.paste(slice_zoom, (dx, dy), mask_zoom)
 
-                # composite the zoomed slice over the original
+                # blend it in
                 im = Image.alpha_composite(im, overlay)
                 
             imgs.append(im)
