@@ -166,44 +166,42 @@ class PickerWheel(commands.Cog):
         colors = self._get_colors(len(options))
         imgs = []
 
-        # compute total rotation so chosen slice lands at 12 o'clock (90°)
+        # total turns + just enough extra so the winner lands at 90°
         rotations = 3
         mid_deg = (winner_idx + 0.5) * sector
-        delta = (90 - mid_deg) % 360
-        final_offset = rotations * 360 + delta
+        final_offset = rotations * 360 + (90 - mid_deg)
 
         for frame in range(frames):
             t = frame / (frames - 1)
-            # invert direction so slice moves under the top arrow
-            offset = -t * final_offset
+            # ← now we spin forward, not backward
+            offset = t * final_offset
 
             im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
             draw = ImageDraw.Draw(im)
 
-            # draw each slice and its label
+            # draw slices + labels
             for idx, (opt, col) in enumerate(zip(options, colors)):
                 start = idx * sector + offset
                 end = start + sector
                 draw.pieslice(
                     [10, 10, size - 10, size - 10],
-                    start,
-                    end,
+                    start, end,
                     fill=col,
                     outline=(0, 0, 0),
                 )
 
-                # label at 60% radius
+                # label inside at 60% radius
                 ang = math.radians((start + end) / 2)
                 tx = center + math.cos(ang) * (radius * 0.6)
                 ty = center + math.sin(ang) * (radius * 0.6)
                 label = opt if len(opt) <= 12 else opt[:12] + "…"
 
-                # contrasting text color
+                # pick contrasting text color
                 bri = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
                 fg = "black" if bri > 128 else "white"
                 bg = "white" if fg == "black" else "black"
 
-                # measure and render text with padding
+                # measure and pad for rotation
                 x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
                 w, h = x1 - x0, y1 - y0
                 pad = 8
@@ -218,12 +216,13 @@ class PickerWheel(commands.Cog):
                     stroke_fill=bg,
                 )
 
+                # rotate text back to horizontal
                 rot = text_im.rotate(-math.degrees(ang), expand=True)
                 px = int(tx - rot.width / 2)
                 py = int(ty - rot.height / 2)
                 im.paste(rot, (px, py), rot)
 
-            # draw fixed arrow at top-center
+            # draw the fixed arrow at the top
             arrow_w, arrow_h = 30, 20
             triangle = [
                 (center - arrow_w // 2, 0),
@@ -234,14 +233,11 @@ class PickerWheel(commands.Cog):
 
             imgs.append(im)
 
-        # write out the GIF preserving RGBA (colors + transparency)
+        # build a fully RGBA GIF so colors & transparency survive
         bio = io.BytesIO()
         imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
         bio.seek(0)
         return bio
-
-
-
 
 
 
