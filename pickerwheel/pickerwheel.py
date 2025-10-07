@@ -323,24 +323,34 @@ class PickerWheel(commands.Cog):
             tri=[(center-aw//2,0),(center+aw//2,0),(center,ah)]
             draw.polygon(tri, fill=(0,0,0), outline=(255,255,255))
             
-            EFFECT_FRAMES = 5
-            if frame >= frames - EFFECT_FRAMES:
-                # 0→1 ramp
-                t2 = (frame - (frames - EFFECT_FRAMES)) / (EFFECT_FRAMES - 1)
-                alpha = int(150 * t2)  # tweak max (0–255) to taste
+            ZOOM_FRAMES = 5
+            if frame >= frames - ZOOM_FRAMES:
+                # ramp t2 from 0→1 over the last ZOOM_FRAMES
+                t2 = (frame - (frames - ZOOM_FRAMES)) / (ZOOM_FRAMES - 1)
+                zoom = 1.0 + 0.1 * t2   # final zoom = 1.1× (10% larger)
 
-                # draw only the winner slice into a transparent overlay
+                # build a mask for just the winning sector
                 start_win = winner_idx * sector + offset
                 end_win   = start_win + sector
-                overlay = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-                o_draw = ImageDraw.Draw(overlay)
-                o_draw.pieslice(
-                    [10,10,size-10,size-10],
-                    start_win, end_win,
-                    fill=(255,255,255, alpha)
-                )
+                mask = Image.new("L", (size, size), 0)
+                mdraw = ImageDraw.Draw(mask)
+                mdraw.pieslice([10,10,size-10,size-10], start_win, end_win, fill=255)
 
-                # alpha‐blend it onto im
+                # isolate that slice
+                slice_im = Image.new("RGBA", (size, size), (0,0,0,0))
+                slice_im.paste(im, (0,0), mask)
+
+                # resize (zoom) the isolated slice
+                new_dim = int(size * zoom)
+                slice_zoom = slice_im.resize((new_dim, new_dim), resample=Image.LANCZOS)
+
+                # center it back onto the wheel
+                dx = (size - new_dim) // 2
+                dy = (size - new_dim) // 2
+                overlay = Image.new("RGBA", (size, size), (0,0,0,0))
+                overlay.paste(slice_zoom, (dx, dy), slice_zoom)
+
+                # composite the zoomed slice over the original
                 im = Image.alpha_composite(im, overlay)
                 
             imgs.append(im)
