@@ -9,20 +9,18 @@ import discord
 from PIL import Image, ImageDraw, ImageFont
 from redbot.core import commands, Config
 
-
 class PickerWheel(commands.Cog):
-    """Multiple named wheels with per-slice background images."""
+    """Multiple named wheels with per‐slice background images."""
 
     DEFAULT_CONFIG = {
         "wheels": {},         # wheel_name → [options]
-        "wheel_images": {},   # wheel_name → {label → image URL}
+        "wheel_images": {},   # wheel_name → { label → image URL }
     }
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890)
         self.config.register_guild(**self.DEFAULT_CONFIG)
-        # bold, larger font for readability
         self.font = ImageFont.truetype(
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20
         )
@@ -49,7 +47,7 @@ class PickerWheel(commands.Cog):
     @pickerwheel.command()
     @commands.has_guild_permissions(administrator=True)
     async def delete(self, ctx, name: str):
-        """Delete a wheel and its options."""
+        """Delete a wheel and all its options."""
         name = name.lower()
         wheels = await self.config.guild(ctx.guild).wheels()
         if name not in wheels:
@@ -61,7 +59,7 @@ class PickerWheel(commands.Cog):
     @pickerwheel.command(name="list")
     @commands.has_guild_permissions(administrator=True)
     async def _list(self, ctx, name: str = None):
-        """List wheels or the options of a specific wheel."""
+        """List wheels or the options in one wheel."""
         wheels = await self.config.guild(ctx.guild).wheels()
         if name is None:
             if not wheels:
@@ -143,8 +141,7 @@ class PickerWheel(commands.Cog):
     async def image(self, ctx, wheel: str, *, label: str):
         """
         Attach an image to use as the background for one slice.
-        Usage: [p]pickerwheel image <wheel_name> <exact_label>
-        (attach a PNG/JPG)
+        Usage: [p]pickerwheel image <wheel_name> <exact_label>  (attach file)
         """
         if not ctx.message.attachments:
             return await ctx.send("🚫 Please attach an image file.")
@@ -171,15 +168,13 @@ class PickerWheel(commands.Cog):
         self._img_cache[url] = img
         return img
 
-    def _get_colors(self, n: int) -> list[tuple[int, int, int]]:
+    def _get_colors(self, n: int) -> list[tuple[int,int,int]]:
         """Generate n random bright RGB colors."""
-        cols: list[tuple[int, int, int]] = []
+        cols = []
         for _ in range(n):
-            h = random.random()
-            s = random.uniform(0.6, 1.0)
-            v = random.uniform(0.7, 1.0)
-            r, g, b = colorsys.hsv_to_rgb(h, s, v)
-            cols.append((int(r * 255), int(g * 255), int(b * 255)))
+            h, s, v = random.random(), random.uniform(0.6,1.0), random.uniform(0.7,1.0)
+            r,g,b = colorsys.hsv_to_rgb(h,s,v)
+            cols.append((int(r*255), int(g*255), int(b*255)))
         return cols
 
     async def _make_wheel_gif(
@@ -198,11 +193,11 @@ class PickerWheel(commands.Cog):
         colors = self._get_colors(len(options))
         imgs: list[Image.Image] = []
 
-        # pull image‐URL map for this wheel
+        # pull image→URL map for this wheel
         all_imgs = await self.config.guild(ctx.guild).wheel_images()
         img_map = all_imgs.get(wheel_name, {})
 
-        # calculate total spin so winner lands at 12 o'clock (270°)
+        # compute total spin so chosen slice lands at 12 o'clock (270°)
         rotations = 3
         mid_deg = (winner_idx + 0.5) * sector
         delta = (270 - mid_deg) % 360
@@ -222,65 +217,47 @@ class PickerWheel(commands.Cog):
                 url = img_map.get(opt)
                 if url:
                     src = await self._fetch_image(url)
-                    bg = src.resize((size - 20, size - 20), Image.LANCZOS)
+                    bg = src.resize((size-20, size-20), Image.LANCZOS)
                     mask = Image.new("L", (size, size), 0)
                     md = ImageDraw.Draw(mask)
-                    md.pieslice([10, 10, size - 10, size - 10], start, end, fill=255)
-                    im.paste(
-                        bg,
-                        (10, 10),
-                        mask.crop((10, 10, size - 10, size - 10)),
-                    )
-                    draw.arc([10, 10, size - 10, size - 10], start, end, fill=(0, 0, 0))
+                    md.pieslice([10,10,size-10,size-10], start, end, fill=255)
+                    im.paste(bg, (10,10), mask.crop((10,10,size-10,size-10)))
+                    draw.arc([10,10,size-10,size-10], start, end, fill=(0,0,0))
                 else:
                     draw.pieslice(
-                        [10, 10, size - 10, size - 10],
+                        [10,10,size-10,size-10],
                         start, end,
-                        fill=col,
-                        outline=(0, 0, 0),
+                        fill=col, outline=(0,0,0)
                     )
 
-                # draw the label
-                ang = math.radians((start + end) / 2)
-                tx = center + math.cos(ang) * (radius * 0.6)
-                ty = center + math.sin(ang) * (radius * 0.6)
-                label = opt if len(opt) <= 12 else opt[:12] + "…"
-                bri = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
-                fg = "black" if bri > 128 else "white"
-                bgc = "white" if fg == "black" else "black"
-
-                x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
-                w, h = x1 - x0, y1 - y0
-                pad = 8
-                text_im = Image.new("RGBA", (w + pad*2, h + pad*2), (0, 0, 0, 0))
+                # draw the slice’s label
+                ang = math.radians((start + end)/2)
+                tx = center + math.cos(ang)*(radius*0.6)
+                ty = center + math.sin(ang)*(radius*0.6)
+                label = opt if len(opt)<=12 else opt[:12]+"…"
+                bri = 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
+                fg = "black" if bri>128 else "white"
+                bgc = "white" if fg=="black" else "black"
+                x0,y0,x1,y1 = draw.textbbox((0,0), label, font=self.font)
+                w,h = x1-x0, y1-y0
+                pad=8
+                text_im = Image.new("RGBA", (w+pad*2,h+pad*2), (0,0,0,0))
                 td = ImageDraw.Draw(text_im)
-                td.text(
-                    (pad, pad),
-                    label,
-                    font=self.font,
-                    fill=fg,
-                    stroke_width=2,
-                    stroke_fill=bgc,
-                )
+                td.text((pad,pad), label, font=self.font,
+                        fill=fg, stroke_width=2, stroke_fill=bgc)
                 rot = text_im.rotate(-math.degrees(ang), expand=True)
-                im.paste(rot, (int(tx - rot.width / 2), int(ty - rot.height / 2)), rot)
+                im.paste(rot, (int(tx-rot.width/2), int(ty-rot.height/2)), rot)
 
             # draw fixed arrow at top (12 o'clock)
-            arrow_w, arrow_h = 30, 20
-            triangle = [
-                (center - arrow_w // 2, 0),
-                (center + arrow_w // 2, 0),
-                (center, arrow_h),
-            ]
-            draw.polygon(triangle, fill=(0, 0, 0), outline=(255, 255, 255))
-
+            aw,ah=30,20
+            tri=[(center-aw//2,0),(center+aw//2,0),(center,ah)]
+            draw.polygon(tri, fill=(0,0,0), outline=(255,255,255))
             imgs.append(im)
 
         bio = io.BytesIO()
-        imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
+        imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
         bio.seek(0)
         return bio
-
 
 async def setup(bot):
     await bot.add_cog(PickerWheel(bot))
