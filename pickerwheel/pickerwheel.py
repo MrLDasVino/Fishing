@@ -210,7 +210,7 @@ class PickerWheel(commands.Cog):
                 im.paste(halo, (px, py), mask)
                 im.paste(rot, (px, py), rot)
 
-            imgs.append(im.convert("P"))
+            imgs.append(im.convert("RGB"))
 
         bio = io.BytesIO()
         imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
