@@ -163,28 +163,48 @@ class PickerWheel(commands.Cog):
     @pickerwheel.command(name="listimages")
     async def listimages(self, ctx, wheel: str = None):
         """
-        List wheels with custom images, or the images for one wheel.
-        Usage: 
-          [p]pickerwheel listimages              → shows all wheels that have images  
-          [p]pickerwheel listimages <wheel_name> → lists labels↔URLs for that wheel
+        List wheels with custom images (showing each label→URL) in an embed,
+        or list the images for one wheel.
         """
         all_imgs = await self.config.guild(ctx.guild).wheel_images()
         if not all_imgs:
             return await ctx.send("No custom images set on any wheel.")
 
-        # list all wheels w/ counts
+        # when no wheel specified, show all wheels + their images
         if wheel is None:
-            lines = [f"{w}: {len(imgs)} image(s)" for w, imgs in all_imgs.items() if imgs]
-            return await ctx.send("**Wheels with custom images:**\n" + "\n".join(lines))
+            embed = discord.Embed(
+                title="Wheels with Custom Images",
+                color=discord.Color.blurple()
+            )
+            for wname, imgs in all_imgs.items():
+                if imgs:
+                    # build a markdown list of label→link
+                    lines = "\n".join(f"[{label}]({url})" for label, url in imgs.items())
+                    embed.add_field(
+                        name=f"{wname} ({len(imgs)})",
+                        value=lines,
+                        inline=False
+                    )
+            return await ctx.send(embed=embed)
 
-        # list images for a specific wheel
+        # wheel-specific listing
         wheel_key = wheel.lower()
         imgs = all_imgs.get(wheel_key, {})
         if not imgs:
             return await ctx.send(f"No custom images set on wheel **{wheel_key}**.")
 
-        lines = [f"{label}: {url}" for label, url in imgs.items()]
-        await ctx.send(f"**Custom images on `{wheel_key}`:**\n" + "\n".join(lines))
+        embed = discord.Embed(
+            title=f"Custom Images on `{wheel_key}`",
+            color=discord.Color.random()
+        )
+        for label, url in imgs.items():
+            embed.add_field(
+                name=label,
+                value=f"[View image here]({url})",
+                inline=False
+            )
+        await ctx.send(embed=embed)
+
         
 
     @pickerwheel.command(name="image")
