@@ -18,7 +18,7 @@ class RadioBrowser(commands.Cog):
 
     # Primary JSON API and fallback Webservice API
     API_BASE = "https://api.radio-browser.info/json"
-    WS_BASE = "https://www.radio-browser.info/webservice/json"
+    WS_BASE = "https://www.radio-browser.info/webservice"
 
     def __init__(self, bot):
         self.bot = bot
@@ -26,11 +26,9 @@ class RadioBrowser(commands.Cog):
         self._search_cache: dict[int, list[dict]] = {}
 
     async def cog_load(self):
-        """Initialize HTTP session when the cog loads."""
         self.session = aiohttp.ClientSession()
 
     async def cog_unload(self):
-        """Close HTTP session when the cog unloads."""
         if self.session:
             await self.session.close()
 
@@ -58,24 +56,29 @@ class RadioBrowser(commands.Cog):
             field, query = "name", " ".join(args)
 
         params = {field: query, "limit": 10}
-
         data = None
-        # Try primary API
-        for base in (self.API_BASE, self.WS_BASE):
-            url = f"{base}/stations/search"
+
+        # try primary JSON host then fallback Webservice
+        for base, path_prefix in (
+            (self.API_BASE, "/stations/search"),
+            (self.WS_BASE, "/json/stations/search"),
+        ):
+            url = f"{base}{path_prefix}"
             try:
                 async with self.session.get(url, params=params, timeout=8) as resp:
                     text = await resp.text()
-                    if resp.status == 200:
-                        data = await resp.json()
-                        break
-                    logger.error(f"Search HTTP {resp.status} @ {base}: {text[:200]}")
+                    ctype = resp.headers.get("Content-Type", "")
+                    if resp.status != 200 or "application/json" not in ctype:
+                        logger.error(f"Search HTTP {resp.status} @ {url}: {text[:200]}")
+                        continue
+                    data = await resp.json()
+                    break
             except Exception:
-                logger.exception(f"Network error during search at {base}")
+                logger.exception(f"Network error during search at {url}")
                 continue
 
         if data is None:
-            return await ctx.send("❌ Could not reach Radio Browser API. Try again later.")
+            return await ctx.send("❌ Could not reach Radio Browser. Try again later.")
         if not data:
             return await ctx.send(f"No stations found for **{field}: {query}**.")
 
@@ -108,12 +111,12 @@ class RadioBrowser(commands.Cog):
             return await ctx.send(f"Pick a number between 1 and {len(cache)}.")
 
         station = cache[number - 1]
-        stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
+        stream = station.get("url_resolved") or station.get("url") or "No URL available"
         embed = discord.Embed(
             title=station.get("name", "Unknown station"),
             color=discord.Color.blue(),
         )
-        embed.add_field(name="🔗 Stream URL", value=stream_url, inline=False)
+        embed.add_field(name="🔗 Stream URL", value=stream, inline=False)
         embed.add_field(name="🌍 Country", value=station.get("country", "Unknown"), inline=True)
         embed.add_field(name="🗣️ Language", value=station.get("language", "Unknown"), inline=True)
         await ctx.send(embed=embed)
@@ -123,30 +126,34 @@ class RadioBrowser(commands.Cog):
         """Fetch a completely random radio station."""
         station = None
 
-        # Try primary JSON API, then fallback Webservice API
-        for base in (self.API_BASE, self.WS_BASE):
-            url = f"{base}/stations/random"
+        for base, path_prefix in (
+            (self.API_BASE, "/stations/random"),
+            (self.WS_BASE, "/json/stations/random"),
+        ):
+            url = f"{base}{path_prefix}"
             try:
                 async with self.session.get(url, timeout=8) as resp:
                     text = await resp.text()
-                    if resp.status == 200:
-                        station = await resp.json()
-                        break
-                    logger.error(f"Random HTTP {resp.status} @ {base}: {text[:200]}")
+                    ctype = resp.headers.get("Content-Type", "")
+                    if resp.status != 200 or "application/json" not in ctype:
+                        logger.error(f"Random HTTP {resp.status} @ {url}: {text[:200]}")
+                        continue
+                    station = await resp.json()
+                    break
             except Exception:
-                logger.exception(f"Network error during random fetch at {base}")
+                logger.exception(f"Network error during random fetch at {url}")
                 continue
 
         if not station:
             return await ctx.send("❌ Could not fetch a random station. Try again later.")
 
         title = station.get("name", "Random station")
-        stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
+        stream = station.get("url_resolved") or station.get("url") or "No URL available"
         country = station.get("country", "Unknown")
         language = station.get("language", "Unknown")
 
         embed = discord.Embed(title="🎲 Random Radio Station", color=discord.Color.purple())
-        embed.add_field(name=title, value=f"[Listen here]({stream_url})", inline=False)
+        embed.add_field(name=title, value=f"[Listen here]({stream})", inline=False)
         embed.add_field(name="🌍 Country", value=country, inline=True)
         embed.add_field(name="🗣️ Language", value=language, inline=True)
         await ctx.send(embed=embed)
