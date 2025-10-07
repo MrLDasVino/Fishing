@@ -322,6 +322,26 @@ class PickerWheel(commands.Cog):
             aw,ah=30,20
             tri=[(center-aw//2,0),(center+aw//2,0),(center,ah)]
             draw.polygon(tri, fill=(0,0,0), outline=(255,255,255))
+            
+            EFFECT_FRAMES = 5
+            if frame >= frames - EFFECT_FRAMES:
+                # normalized 0→1 over the last EFFECT_FRAMES
+                t2 = (frame - (frames - EFFECT_FRAMES)) / (EFFECT_FRAMES - 1)
+                alpha = int(80 * t2)  # max semi-opaque white
+
+                # full-canvas white overlay
+                overlay = Image.new("RGBA", (size, size), (255,255,255,alpha))
+
+                # mask just the winning sector
+                start_win = winner_idx * sector + offset
+                end_win   = start_win + sector
+                mask = Image.new("L", (size, size), 0)
+                mdraw = ImageDraw.Draw(mask)
+                mdraw.pieslice([10,10,size-10,size-10], start_win, end_win, fill=255)
+
+                # composite overlay onto the base frame
+                im = Image.composite(overlay, im, mask)
+                
             imgs.append(im)
 
         bio = io.BytesIO()
