@@ -167,7 +167,13 @@ class PickerWheel(commands.Cog):
                 tx = center + (radius / 2) * math.cos(mid)
                 ty = center + (radius / 2) * math.sin(mid)
                 label = opt if len(opt) <= 15 else opt[:15] + "…"
-                w, h = draw.textsize(label, font=self.font)
+
+                # Compute text size using textbbox (fallback to font.getsize)
+                try:
+                    bbox = draw.textbbox((0, 0), label, font=self.font)
+                    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+                except AttributeError:
+                    w, h = self.font.getsize(label)
                 draw.text((tx - w/2, ty - h/2), label, font=self.font, fill="black")
 
             imgs.append(im.convert("P"))
