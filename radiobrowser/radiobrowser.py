@@ -1,5 +1,6 @@
 import aiohttp
 import logging
+import random
 
 from redbot.core import commands
 import discord
@@ -16,8 +17,17 @@ class RadioBrowser(commands.Cog):
       • radio random
     """
 
-    # Use the DNS-balanced JSON endpoint
-    API_BASE = "https://all.api.radio-browser.info/json"
+    # Primary JSON API host for search/pick
+    API_BASE = "https://api.radio-browser.info/json"
+    # List of known HTTPS-enabled cluster hosts for random
+    RANDOM_CLUSTERS = [
+        "https://de1.api.radio-browser.info/json",
+        "https://de2.api.radio-browser.info/json",
+        "https://fi1.api.radio-browser.info/json",
+        "https://fr1.api.radio-browser.info/json",
+        "https://nl1.api.radio-browser.info/json",
+        "https://us1.api.radio-browser.info/json",
+    ]
 
     def __init__(self, bot):
         self.bot = bot
@@ -25,9 +35,11 @@ class RadioBrowser(commands.Cog):
         self._search_cache: dict[int, list[dict]] = {}
 
     async def cog_load(self):
+        """Initialize HTTP session when the cog loads."""
         self.session = aiohttp.ClientSession()
 
     async def cog_unload(self):
+        """Close HTTP session when the cog unloads."""
         if self.session:
             await self.session.close()
 
@@ -112,33 +124,32 @@ class RadioBrowser(commands.Cog):
 
     @radio.command(name="random")
     async def radio_random(self, ctx: commands.Context):
-        """Fetch a completely random radio station."""
-
-        # 1) Try the dedicated random endpoint.
-        random_url = f"{self.API_BASE}/stations/random"
+        """Fetch a completely random radio station by rotating through cluster hosts."""
         station = None
-        try:
-            async with self.session.get(random_url, timeout=10) as resp:
-                if resp.status == 200 and "application/json" in resp.headers.get("Content-Type", ""):
-                    station = await resp.json()
-        except Exception:
-            logger.exception(f"Error fetching random via {random_url}")
+        clusters = random.sample(self.RANDOM_CLUSTERS, k=len(self.RANDOM_CLUSTERS))
 
-        # 2) Fallback: use search ordered by random & limit 1
-        if not station:
-            search_url = f"{self.API_BASE}/stations/search"
-            params = {"order": "random", "limit": 1}
+        for base in clusters:
+            url = f"{base}/stations/random"
             try:
-                async with self.session.get(search_url, params=params, timeout=10) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        if isinstance(data, list) and data:
-                            station = data[0]
+                async with self.session.get(url, timeout=10) as resp:
+                    if resp.status != 200 or "application/json" not in resp.headers.get("Content-Type", ""):
+                        text = await resp.text()
+                        logger.error(f"Random HTTP {resp.status} @ {url}: {text[:200]}")
+                        continue
+                    data = await resp.json()
+                    # Some clusters return a list with one station, others a dict
+                    if isinstance(data, list) and data:
+                        station = data[0]
+                    elif isinstance(data, dict):
+                        station = data
+                    if station:
+                        break
             except Exception:
-                logger.exception(f"Error fetching random via search at {search_url}")
+                logger.exception(f"Network error during random fetch at {url}")
+                continue
 
         if not station:
-            return await ctx.send("❌ Could not fetch a random station. Try again later.")
+            return await ctx.send("❌ Could not fetch a random station. Please try again later.")
 
         title = station.get("name", "Random station")
         stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
