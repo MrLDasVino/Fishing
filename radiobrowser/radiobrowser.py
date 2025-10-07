@@ -17,7 +17,9 @@ class RadioBrowser(commands.Cog):
       • radio random
     """
 
-    CLUSTERS = [
+    # Try the main API host first, then fall back to clusters
+    API_BASES = [
+        "https://api.radio-browser.info/json",
         "https://de1.api.radio-browser.info/json",
         "https://fr1.api.radio-browser.info/json",
         "https://nl1.api.radio-browser.info/json",
@@ -31,11 +33,9 @@ class RadioBrowser(commands.Cog):
         self._search_cache: dict[int, list[dict]] = {}
 
     async def cog_load(self):
-        """Initialize HTTP session when the cog loads."""
         self.session = aiohttp.ClientSession()
 
     async def cog_unload(self):
-        """Close HTTP session when the cog unloads."""
         if self.session:
             await self.session.close()
 
@@ -62,22 +62,24 @@ class RadioBrowser(commands.Cog):
         else:
             field, query = "name", " ".join(args)
 
-        # Pick a random cluster for search
-        base = random.choice(self.CLUSTERS)
-        url = f"{base}/stations/search"
         params = {field: query, "limit": 10}
+        data = None
 
-        try:
-            async with self.session.get(url, params=params, timeout=10) as resp:
-                text = await resp.text()
-                if resp.status != 200:
-                    logger.error(f"Search HTTP {resp.status} @ {base}: {text}")
-                    return await ctx.send("❌ Error fetching stations. Try again later.")
-                data = await resp.json()
-        except Exception as e:
-            logger.exception("Network error during search")
-            return await ctx.send(f"❌ Network error fetching stations: `{e}`")
+        # Rotate through hosts until one succeeds
+        for base in self.API_BASES:
+            try:
+                async with self.session.get(f"{base}/stations/search", params=params, timeout=8) as resp:
+                    text = await resp.text()
+                    if resp.status == 200:
+                        data = await resp.json()
+                        break
+                    logger.error(f"Search HTTP {resp.status} from {base}: {text[:200]}")
+            except Exception:
+                logger.exception(f"Network error during search at {base}")
+                continue
 
+        if data is None:
+            return await ctx.send("❌ Could not reach Radio Browser API. Try again later.")
         if not data:
             return await ctx.send(f"No stations found for **{field}: {query}**.")
 
@@ -106,55 +108,47 @@ class RadioBrowser(commands.Cog):
         cache = self._search_cache.get(ctx.author.id)
         if not cache:
             return await ctx.send("You have no recent search. Use `[p]radio search <query>` first.")
-        if not 1 <= number <= len(cache):
+        if number < 1 or number > len(cache):
             return await ctx.send(f"Pick a number between 1 and {len(cache)}.")
 
         station = cache[number - 1]
-        stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
+        stream = station.get("url_resolved") or station.get("url") or "No URL available"
         embed = discord.Embed(
             title=station.get("name", "Unknown station"),
             color=discord.Color.blue(),
         )
-        embed.add_field(name="🔗 Stream URL", value=stream_url, inline=False)
+        embed.add_field(name="🔗 Stream URL", value=stream, inline=False)
         embed.add_field(name="🌍 Country", value=station.get("country", "Unknown"), inline=True)
         embed.add_field(name="🗣️ Language", value=station.get("language", "Unknown"), inline=True)
         await ctx.send(embed=embed)
 
     @radio.command(name="random")
     async def radio_random(self, ctx: commands.Context):
-        """Fetch a completely random radio station, retrying across clusters on 502 errors."""
+        """Fetch a completely random radio station."""
         station = None
-        # try each cluster in random order until one succeeds
-        for base in random.sample(self.CLUSTERS, len(self.CLUSTERS)):
-            url = f"{base}/stations/random"
+
+        for base in self.API_BASES:
             try:
-                async with self.session.get(url, timeout=10) as resp:
-                    full_text = await resp.text()
+                async with self.session.get(f"{base}/stations/random", timeout=8) as resp:
+                    text = await resp.text()
                     if resp.status == 200:
                         station = await resp.json()
                         break
-                    # specific retry on 502
-                    if resp.status == 502:
-                        logger.warning(f"Cluster {base} returned 502, trying next")
-                        continue
-                    # other errors: log and break to report back
-                    logger.error(f"Random HTTP {resp.status} @ {base}: {full_text[:200]}")
-                    snippet = full_text[:500] + ("... (truncated)" if len(full_text) > 500 else "")
-                    return await ctx.send(f"❌ HTTP {resp.status} from Radio-Browser:\n```{snippet}```")
-            except Exception as e:
-                logger.exception(f"Error fetching random from cluster {base}")
+                    logger.warning(f"Random HTTP {resp.status} from {base}")
+            except Exception:
+                logger.exception(f"Network error during random fetch at {base}")
                 continue
 
         if not station:
-            return await ctx.send("❌ Could not fetch from any Radio-Browser cluster. Please try again later.")
+            return await ctx.send("❌ Could not fetch a random station. Try again later.")
 
         title = station.get("name", "Random station")
-        stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
+        stream = station.get("url_resolved") or station.get("url") or "No URL available"
         country = station.get("country", "Unknown")
         language = station.get("language", "Unknown")
 
         embed = discord.Embed(title="🎲 Random Radio Station", color=discord.Color.purple())
-        embed.add_field(name=title, value=f"[Listen here]({stream_url})", inline=False)
+        embed.add_field(name=title, value=f"[Listen here]({stream})", inline=False)
         embed.add_field(name="🌍 Country", value=country, inline=True)
         embed.add_field(name="🗣️ Language", value=language, inline=True)
         await ctx.send(embed=embed)
