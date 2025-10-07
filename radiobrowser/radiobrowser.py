@@ -1,4 +1,5 @@
 import aiohttp
+import asyncio
 import logging
 
 from redbot.core import commands
@@ -16,13 +17,8 @@ class RadioBrowser(commands.Cog):
       • [p]radio random
     """
 
-    # Primary + regional JSON endpoints
-    API_BASES = [
-        "https://all.api.radio-browser.info/json",
-        "https://fi1.api.radio-browser.info/json",
-        "https://de1.api.radio-browser.info/json",
-        "https://nl1.api.radio-browser.info/json",
-    ]
+    # Use the DNS-balanced JSON endpoint
+    API_BASE = "https://all.api.radio-browser.info/json"
 
     def __init__(self, bot):
         self.bot = bot
@@ -41,34 +37,34 @@ class RadioBrowser(commands.Cog):
 
     async def _api_get(self, endpoint: str, params: dict):
         """
-        Try each base URL until we get a 200.
-        Treat 404 and 502 as “go to next host.”
+        Fetch JSON from API_BASE/<endpoint> with up to 3 retries on 502 or network errors.
         Returns (data, error_message).
         """
         assert self.session, "HTTP session not initialized"
-        last_error = None
+        url = f"{self.API_BASE.rstrip('/')}/{endpoint.lstrip('/')}"
 
-        for base in self.API_BASES:
-            url = f"{base.rstrip('/')}/{endpoint.lstrip('/')}"
-            logger.debug("Requesting %s params=%s", url, params)
+        last_err: str | None = None
+        for attempt in range(1, 4):
             try:
                 async with self.session.get(url, params=params, timeout=10) as resp:
-                    text = await resp.text()
-                    # fallback on 502 or 404
-                    if resp.status in (502, 404):
-                        logger.warning("%s from %s; trying next host", resp.status, base)
-                        last_error = f"{resp.status} error from {base}"
-                        continue
-                    if resp.status != 200:
-                        logger.error("HTTP %s from %s: %s", resp.status, base, text[:200])
-                        return None, f"HTTP {resp.status} from Radio Browser"
-                    return await resp.json(), None
-            except Exception as e:
-                logger.exception("Error fetching %s from %s", endpoint, base)
-                last_error = str(e)
+                    if resp.status == 200:
+                        return await resp.json(), None
 
-        # All endpoints failed
-        return None, last_error or "Unknown error fetching from Radio Browser"
+                    text = await resp.text()
+                    if resp.status == 502:
+                        logger.warning("Attempt %s: 502 from %s", attempt, url)
+                        last_err = "502 Bad Gateway"
+                    else:
+                        logger.error("HTTP %s from %s: %s", resp.status, url, text[:200])
+                        return None, f"HTTP {resp.status} from Radio Browser"
+            except Exception as e:
+                last_err = str(e)
+                logger.warning("Attempt %s: network error fetching %s → %s", attempt, url, e)
+
+            if attempt < 3:
+                await asyncio.sleep(1)
+
+        return None, last_err or "Unknown error fetching from Radio Browser"
 
     @commands.group(name="radio", invoke_without_command=True)
     async def radio(self, ctx: commands.Context):
@@ -79,9 +75,10 @@ class RadioBrowser(commands.Cog):
     async def radio_search(self, ctx: commands.Context, *args):
         """
         Search stations by name (default), country, tag or language.
-        • [p]radio search Beatles
-        • [p]radio search country Germany
-        • [p]radio search tag rock
+        Examples:
+          • [p]radio search Beatles
+          • [p]radio search country Germany
+          • [p]radio search tag rock
         """
         if not args:
             return await ctx.send("Please provide something to search for.")
@@ -101,7 +98,6 @@ class RadioBrowser(commands.Cog):
             return await ctx.send(f"No stations found for **{field}: {query}**.")
 
         self._search_cache[ctx.author.id] = data
-
         embed = discord.Embed(
             title=f"Results — {field.title()}: {query}",
             color=discord.Color.green(),
@@ -131,7 +127,6 @@ class RadioBrowser(commands.Cog):
 
         station = cache[number - 1]
         stream = station.get("url_resolved") or station.get("url") or "No URL available"
-
         embed = discord.Embed(
             title=station.get("name", "Unknown station"),
             color=discord.Color.blue(),
@@ -147,7 +142,6 @@ class RadioBrowser(commands.Cog):
         Fetch a completely random station using the dedicated endpoint.
         """
         data, error = await self._api_get("stations/random", {"limit": 1})
-
         if error:
             return await ctx.send(f"❌ {error}. Try again later.")
         if not data:
