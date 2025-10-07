@@ -28,12 +28,12 @@ class RadioBrowser(commands.Cog):
 
     @commands.group(name="radio", invoke_without_command=True)
     async def radio(self, ctx: commands.Context):
-        await ctx.send(
-            "Usage:\n"
-            "`[p]radio search [name|country|tag|language] <query>`\n"
-            "`[p]radio pick <number>`\n"
-            "`[p]radio random`"
-        )
+        """Group command for Radio Browser.
+
+        Search internet radio stations by name, country, tag or language,
+        pick from your last search, or get a random station.
+        """
+        await ctx.send_help()
 
     @radio.command(name="search")
     async def radio_search(self, ctx: commands.Context, *args):
