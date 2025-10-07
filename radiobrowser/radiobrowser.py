@@ -26,9 +26,11 @@ class RadioBrowser(commands.Cog):
         self._search_cache: dict[int, list[dict]] = {}
 
     async def cog_load(self):
+        """Initialize HTTP session when the cog loads."""
         self.session = aiohttp.ClientSession()
 
     async def cog_unload(self):
+        """Close HTTP session when the cog unloads."""
         if self.session:
             await self.session.close()
 
@@ -59,11 +61,11 @@ class RadioBrowser(commands.Cog):
         data = None
 
         # try primary JSON host then fallback Webservice
-        for base, path_prefix in (
+        for base, path in (
             (self.API_BASE, "/stations/search"),
             (self.WS_BASE, "/json/stations/search"),
         ):
-            url = f"{base}{path_prefix}"
+            url = f"{base}{path}"
             try:
                 async with self.session.get(url, params=params, timeout=8) as resp:
                     text = await resp.text()
@@ -82,6 +84,7 @@ class RadioBrowser(commands.Cog):
         if not data:
             return await ctx.send(f"No stations found for **{field}: {query}**.")
 
+        # cache results
         self._search_cache[ctx.author.id] = data
         embed = discord.Embed(
             title=f"Results — {field.title()}: {query}",
@@ -111,12 +114,12 @@ class RadioBrowser(commands.Cog):
             return await ctx.send(f"Pick a number between 1 and {len(cache)}.")
 
         station = cache[number - 1]
-        stream = station.get("url_resolved") or station.get("url") or "No URL available"
+        stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
         embed = discord.Embed(
             title=station.get("name", "Unknown station"),
             color=discord.Color.blue(),
         )
-        embed.add_field(name="🔗 Stream URL", value=stream, inline=False)
+        embed.add_field(name="🔗 Stream URL", value=stream_url, inline=False)
         embed.add_field(name="🌍 Country", value=station.get("country", "Unknown"), inline=True)
         embed.add_field(name="🗣️ Language", value=station.get("language", "Unknown"), inline=True)
         await ctx.send(embed=embed)
@@ -126,20 +129,28 @@ class RadioBrowser(commands.Cog):
         """Fetch a completely random radio station."""
         station = None
 
-        for base, path_prefix in (
+        # GET with limit=1; handle array vs object
+        params = {"limit": 1}
+        for base, path in (
             (self.API_BASE, "/stations/random"),
             (self.WS_BASE, "/json/stations/random"),
         ):
-            url = f"{base}{path_prefix}"
+            url = f"{base}{path}"
             try:
-                async with self.session.get(url, timeout=8) as resp:
+                async with self.session.get(url, params=params, timeout=8) as resp:
                     text = await resp.text()
                     ctype = resp.headers.get("Content-Type", "")
                     if resp.status != 200 or "application/json" not in ctype:
                         logger.error(f"Random HTTP {resp.status} @ {url}: {text[:200]}")
                         continue
-                    station = await resp.json()
-                    break
+                    data = await resp.json()
+                    # data might be a list (API returns [ ... ]) or a single dict
+                    if isinstance(data, list) and data:
+                        station = data[0]
+                    elif isinstance(data, dict):
+                        station = data
+                    if station:
+                        break
             except Exception:
                 logger.exception(f"Network error during random fetch at {url}")
                 continue
@@ -148,12 +159,12 @@ class RadioBrowser(commands.Cog):
             return await ctx.send("❌ Could not fetch a random station. Try again later.")
 
         title = station.get("name", "Random station")
-        stream = station.get("url_resolved") or station.get("url") or "No URL available"
+        stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
         country = station.get("country", "Unknown")
         language = station.get("language", "Unknown")
 
         embed = discord.Embed(title="🎲 Random Radio Station", color=discord.Color.purple())
-        embed.add_field(name=title, value=f"[Listen here]({stream})", inline=False)
+        embed.add_field(name=title, value=f"[Listen here]({stream_url})", inline=False)
         embed.add_field(name="🌍 Country", value=country, inline=True)
         embed.add_field(name="🗣️ Language", value=language, inline=True)
         await ctx.send(embed=embed)
