@@ -152,52 +152,58 @@ class PickerWheel(commands.Cog):
         sector = 360 / len(options)
         colors = self._get_colors(len(options))
         imgs = []
-
+    
         for i in range(frames):
             offset = (i / frames) * 360
             im = Image.new("RGBA", (size, size), (255, 255, 255, 0))
             draw = ImageDraw.Draw(im)
-
+    
             for idx, (opt, col) in enumerate(zip(options, colors)):
                 start = idx * sector + offset
                 end = start + sector
-                draw.pieslice([10, 10, size-10, size-10], start, end, fill=col, outline="black")
-
+                draw.pieslice([10, 10, size - 10, size - 10],
+                              start, end, fill=col, outline="black")
+    
+                # midpoint angle for label
                 mid_ang = math.radians((start + end) / 2)
-        # 1) wrap or truncate so text width < arc length
-        raw = opt
-        label = raw if len(raw) <= 15 else raw[:12] + "…"
-        arc_len = radius * math.radians(sector)
-        font = self.font
-        # measure with bbox
-        def measure(txt):
-            try:
-                b = draw.textbbox((0,0), txt, font=font)
-                return b[2]-b[0], b[3]-b[1]
-            except AttributeError:
-                return font.getsize(txt)
-        w, h = measure(label)
-        # if still too long, shrink font until it fits
-        while w > arc_len and font.size > 8:
-            font = ImageFont.truetype(font.path, font.size - 1)
-            w, h = measure(label)
-
-        # 2) render text on its own img and rotate upright
-        tx = center + (radius + 10) * math.cos(mid_ang)
-        ty = center + (radius + 10) * math.sin(mid_ang)
-        text_im = Image.new("RGBA", (w, h), (0,0,0,0))
-        td = ImageDraw.Draw(text_im)
-        td.text((0,0), label, font=font, fill="black")
-        # rotate so text is always horizontal
-        rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
-        im.paste(rot, (int(tx - rot.width/2), int(ty - rot.height/2)), rot)
-
-        imgs.append(im.convert("P"))
-
+    
+                # truncate to 15 chars
+                label = opt if len(opt) <= 15 else opt[:12] + "…"
+                arc_len = radius * math.radians(sector)
+    
+                # measure helper
+                def measure(txt, fnt):
+                    try:
+                        b = draw.textbbox((0, 0), txt, font=fnt)
+                        return b[2] - b[0], b[3] - b[1]
+                    except AttributeError:
+                        return fnt.getsize(txt)
+    
+                # shrink font if needed
+                fnt = self.font
+                w, h = measure(label, fnt)
+                while w > arc_len and getattr(fnt, "size", 0) > 8:
+                    fnt = ImageFont.truetype(fnt.path, fnt.size - 1)
+                    w, h = measure(label, fnt)
+    
+                # draw label on its own layer and rotate upright
+                tx = center + (radius + 10) * math.cos(mid_ang)
+                ty = center + (radius + 10) * math.sin(mid_ang)
+                text_im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+                td = ImageDraw.Draw(text_im)
+                td.text((0, 0), label, font=fnt, fill="black")
+                rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
+                im.paste(rot, (int(tx - rot.width / 2), int(ty - rot.height / 2)), rot)
+    
+            # ← This append must be *inside* the i-loop, *after* all slices are drawn
+            imgs.append(im.convert("P"))
+    
+        # write out the full sequence of frames
         bio = io.BytesIO()
-        imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
+        imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
         bio.seek(0)
         return bio
+
 
     def _get_colors(self, n):
         def pastel(i):
