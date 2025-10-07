@@ -1,6 +1,5 @@
 import aiohttp
 import logging
-import random
 
 from redbot.core import commands
 import discord
@@ -17,17 +16,7 @@ class RadioBrowser(commands.Cog):
       • radio random
     """
 
-    # Primary JSON API host for search/pick
-    API_BASE = "https://api.radio-browser.info/json"
-    # List of known HTTPS-enabled cluster hosts for random
-    RANDOM_CLUSTERS = [
-        "https://de1.api.radio-browser.info/json",
-        "https://de2.api.radio-browser.info/json",
-        "https://fi1.api.radio-browser.info/json",
-        "https://fr1.api.radio-browser.info/json",
-        "https://nl1.api.radio-browser.info/json",
-        "https://us1.api.radio-browser.info/json",
-    ]
+    API_BASE = "https://all.api.radio-browser.info/json"
 
     def __init__(self, bot):
         self.bot = bot
@@ -112,52 +101,53 @@ class RadioBrowser(commands.Cog):
             return await ctx.send(f"Pick a number between 1 and {len(cache)}.")
 
         station = cache[number - 1]
-        stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
+        stream = station.get("url_resolved") or station.get("url") or "No URL available"
         embed = discord.Embed(
             title=station.get("name", "Unknown station"),
             color=discord.Color.blue(),
         )
-        embed.add_field(name="🔗 Stream URL", value=stream_url, inline=False)
+        embed.add_field(name="🔗 Stream URL", value=stream, inline=False)
         embed.add_field(name="🌍 Country", value=station.get("country", "Unknown"), inline=True)
         embed.add_field(name="🗣️ Language", value=station.get("language", "Unknown"), inline=True)
         await ctx.send(embed=embed)
 
     @radio.command(name="random")
     async def radio_random(self, ctx: commands.Context):
-        """Fetch a completely random radio station by rotating through cluster hosts."""
+        """Fetch a completely random radio station."""
         station = None
-        clusters = random.sample(self.RANDOM_CLUSTERS, k=len(self.RANDOM_CLUSTERS))
 
-        for base in clusters:
-            url = f"{base}/stations/random"
+        # 1) Try the dedicated random endpoint
+        rand_url = f"{self.API_BASE}/stations/random"
+        try:
+            async with self.session.get(rand_url, timeout=10) as resp:
+                if resp.status == 200 and "application/json" in resp.headers.get("Content-Type", ""):
+                    station = await resp.json()
+        except Exception:
+            logger.exception(f"Error fetching random via {rand_url}")
+
+        # 2) Fallback: search ordered by random & limit=1
+        if not station:
+            search_url = f"{self.API_BASE}/stations/search"
+            params = {"order": "random", "limit": 1}
             try:
-                async with self.session.get(url, timeout=10) as resp:
-                    if resp.status != 200 or "application/json" not in resp.headers.get("Content-Type", ""):
-                        text = await resp.text()
-                        logger.error(f"Random HTTP {resp.status} @ {url}: {text[:200]}")
-                        continue
-                    data = await resp.json()
-                    # Some clusters return a list with one station, others a dict
-                    if isinstance(data, list) and data:
-                        station = data[0]
-                    elif isinstance(data, dict):
-                        station = data
-                    if station:
-                        break
+                async with self.session.get(search_url, params=params, timeout=10) as resp:
+                    if resp.status == 200 and "application/json" in resp.headers.get("Content-Type", ""):
+                        data = await resp.json()
+                        if isinstance(data, list) and data:
+                            station = data[0]
             except Exception:
-                logger.exception(f"Network error during random fetch at {url}")
-                continue
+                logger.exception(f"Error fetching random via search at {search_url}")
 
         if not station:
-            return await ctx.send("❌ Could not fetch a random station. Please try again later.")
+            return await ctx.send("❌ Could not fetch a random station. Try again later.")
 
         title = station.get("name", "Random station")
-        stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
+        stream = station.get("url_resolved") or station.get("url") or "No URL available"
         country = station.get("country", "Unknown")
         language = station.get("language", "Unknown")
 
         embed = discord.Embed(title="🎲 Random Radio Station", color=discord.Color.purple())
-        embed.add_field(name=title, value=f"[Listen here]({stream_url})", inline=False)
+        embed.add_field(name=title, value=f"[Listen here]({stream})", inline=False)
         embed.add_field(name="🌍 Country", value=country, inline=True)
         embed.add_field(name="🗣️ Language", value=language, inline=True)
         await ctx.send(embed=embed)
