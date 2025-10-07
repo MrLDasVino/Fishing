@@ -325,22 +325,23 @@ class PickerWheel(commands.Cog):
             
             EFFECT_FRAMES = 5
             if frame >= frames - EFFECT_FRAMES:
-                # normalized 0→1 over the last EFFECT_FRAMES
+                # 0→1 ramp
                 t2 = (frame - (frames - EFFECT_FRAMES)) / (EFFECT_FRAMES - 1)
-                alpha = int(80 * t2)  # max semi-opaque white
+                alpha = int(150 * t2)  # tweak max (0–255) to taste
 
-                # full-canvas white overlay
-                overlay = Image.new("RGBA", (size, size), (255,255,255,alpha))
-
-                # mask just the winning sector
+                # draw only the winner slice into a transparent overlay
                 start_win = winner_idx * sector + offset
                 end_win   = start_win + sector
-                mask = Image.new("L", (size, size), 0)
-                mdraw = ImageDraw.Draw(mask)
-                mdraw.pieslice([10,10,size-10,size-10], start_win, end_win, fill=255)
+                overlay = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+                o_draw = ImageDraw.Draw(overlay)
+                o_draw.pieslice(
+                    [10,10,size-10,size-10],
+                    start_win, end_win,
+                    fill=(255,255,255, alpha)
+                )
 
-                # composite overlay onto the base frame
-                im = Image.composite(overlay, im, mask)
+                # alpha‐blend it onto im
+                im = Image.alpha_composite(im, overlay)
                 
             imgs.append(im)
 
