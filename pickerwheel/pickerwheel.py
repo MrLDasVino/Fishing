@@ -140,7 +140,7 @@ class PickerWheel(commands.Cog):
         winner_idx = random.randrange(len(opts))
         winner = opts[winner_idx]
 
-        # 2) Build a GIF that ends with that slice under the arrow
+        # 2) Pass it into the GIF generator
         gif = await self._make_wheel_gif(opts, frames, duration, winner_idx)
         file = discord.File(fp=gif, filename="wheel.gif")
         await ctx.send(f"🎉 **{key}** stops on **{winner}**!", file=file)
@@ -166,44 +166,43 @@ class PickerWheel(commands.Cog):
         colors = self._get_colors(len(options))
         imgs = []
 
-        # Precompute how far to turn so slice #winner_idx lands at 90°
+        # Compute how far to spin so the chosen slice midpoint lands at 90°
         rotations = 3
-        # midpoint of that slice in degrees
-        mid = (winner_idx + 0.5) * sector  
-        # wrap the partial turn into [0,360)
-        delta = (90 - mid) % 360
+        mid_deg = (winner_idx + 0.5) * sector
+        delta = (90 - mid_deg) % 360
         final_offset = rotations * 360 + delta
 
         for frame in range(frames):
-            # smoothly move from 0 → final_offset
             t = frame / (frames - 1)
             offset = t * final_offset
 
             im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
             draw = ImageDraw.Draw(im)
 
-            # draw each slice + its label
+            # draw slices and labels
             for idx, (opt, col) in enumerate(zip(options, colors)):
                 start = idx * sector + offset
                 end = start + sector
                 draw.pieslice(
                     [10, 10, size - 10, size - 10],
-                    start, end,
-                    fill=col, outline=(0, 0, 0),
+                    start,
+                    end,
+                    fill=col,
+                    outline=(0, 0, 0),
                 )
 
-                # place text inside at 60% radius
+                # label inside at 60% radius
                 ang = math.radians((start + end) / 2)
                 tx = center + math.cos(ang) * (radius * 0.6)
                 ty = center + math.sin(ang) * (radius * 0.6)
                 label = opt if len(opt) <= 12 else opt[:12] + "…"
 
-                # contrast colors
+                # choose contrasting color
                 bri = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
                 fg = "black" if bri > 128 else "white"
                 bg = "white" if fg == "black" else "black"
 
-                # render text with padding
+                # render with padding to avoid clipping
                 x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
                 w, h = x1 - x0, y1 - y0
                 pad = 8
@@ -217,25 +216,26 @@ class PickerWheel(commands.Cog):
                     stroke_width=2,
                     stroke_fill=bg,
                 )
+
                 rot = text_im.rotate(-math.degrees(ang), expand=True)
                 px = int(tx - rot.width / 2)
                 py = int(ty - rot.height / 2)
                 im.paste(rot, (px, py), rot)
 
-            # draw a fixed arrow at 12 o'clock
+            # draw fixed arrow at top (90°)
             arrow_w, arrow_h = 30, 20
-            tri = [
-                (center - arrow_w//2, 0),
-                (center + arrow_w//2, 0),
+            triangle = [
+                (center - arrow_w // 2, 0),
+                (center + arrow_w // 2, 0),
                 (center, arrow_h),
             ]
-            draw.polygon(tri, fill=(0, 0, 0), outline=(255, 255, 255))
+            draw.polygon(triangle, fill=(0, 0, 0), outline=(255, 255, 255))
 
             imgs.append(im)
 
-        # write out full-RGBA frames so colors & transparency survive
+        # write out the GIF with true RGBA frames
         bio = io.BytesIO()
-        imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
+        imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
         bio.seek(0)
         return bio
 
