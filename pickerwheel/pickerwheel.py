@@ -166,10 +166,12 @@ class PickerWheel(commands.Cog):
         colors = self._get_colors(len(options))
         imgs = []
 
-        # total turns + just enough extra so the winner lands at 90°
+        # total turns + just enough so the slice midpoint ends up at 270° (top)
         rotations = 3
         mid_deg = (winner_idx + 0.5) * sector
-        final_offset = rotations * 360 + (90 - mid_deg)
+        # 270° in PIL is straight up — this lines the chosen slice under the arrow
+        delta = (270 - mid_deg) % 360
+        final_offset = rotations * 360 + delta
 
         for frame in range(frames):
             t = frame / (frames - 1)
