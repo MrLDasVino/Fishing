@@ -1,6 +1,6 @@
 from .pickerwheel import PickerWheel
 
 async def setup(bot):
-    
-    bot.add_cog(PickerWheel(bot))
+    cog = PickerWheel(bot)
+    await bot.add_cog(cog)
 
