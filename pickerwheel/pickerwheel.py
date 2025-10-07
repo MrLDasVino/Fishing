@@ -18,7 +18,7 @@ class PickerWheel(commands.Cog):
         self.config.register_guild(**self.DEFAULT_CONFIG)
         self.font = ImageFont.load_default()
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     @commands.guild_only()
     async def pickerwheel(self, ctx):
         """Create, manage, and spin named wheels."""
