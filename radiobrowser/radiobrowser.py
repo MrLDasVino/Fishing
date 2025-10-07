@@ -16,7 +16,9 @@ class RadioBrowser(commands.Cog):
       • radio random
     """
 
-    API_BASE = "https://all.api.radio-browser.info/json"
+    # Primary JSON API and fallback Webservice API
+    API_BASE = "https://api.radio-browser.info/json"
+    WS_BASE = "https://www.radio-browser.info/webservice/json"
 
     def __init__(self, bot):
         self.bot = bot
@@ -55,20 +57,25 @@ class RadioBrowser(commands.Cog):
         else:
             field, query = "name", " ".join(args)
 
-        url = f"{self.API_BASE}/stations/search"
         params = {field: query, "limit": 10}
 
-        try:
-            async with self.session.get(url, params=params, timeout=8) as resp:
-                if resp.status != 200:
-                    body = await resp.text()
-                    logger.error(f"Search HTTP {resp.status}: {body[:200]}")
-                    return await ctx.send("❌ Error fetching stations. Try again later.")
-                data = await resp.json()
-        except Exception as e:
-            logger.exception("Network error during search")
-            return await ctx.send(f"❌ Network error fetching stations: `{e}`")
+        data = None
+        # Try primary API
+        for base in (self.API_BASE, self.WS_BASE):
+            url = f"{base}/stations/search"
+            try:
+                async with self.session.get(url, params=params, timeout=8) as resp:
+                    text = await resp.text()
+                    if resp.status == 200:
+                        data = await resp.json()
+                        break
+                    logger.error(f"Search HTTP {resp.status} @ {base}: {text[:200]}")
+            except Exception:
+                logger.exception(f"Network error during search at {base}")
+                continue
 
+        if data is None:
+            return await ctx.send("❌ Could not reach Radio Browser API. Try again later.")
         if not data:
             return await ctx.send(f"No stations found for **{field}: {query}**.")
 
@@ -114,18 +121,24 @@ class RadioBrowser(commands.Cog):
     @radio.command(name="random")
     async def radio_random(self, ctx: commands.Context):
         """Fetch a completely random radio station."""
-        url = f"{self.API_BASE}/stations/random"
-        try:
-            async with self.session.get(url, timeout=8) as resp:
-                if resp.status != 200:
-                    body = await resp.text()
-                    logger.error(f"Random HTTP {resp.status}: {body[:200]}")
-                    snippet = body[:500] + ("... (truncated)" if len(body) > 500 else "")
-                    return await ctx.send(f"❌ HTTP {resp.status} from Radio-Browser:\n```{snippet}```")
-                station = await resp.json()
-        except Exception as e:
-            logger.exception("Network error during random fetch")
-            return await ctx.send(f"❌ Network error fetching random station: `{e}`")
+        station = None
+
+        # Try primary JSON API, then fallback Webservice API
+        for base in (self.API_BASE, self.WS_BASE):
+            url = f"{base}/stations/random"
+            try:
+                async with self.session.get(url, timeout=8) as resp:
+                    text = await resp.text()
+                    if resp.status == 200:
+                        station = await resp.json()
+                        break
+                    logger.error(f"Random HTTP {resp.status} @ {base}: {text[:200]}")
+            except Exception:
+                logger.exception(f"Network error during random fetch at {base}")
+                continue
+
+        if not station:
+            return await ctx.send("❌ Could not fetch a random station. Try again later.")
 
         title = station.get("name", "Random station")
         stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
