@@ -16,9 +16,7 @@ class RadioBrowser(commands.Cog):
       • radio random
     """
 
-    # Primary JSON API and fallback Webservice API
     API_BASE = "https://api.radio-browser.info/json"
-    WS_BASE = "https://www.radio-browser.info/webservice"
 
     def __init__(self, bot):
         self.bot = bot
@@ -57,34 +55,23 @@ class RadioBrowser(commands.Cog):
         else:
             field, query = "name", " ".join(args)
 
+        url = f"{self.API_BASE}/stations/search"
         params = {field: query, "limit": 10}
-        data = None
-
-        # try primary JSON host then fallback Webservice
-        for base, path in (
-            (self.API_BASE, "/stations/search"),
-            (self.WS_BASE, "/json/stations/search"),
-        ):
-            url = f"{base}{path}"
-            try:
-                async with self.session.get(url, params=params, timeout=8) as resp:
+        try:
+            async with self.session.get(url, params=params, timeout=10) as resp:
+                if resp.status != 200:
                     text = await resp.text()
-                    ctype = resp.headers.get("Content-Type", "")
-                    if resp.status != 200 or "application/json" not in ctype:
-                        logger.error(f"Search HTTP {resp.status} @ {url}: {text[:200]}")
-                        continue
-                    data = await resp.json()
-                    break
-            except Exception:
-                logger.exception(f"Network error during search at {url}")
-                continue
+                    logger.error(f"Search HTTP {resp.status}: {text[:200]}")
+                    return await ctx.send("❌ Error fetching stations. Try again later.")
+                data = await resp.json()
+        except Exception as e:
+            logger.exception("Network error during search")
+            return await ctx.send(f"❌ Network error fetching stations: `{e}`")
 
-        if data is None:
-            return await ctx.send("❌ Could not reach Radio Browser. Try again later.")
         if not data:
             return await ctx.send(f"No stations found for **{field}: {query}**.")
 
-        # cache results
+        # Cache results per user
         self._search_cache[ctx.author.id] = data
         embed = discord.Embed(
             title=f"Results — {field.title()}: {query}",
@@ -126,38 +113,25 @@ class RadioBrowser(commands.Cog):
 
     @radio.command(name="random")
     async def radio_random(self, ctx: commands.Context):
-        """Fetch a completely random radio station."""
-        station = None
-
-        # GET with limit=1; handle array vs object
-        params = {"limit": 1}
-        for base, path in (
-            (self.API_BASE, "/stations/random"),
-            (self.WS_BASE, "/json/stations/random"),
-        ):
-            url = f"{base}{path}"
-            try:
-                async with self.session.get(url, params=params, timeout=8) as resp:
+        """Fetch a completely random radio station via search ordering."""
+        url = f"{self.API_BASE}/stations/search"
+        params = {"order": "random", "limit": 1}
+        try:
+            async with self.session.get(url, params=params, timeout=10) as resp:
+                if resp.status != 200:
                     text = await resp.text()
-                    ctype = resp.headers.get("Content-Type", "")
-                    if resp.status != 200 or "application/json" not in ctype:
-                        logger.error(f"Random HTTP {resp.status} @ {url}: {text[:200]}")
-                        continue
-                    data = await resp.json()
-                    # data might be a list (API returns [ ... ]) or a single dict
-                    if isinstance(data, list) and data:
-                        station = data[0]
-                    elif isinstance(data, dict):
-                        station = data
-                    if station:
-                        break
-            except Exception:
-                logger.exception(f"Network error during random fetch at {url}")
-                continue
+                    logger.error(f"Random via search HTTP {resp.status}: {text[:200]}")
+                    snippet = text[:500] + ("... (truncated)" if len(text) > 500 else "")
+                    return await ctx.send(f"❌ HTTP {resp.status} from Radio-Browser:\n```{snippet}```")
+                data = await resp.json()
+        except Exception as e:
+            logger.exception("Network error during random fetch")
+            return await ctx.send(f"❌ Network error fetching random station: `{e}`")
 
-        if not station:
-            return await ctx.send("❌ Could not fetch a random station. Try again later.")
+        if not data:
+            return await ctx.send("❌ No station returned. Try again later.")
 
+        station = data[0]
         title = station.get("name", "Random station")
         stream_url = station.get("url_resolved") or station.get("url") or "No URL available"
         country = station.get("country", "Unknown")
