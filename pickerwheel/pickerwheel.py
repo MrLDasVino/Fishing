@@ -8,7 +8,6 @@ import imageio
 import discord
 from redbot.core import commands, Config
 
-
 class PickerWheel(commands.Cog):
     """Multiple named wheels with admin-only management and bulk adds."""
 
@@ -18,7 +17,10 @@ class PickerWheel(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890)
         self.config.register_guild(**self.DEFAULT_CONFIG)
-        self.font = ImageFont.load_default()
+        # use a bolder, larger TTF font for readability
+        self.font = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20
+        )
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -140,14 +142,13 @@ class PickerWheel(commands.Cog):
         await ctx.send(f"🎉 **{key}** stops on **{winner}**!", file=file)
 
     def _get_colors(self, n):
-        """Generate n bright, random RGB colors."""
+        """Generate n evenly spaced, vibrant rainbow colors."""
         cols = []
-        for _ in range(n):
-            h = random.random()              # random hue
-            s = random.uniform(0.6, 1.0)     # saturated
-            v = random.uniform(0.7, 1.0)     # bright
+        for i in range(n):
+            h = i / n
+            s, v = 0.8, 0.9
             r, g, b = colorsys.hsv_to_rgb(h, s, v)
-            cols.append((int(r*255), int(g*255), int(b*255)))
+            cols.append((int(r * 255), int(g * 255), int(b * 255)))
         return cols
 
     async def _make_wheel_gif(self, options, frames, duration):
@@ -179,13 +180,15 @@ class PickerWheel(commands.Cog):
                 tx = center + (radius + 15) * math.cos(mid_ang)
                 ty = center + (radius + 15) * math.sin(mid_ang)
 
-                # truncate and choose text color
+                # truncate label
                 label = opt if len(opt) <= 12 else opt[:12] + "…"
-                brightness = 0.299*col[0] + 0.587*col[1] + 0.114*col[2]
+
+                # choose text color for contrast
+                brightness = 0.299 * col[0] + 0.587 * col[1] + 0.114 * col[2]
                 text_fill = "black" if brightness > 128 else "white"
                 outline_fill = "white" if text_fill == "black" else "black"
 
-                # render text + stroke
+                # measure and render text with stroke
                 x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=self.font)
                 w, h = x1 - x0, y1 - y0
                 text_im = Image.new("RGBA", (w + 4, h + 4), (0, 0, 0, 0))
@@ -198,17 +201,19 @@ class PickerWheel(commands.Cog):
                     stroke_width=1,
                     stroke_fill=outline_fill,
                 )
+
+                # rotate text upright and paste with white halo
                 rot = text_im.rotate(-math.degrees(mid_ang), expand=True)
-                im.paste(
-                    rot,
-                    (int(tx - rot.width/2), int(ty - rot.height/2)),
-                    rot,
-                )
+                px, py = int(tx - rot.width / 2), int(ty - rot.height / 2)
+                halo = Image.new("RGBA", rot.size, (255, 255, 255, 180))
+                mask = rot.split()[3]
+                im.paste(halo, (px, py), mask)
+                im.paste(rot, (px, py), rot)
 
             imgs.append(im.convert("P"))
 
         bio = io.BytesIO()
-        imageio.mimsave(bio, imgs, format="GIF", duration=duration/frames)
+        imageio.mimsave(bio, imgs, format="GIF", duration=duration / frames)
         bio.seek(0)
         return bio
 
