@@ -16,13 +16,18 @@ class RadioBrowser(commands.Cog):
       • [p]radio random
     """
 
-    # Use the DNS-balanced HTTP JSON endpoint
-    API_BASE = "http://all.api.radio-browser.info/json"
+    # Primary + regional JSON endpoints for failover
+    API_BASES = [
+        "https://api.radio-browser.info/json",
+        "https://fi1.api.radio-browser.info/json",
+        "https://de1.api.radio-browser.info/json",
+        "https://nl1.api.radio-browser.info/json",
+    ]
 
     def __init__(self, bot):
         self.bot = bot
-        self.session = None
-        self._search_cache = {}
+        self.session: aiohttp.ClientSession | None = None
+        self._search_cache: dict[int, list[dict]] = {}
 
     async def cog_load(self):
         """Initialize HTTP session when the cog loads."""
@@ -33,6 +38,36 @@ class RadioBrowser(commands.Cog):
         """Close HTTP session when the cog unloads."""
         if self.session and not self.session.closed:
             await self.session.close()
+
+    async def _api_get(self, path: str, params: dict):
+        """
+        Try each base URL in turn until we get a non-502 response.
+        Returns (data, error_message) where data is the parsed JSON or None,
+        and error_message is a string to display/log on total failure.
+        """
+        assert self.session, "Session not initialized"
+
+        last_error = None
+        for base in self.API_BASES:
+            url = f"{base}/{path}"
+            try:
+                async with self.session.get(url, params=params, timeout=10) as resp:
+                    text = await resp.text()
+                    if resp.status == 502:
+                        logger.warning("502 from %s; trying next endpoint", base)
+                        last_error = f"502 Bad Gateway from {base}"
+                        continue
+                    if resp.status != 200:
+                        logger.error("HTTP %s from %s: %s", resp.status, base, text[:200])
+                        return None, f"HTTP {resp.status} from Radio Browser"
+                    return await resp.json(), None
+            except Exception as e:
+                logger.exception("Error fetching %s from %s", path, base)
+                last_error = str(e)
+                continue
+
+        # All endpoints failed
+        return None, last_error or "Unknown error fetching from Radio Browser"
 
     @commands.group(name="radio", invoke_without_command=True)
     async def radio(self, ctx: commands.Context):
@@ -57,20 +92,11 @@ class RadioBrowser(commands.Cog):
         else:
             field, query = "name", " ".join(args)
 
-        url = f"{self.API_BASE}/stations/search"
-        params = {"limit": 10, field: query, "hidebroken": True}
+        params = {field: query, "limit": 10, "hidebroken": True}
+        data, error = await self._api_get("stations/search", params)
 
-        try:
-            async with self.session.get(url, params=params, timeout=10) as resp:
-                if resp.status != 200:
-                    text = await resp.text()
-                    logger.error(f"Search HTTP {resp.status}: {text[:200]}")
-                    return await ctx.send("❌ Error fetching stations. Try again later.")
-                data = await resp.json()
-        except Exception as e:
-            logger.exception("Network error during search")
-            return await ctx.send(f"❌ Network error fetching stations: `{e}`")
-
+        if error:
+            return await ctx.send(f"❌ {error}. Try again later.")
         if not data:
             return await ctx.send(f"No stations found for **{field}: {query}**.")
 
@@ -79,7 +105,7 @@ class RadioBrowser(commands.Cog):
 
         embed = discord.Embed(
             title=f"Results — {field.title()}: {query}",
-            color=discord.Color.green()
+            color=discord.Color.green(),
         )
         for idx, station in enumerate(data, start=1):
             name = station.get("name", "Unknown")
@@ -88,7 +114,7 @@ class RadioBrowser(commands.Cog):
             embed.add_field(
                 name=f"{idx}. {name}",
                 value=f"Country: {country} | Language: {language}",
-                inline=False
+                inline=False,
             )
         embed.set_footer(text="Type [p]radio pick <number> to get the stream URL")
         await ctx.send(embed=embed)
@@ -109,7 +135,7 @@ class RadioBrowser(commands.Cog):
 
         embed = discord.Embed(
             title=station.get("name", "Unknown station"),
-            color=discord.Color.blue()
+            color=discord.Color.blue(),
         )
         embed.add_field(name="🔗 Stream URL", value=stream, inline=False)
         embed.add_field(name="🌍 Country", value=station.get("country", "Unknown"), inline=True)
@@ -121,20 +147,11 @@ class RadioBrowser(commands.Cog):
         """
         Fetch a completely random station using the dedicated endpoint.
         """
-        url = f"{self.API_BASE}/stations/random"
         params = {"limit": 1}
+        data, error = await self._api_get("stations/random", params)
 
-        try:
-            async with self.session.get(url, params=params, timeout=10) as resp:
-                if resp.status != 200:
-                    text = await resp.text()
-                    logger.error(f"Random HTTP {resp.status}: {text[:200]}")
-                    return await ctx.send(f"❌ HTTP {resp.status} from Radio Browser:\n```{text[:500]}```")
-                data = await resp.json()
-        except Exception as e:
-            logger.exception("Network error during random fetch")
-            return await ctx.send(f"❌ Network error fetching random station: `{e}`")
-
+        if error:
+            return await ctx.send(f"❌ {error}. Try again later.")
         if not data:
             return await ctx.send("❌ No station returned. Try again later.")
 
@@ -146,7 +163,7 @@ class RadioBrowser(commands.Cog):
 
         embed = discord.Embed(
             title="🎲 Random Radio Station",
-            color=discord.Color.purple()
+            color=discord.Color.purple(),
         )
         embed.add_field(name=title, value=f"[Listen here]({stream})", inline=False)
         embed.add_field(name="🌍 Country", value=country, inline=True)
