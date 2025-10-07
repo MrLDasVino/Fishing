@@ -325,40 +325,48 @@ class PickerWheel(commands.Cog):
             
             ZOOM_FRAMES = 5
             if frame >= frames - ZOOM_FRAMES:
-                # 0→1 ramp
+                # 0→1 over the last ZOOM_FRAMES
                 t2 = (frame - (frames - ZOOM_FRAMES)) / (ZOOM_FRAMES - 1)
-                zoom = 1.0 + 0.1 * t2  # up to +10%
+                zoom = 1.0 + 0.1 * t2    # up to +10% growth
 
-                # compute slice angles
+                # compute our slice’s start/end angles
                 start_win = winner_idx * sector + offset
                 end_win   = start_win + sector
 
-                # full‐canvas mask and isolated slice
+                # 1) build a full-canvas mask for just that wedge
                 mask = Image.new("L", (size, size), 0)
                 mdraw = ImageDraw.Draw(mask)
-                mdraw.pieslice([10,10,size-10,size-10], start_win, end_win, fill=255)
-                slice_im = Image.new("RGBA", (size, size), (0,0,0,0))
-                slice_im.paste(im, (0,0), mask)
+                mdraw.pieslice([10,10,size-10,size-10],
+                               start_win, end_win, fill=255)
 
-                # crop to the wheel‐inner square (remove border)
-                bbox = (10, 10, size - 10, size - 10)
-                slice_crop = slice_im.crop(bbox)
+                # 2) extract that wedge from the frame
+                wedge = Image.new("RGBA", (size, size), (0,0,0,0))
+                wedge.paste(im, (0,0), mask)
+
+                # 3) crop to the mask’s bounding box (tight rectangle)
+                bbox = mask.getbbox()   # returns (left, top, right, bottom)
+                wedge_crop = wedge.crop(bbox)
                 mask_crop  = mask.crop(bbox)
 
-                # zoom that cropped region
-                orig = size - 20
-                new_sz = int(orig * zoom)
-                slice_zoom = slice_crop.resize((new_sz, new_sz), Image.LANCZOS)
-                mask_zoom  = mask_crop.resize((new_sz, new_sz), Image.LANCZOS)
+                # 4) resize the crop
+                w0, h0 = wedge_crop.size
+                new_w = int(w0 * zoom)
+                new_h = int(h0 * zoom)
 
-                # compute top‐left so zoom stays centered
-                dx = 10 - (new_sz - orig)//2
-                dy = 10 - (new_sz - orig)//2
-                overlay = Image.new("RGBA", (size, size), (0,0,0,0))
-                overlay.paste(slice_zoom, (dx, dy), mask_zoom)
+                wedge_zoom = wedge_crop.resize((new_w, new_h),
+                                              resample=Image.LANCZOS)
+                # use NEAREST on the mask to keep it crisp
+                mask_zoom = mask_crop.resize((new_w, new_h),
+                                             resample=Image.NEAREST)
 
-                # blend it in
-                im = Image.alpha_composite(im, overlay)
+                # 5) compute offset so the zoomed wedge stays centered
+                dx = bbox[0] - (new_w - w0)//2
+                dy = bbox[1] - (new_h - h0)//2
+
+                # 6) paste it back onto a copy of the base wheel
+                base = im.copy()
+                base.paste(wedge_zoom, (dx, dy), mask_zoom)
+                im = base
                 
             imgs.append(im)
 
