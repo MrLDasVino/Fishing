@@ -436,13 +436,24 @@ class FortuneGarden(commands.Cog):
 
 
     @commands.guild_only()
-    @commands.command()
-    async def seeds(self, ctx):
-        """Check how many fortune seeds you have."""
-        count = await self.config.member(ctx.author).seeds()
+    @commands.command(
+        name="fortuneseeds",                             
+        help="Show how many fortune seeds you or another member has."
+    )
+    async def fortuneseeds(self, ctx, member: discord.Member = None):
+        """
+        Show how many fortune seeds a user has.
+        """
+        # default to command author if no member specified
+        member = member or ctx.author
+
+        seeds = await self.config.member(member).seeds()
         embed = discord.Embed(
             title="🌱 Fortune Seeds",
-            description=f"{ctx.author.mention}, you have **{count}** seed{'s' if count != 1 else ''}.",
+            description=(
+                f"{member.mention} has **{seeds}** fortune seed"
+                f"{'s' if seeds != 1 else ''}."
+            ),
             colour=commands.Colour.random()
         )
         embed.set_image(url=SEED_BANNER)
