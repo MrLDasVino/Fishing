@@ -323,50 +323,23 @@ class PickerWheel(commands.Cog):
             tri=[(center-aw//2,0),(center+aw//2,0),(center,ah)]
             draw.polygon(tri, fill=(0,0,0), outline=(255,255,255))
             
-            ZOOM_FRAMES = 5
-            if frame >= frames - ZOOM_FRAMES:
-                # 0→1 over the last ZOOM_FRAMES
-                t2 = (frame - (frames - ZOOM_FRAMES)) / (ZOOM_FRAMES - 1)
-                zoom = 1.0 + 0.1 * t2    # up to +10% growth
+            PULSE_FRAMES = 5
+            if frame >= frames - PULSE_FRAMES:
+                t2 = (frame - (frames - PULSE_FRAMES)) / (PULSE_FRAMES - 1)
+                # outline width ramps from 2px → 12px
+                stroke = int(2 + 10 * t2)
+                color  = (255, 255, 255)  # or any highlight color
 
-                # compute our slice’s start/end angles
                 start_win = winner_idx * sector + offset
                 end_win   = start_win + sector
 
-                # 1) build a full-canvas mask for just that wedge
-                mask = Image.new("L", (size, size), 0)
-                mdraw = ImageDraw.Draw(mask)
-                mdraw.pieslice([10,10,size-10,size-10],
-                               start_win, end_win, fill=255)
-
-                # 2) extract that wedge from the frame
-                wedge = Image.new("RGBA", (size, size), (0,0,0,0))
-                wedge.paste(im, (0,0), mask)
-
-                # 3) crop to the mask’s bounding box (tight rectangle)
-                bbox = mask.getbbox()   # returns (left, top, right, bottom)
-                wedge_crop = wedge.crop(bbox)
-                mask_crop  = mask.crop(bbox)
-
-                # 4) resize the crop
-                w0, h0 = wedge_crop.size
-                new_w = int(w0 * zoom)
-                new_h = int(h0 * zoom)
-
-                wedge_zoom = wedge_crop.resize((new_w, new_h),
-                                              resample=Image.LANCZOS)
-                # use NEAREST on the mask to keep it crisp
-                mask_zoom = mask_crop.resize((new_w, new_h),
-                                             resample=Image.NEAREST)
-
-                # 5) compute offset so the zoomed wedge stays centered
-                dx = bbox[0] - (new_w - w0)//2
-                dy = bbox[1] - (new_h - h0)//2
-
-                # 6) paste it back onto a copy of the base wheel
-                base = im.copy()
-                base.paste(wedge_zoom, (dx, dy), mask_zoom)
-                im = base
+                # draw a bigger ring for the winning wedge
+                draw.pieslice(
+                    [10 - stroke, 10 - stroke, size - 10 + stroke, size - 10 + stroke],
+                    start_win, end_win,
+                    outline=color,
+                    width=stroke
+                )
                 
             imgs.append(im)
 
