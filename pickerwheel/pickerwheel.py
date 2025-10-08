@@ -322,25 +322,6 @@ class PickerWheel(commands.Cog):
             aw,ah=30,20
             tri=[(center-aw//2,0),(center+aw//2,0),(center,ah)]
             draw.polygon(tri, fill=(0,0,0), outline=(255,255,255))
-            
-            PULSE_FRAMES = 5
-            if frame >= frames - PULSE_FRAMES:
-                t2 = (frame - (frames - PULSE_FRAMES)) / (PULSE_FRAMES - 1)
-                # outline width ramps from 2px → 12px
-                stroke = int(2 + 10 * t2)
-                color  = (255, 255, 255)  # or any highlight color
-
-                start_win = winner_idx * sector + offset
-                end_win   = start_win + sector
-
-                # draw a bigger ring for the winning wedge
-                draw.pieslice(
-                    [10 - stroke, 10 - stroke, size - 10 + stroke, size - 10 + stroke],
-                    start_win, end_win,
-                    outline=color,
-                    width=stroke
-                )
-                
             imgs.append(im)
 
         bio = io.BytesIO()
