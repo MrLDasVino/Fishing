@@ -112,13 +112,13 @@ class CharacterGenerator(commands.Cog):
             title=f"{first} {last}",
             color=discord.Color.random()
         )
-        embed.add_field(name="Profession",   value=profession,   inline=False)
-        embed.add_field(name="Quirk",        value=quirk,        inline=False)
-        embed.add_field(name="Backstory",    value=backstory,    inline=False)
-        embed.add_field(name="Goal",         value=goal,         inline=False)
-        embed.add_field(name="Secret",       value=secret,       inline=False)
-        embed.add_field(name="Relationship", value=relationship, inline=False)
-        embed.add_field(name="Equipment",    value=equipment,    inline=False)
+        embed.add_field(name="🎓 Profession",   value=profession,   inline=False)
+        embed.add_field(name="✨ Quirk",        value=quirk,        inline=False)
+        embed.add_field(name="📜 Backstory",    value=backstory,    inline=False)
+        embed.add_field(name="🎯 Goal",         value=goal,         inline=False)
+        embed.add_field(name="🔒 Secret",       value=secret,       inline=False)
+        embed.add_field(name="🤝 Relationship", value=relationship, inline=False)
+        embed.add_field(name="🛡 Equipment",    value=equipment,    inline=False)
 
         # Attach a random thumbnail if available
         thumbs = pools.get("thumbnail", [])
