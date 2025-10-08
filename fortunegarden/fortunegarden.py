@@ -398,7 +398,7 @@ class FortuneGarden(commands.Cog):
                     embed = discord.Embed(
                         title="🌸 Your Fortune Seed Has Bloomed!",
                         description=desc,
-                        colour=commands.Colour.random()
+                        colour=discord.Colour.random()
                     )
                     embed.set_image(url=REWARD_BANNERS[reward_type])
                     await channel.send(content=member.mention, embed=embed)
@@ -454,7 +454,7 @@ class FortuneGarden(commands.Cog):
                 f"{member.mention} has **{seeds}** fortune seed"
                 f"{'s' if seeds != 1 else ''}."
             ),
-            colour=commands.Colour.random()
+            colour=discord.Colour.random()
         )
         embed.set_image(url=SEED_BANNER)
         await ctx.send(embed=embed)
@@ -494,7 +494,7 @@ class FortuneGarden(commands.Cog):
             description=(
                 f"{ctx.author.mention}, your seed will bloom in **{delay}** hour(s)."
             ),
-            colour=commands.Colour.random()
+            colour=discord.Colour.random()
         )
         embed.add_field(name="Seed ID", value=fid, inline=True)
         embed.add_field(name="Seeds Left", value=f"{seeds - 1}", inline=True)
@@ -527,7 +527,7 @@ class FortuneGarden(commands.Cog):
         embed = discord.Embed(
             title="🌱 Your Planted Seeds",
             description="\n".join(lines),
-            colour=commands.Colour.random()
+            colour=discord.Colour.random()
         )
         embed.set_image(url=LIST_BANNER)
         await ctx.send(embed=embed)
