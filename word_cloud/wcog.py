@@ -12,7 +12,7 @@ import aiohttp
 from collections import OrderedDict
 from wordcloud import WordCloud
 
-from redbot.core import commands, checks
+from redbot.core import commands, checks, tasks
 from redbot.core.bot import Red
 
 
@@ -61,7 +61,7 @@ class WordCloudCog(commands.Cog):
         self._emoji_cache: OrderedDict[str, Image.Image] = OrderedDict()
         self._cache_max = 200
 
-        self._autogen_task = self.bot.loop.create_task(self._ensure_db_and_task())
+        self.bot.loop.create_task(self._ensure_db_and_task())
 
     async def cog_unload(self):
         if self._autogen_task:
@@ -106,9 +106,14 @@ class WordCloudCog(commands.Cog):
             await db.commit()
         self.db_ready = True
 
+    async def cog_load(self):
+        """Called when the cog is loaded; start the autogen loop."""
+        self.autogen_loop.start()
+
     async def cog_unload(self):
-        if self._autogen_task:
-            self._autogen_task.cancel()
+        """Cleanly stop the loop and close resources."""
+        if self.autogen_loop.is_running():
+            self.autogen_loop.cancel()
         await self._session.close()            
 
     @commands.Cog.listener()
@@ -329,39 +334,44 @@ class WordCloudCog(commands.Cog):
         base_img.save(buf, format="PNG")
         buf.seek(0)
         return buf
+        
+    @tasks.loop(minutes=1)
+    async def autogen_loop(self):
+        """Periodic wordcloud generation for all guilds with autogen=1."""
+        await self.init_db()
+        async with aiosqlite.connect(DB_PATH) as db:
+            cur = await db.execute(
+                "SELECT guild_id, autogen_interval, autogen_channel FROM config WHERE autogen = 1"
+            )
+            rows = await cur.fetchall()
+        for guild_id, interval, channel_id in rows:
+            key = f"autogen_last_{guild_id}"
+            last = getattr(self, key, None)
+            now = datetime.utcnow()
+            if last is None or (now - last).total_seconds() >= interval:
+                guild = self.bot.get_guild(guild_id)
+                if not guild:
+                    continue
+                ch = guild.get_channel(channel_id) if channel_id else None
+                if not ch:
+                    for c in guild.text_channels:
+                        if c.permissions_for(guild.me).send_messages:
+                            ch = c
+                            break
+                if not ch:
+                    continue
+                freqs = await self._get_frequencies_for_guild(guild_id)
+                buf = await self._render_wordcloud_image(freqs)
+                try:
+                    await ch.send(file=discord.File(fp=buf, filename="wordcloud.png"))
+                except Exception:
+                    pass
+                setattr(self, key, now)
 
-
-    async def _maybe_autogen_loop(self):
+    @autogen_loop.before_loop
+    async def before_autogen(self):
         await self.bot.wait_until_ready()
-        while True:
-            await asyncio.sleep(60)
-            await self.init_db()
-            async with aiosqlite.connect(DB_PATH) as db:
-                cur = await db.execute("SELECT guild_id, autogen_interval, autogen_channel FROM config WHERE autogen = 1")
-                rows = await cur.fetchall()
-                for guild_id, interval, channel_id in rows:
-                    key = f"autogen_last_{guild_id}"
-                    last = getattr(self, key, None)
-                    now = datetime.utcnow()
-                    if last is None or (now - last).total_seconds() >= interval:
-                        guild = self.bot.get_guild(guild_id)
-                        if guild is None:
-                            continue
-                        ch = guild.get_channel(channel_id) if channel_id else None
-                        if ch is None:
-                            for c in guild.text_channels:
-                                if c.permissions_for(guild.me).send_messages:
-                                    ch = c
-                                    break
-                        if ch is None:
-                            continue
-                        freqs = await self._get_frequencies_for_guild(guild_id)
-                        buf = await self._render_wordcloud_image(freqs)
-                        try:
-                            await ch.send(file=discord.File(fp=buf, filename="wordcloud.png"))
-                        except Exception:
-                            pass
-                        setattr(self, key, now)
+
 
     @commands.group()
     async def wordcloud(self, ctx: commands.Context):
@@ -593,4 +603,4 @@ class WordCloudCog(commands.Cog):
 async def setup(bot):
     cog = WordCloudCog(bot)
     await bot.add_cog(cog)
-    bot.loop.create_task(cog._maybe_autogen_loop())
+    
