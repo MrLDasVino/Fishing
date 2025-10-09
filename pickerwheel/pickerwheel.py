@@ -286,7 +286,7 @@ class PickerWheel(commands.Cog):
                 if url:
                     try:
                         src = await self._fetch_image(url)
-                        …  # resize & paste
+                          # resize & paste
                     except ValueError:
                         # 1) Remove the broken URL from persistent config
                         all_imgs = await self.config.guild(ctx.guild).wheel_images()
