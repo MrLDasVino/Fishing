@@ -19,20 +19,6 @@ from discord.ext import tasks
 from redbot.core.bot import Red
 
 
-# pick up the system’s emoji font
-_EMOJI_CANDIDATES = [
-    "/usr/share/fonts/truetype/ancient-scripts/Symbola_hint.ttf",   
-    "/usr/share/fonts/truetype/ancient-fonts/Symbola.ttf",          
-    "/usr/share/fonts/truetype/noto/NotoEmoji-Regular.ttf",
-    "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
-]
-for p in _EMOJI_CANDIDATES:
-    if os.path.isfile(p):
-        EMOJI_FONT = p
-        break
-else:
-    EMOJI_FONT = None
-
 
 # Basic stopwords (can be extended or made per-guild later)
 STOPWORDS = {
@@ -70,10 +56,14 @@ class WordCloudCog(commands.Cog):
         # one-time DB/config setup
         self.bot.loop.create_task(self._ensure_db_and_task())
 
+    async def cog_load(self):
+        """Start the periodic autogen loop when the cog goes live."""
+        self.autogen_loop.start()
+
     async def cog_unload(self):
-        if self._autogen_task:
-            self._autogen_task.cancel()
-        # close persistent session
+        """Stop the loop and close our session on unload."""
+        if self.autogen_loop.is_running():
+            self.autogen_loop.cancel()
         await self._session.close()
 
     async def _ensure_db_and_task(self):
@@ -262,9 +252,7 @@ class WordCloudCog(commands.Cog):
             "prefer_horizontal": 0.9,
             "collocations": False,
         }
-        if EMOJI_FONT:
-            wc_kwargs["font_path"] = EMOJI_FONT
-            wc_kwargs["min_font_size"] = 10
+
 
         wc = WordCloud(**wc_kwargs)
         wc.generate_from_frequencies(frequencies)
@@ -283,7 +271,10 @@ class WordCloudCog(commands.Cog):
         for entry in full_layout:
             raw = entry[0]
             token = raw[0] if isinstance(raw, tuple) else raw
-            if isinstance(token, str) and token.startswith("custom_"):
+            # detect ANY emoji token: custom_<name>:<id> OR unicode-char
+            is_custom = isinstance(token, str) and token.startswith("custom_")
+            is_unicode = isinstance(token, str) and UNICODE_EMOJI_RE.fullmatch(token)
+            if is_custom or is_unicode:
                 emoji_entries.append(entry)
             else:
                 word_entries.append(entry)
@@ -304,32 +295,37 @@ class WordCloudCog(commands.Cog):
             else:
                 _, font_size, position, orientation, color = entry
 
-            # extract emoji ID
-            _, rest = token.split("custom_", 1)
-            _, eid = rest.split(":", 1)
-
-            # cache lookup
-            if eid in self._emoji_cache:
-                em = self._emoji_cache[eid]
-                self._emoji_cache.move_to_end(eid)
-            else:
+            if token.startswith("custom_"):
+                # custom_<name>:<id>
+                _, rest = token.split("custom_", 1)
+                _, eid = rest.split(":", 1)
                 url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
+                cache_key = f"custom:{eid}"
+            else:
+                # unicode emoji: build codepoint path for Twemoji
+                cps = "-".join(f"{ord(c):x}" for c in token)
+                url = f"https://twemoji.maxcdn.com/v/latest/72x72/{cps}.png"
+                cache_key = f"unic:{cps}"
+
+            # cache lookup by cache_key
+            if cache_key in self._emoji_cache:
+                em = self._emoji_cache[cache_key]
+                self._emoji_cache.move_to_end(cache_key)
+            else:
                 try:
                     async with session.get(url) as resp:
                         data = await resp.read()
                         em = Image.open(io.BytesIO(data)).convert("RGBA")
                 except Exception:
                     continue
-
-                # resize with LANCZOS
+                # resize to font_size × font_size
                 try:
                     resample = Image.Resampling.LANCZOS
                 except AttributeError:
                     resample = Image.LANCZOS
                 em = em.resize((font_size, font_size), resample)
-
-                # insert & evict oldest
-                self._emoji_cache[eid] = em
+                # insert into LRU cache
+                self._emoji_cache[cache_key] = em
                 if len(self._emoji_cache) > self._cache_max:
                     self._emoji_cache.popitem(last=False)
 
