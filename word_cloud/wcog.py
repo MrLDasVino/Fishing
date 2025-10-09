@@ -341,7 +341,7 @@ class WordCloudCog(commands.Cog):
                     fill=255,
                 )
 
-            mask = np.array(imgm)  # dtype uint8: 0 outside, 255 inside                 
+            mask = np.array(imgm, dtype="uint8")              
 
         wc_kwargs = {
             "width": width,
@@ -429,8 +429,8 @@ class WordCloudCog(commands.Cog):
             base_img.paste(em, (int(x), int(y)), em)
 
             # restore mask into PIL L-mode
-            if mask_bool is not None:
-                pil_mask = Image.fromarray((mask_bool * 255).astype("uint8"))
+            if mask is not None:
+                pil_mask = Image.fromarray(mask)
                 base_img.putalpha(pil_mask)
             
         base_img.save(buf, format="PNG")            
