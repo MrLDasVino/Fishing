@@ -341,7 +341,9 @@ class WordCloudCog(commands.Cog):
                     fill=255,
                 )
 
-            mask = np.array(imgm)
+            mask_array = np.array(imgm)         
+            mask_bool = mask_array > 0          
+            mask = mask_bool                    
 
         wc_kwargs = {
             "width": width,
@@ -426,8 +428,13 @@ class WordCloudCog(commands.Cog):
             x, y = position
             base_img.paste(em, (int(x), int(y)), em)
 
-        # output
-        base_img.save(buf, format="PNG")
+        if mask_name and mask_name != "none":
+            # restore mask into PIL L-mode
+            pil_mask = Image.fromarray((mask_bool * 255).astype("uint8"))
+            # apply as alpha channel → outside pixels become transparent
+            base_img.putalpha(pil_mask)
+            
+        base_img.save(buf, format="PNG")            
         buf.seek(0)
         return buf
 
