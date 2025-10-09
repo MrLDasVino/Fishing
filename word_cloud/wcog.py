@@ -290,6 +290,7 @@ class WordCloudCog(commands.Cog):
         if mask_name and mask_name != "none":
             imgm = Image.new("L", (width, height), 0)
             draw = ImageDraw.Draw(imgm)
+
             if mask_name == "circle":
                 draw.ellipse((0, 0, width, height), fill=255)
             elif mask_name == "square":
@@ -297,7 +298,8 @@ class WordCloudCog(commands.Cog):
                 draw.rectangle((m, m, width - m, height - m), fill=255)
             elif mask_name == "triangle":
                 draw.polygon(
-                    [(width / 2, 0), (width, height), (0, height)], fill=255
+                    [(width / 2, 0), (width, height), (0, height)],
+                    fill=255,
                 )
             elif mask_name == "star":
                 from math import pi, cos, sin
@@ -317,33 +319,28 @@ class WordCloudCog(commands.Cog):
                 r = width * 0.25
                 # left lobe
                 draw.pieslice(
-                    [cx - r*1.5, top - r/2, cx - r/2, top + r/2],
-                    180, 360, fill=255
+                    [cx - r * 1.5, top - r / 2, cx - r / 2, top + r / 2],
+                    180,
+                    360,
+                    fill=255,
                 )
                 # right lobe
                 draw.pieslice(
-                    [cx + r/2, top - r/2, cx + r*1.5, top + r/2],
-                    180, 360, fill=255
+                    [cx + r / 2, top - r / 2, cx + r * 1.5, top + r / 2],
+                    180,
+                    360,
+                    fill=255,
                 )
-                # bottom triangle
+                # bottom point
                 draw.polygon(
-                    [(cx - r*1.5 + r/2, top + r/2),
-                     (cx + r*1.5 - r/2, top + r/2),
-                     (cx, height)],
-                    fill=255
+                    [
+                        (cx - r * 1.5 + r / 2, top + r / 2),
+                        (cx + r * 1.5 - r / 2, top + r / 2),
+                        (cx, height),
+                    ],
+                    fill=255,
                 )
-            mask = np.array(imgm)
 
-        mask = None
-        if mask_name and mask_name != "none":
-            from PIL import ImageDraw
-            import numpy as np
-
-            imgm = Image.new("L", (width, height), 0)
-            draw = ImageDraw.Draw(imgm)
-            if mask_name == "circle":
-                draw.ellipse((0, 0, width, height), fill=255)
-            # … your other shapes here …
             mask = np.array(imgm)
 
         wc_kwargs = {
