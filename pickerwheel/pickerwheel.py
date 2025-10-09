@@ -6,7 +6,7 @@ import colorsys
 import aiohttp
 import imageio
 import discord
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 from redbot.core import commands, Config
 
 class PickerWheel(commands.Cog):
@@ -287,7 +287,7 @@ class PickerWheel(commands.Cog):
                     try:
                         src = await self._fetch_image(url)
                           # resize & paste
-                    except ValueError:
+                    except (ValueError, UnidentifiedImageError):
                         # 1) Remove the broken URL from persistent config
                         all_imgs = await self.config.guild(ctx.guild).wheel_images()
                         wheel_imgs = all_imgs.get(wheel_name, {})
