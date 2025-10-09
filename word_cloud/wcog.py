@@ -287,7 +287,6 @@ class WordCloudCog(commands.Cog):
 
         # Build mask array if requested
         mask = None
-        mask_bool = None
         if mask_name and mask_name != "none":
             imgm = Image.new("L", (width, height), 0)
             draw = ImageDraw.Draw(imgm)
@@ -342,15 +341,13 @@ class WordCloudCog(commands.Cog):
                     fill=255,
                 )
 
-            mask_array = np.array(imgm)         
-            mask_bool = mask_array > 0          
-            mask = mask_bool                    
+            mask = np.array(imgm)  # dtype uint8: 0 outside, 255 inside                 
 
         wc_kwargs = {
             "width": width,
             "height": height,
             "mask": mask,
-            "margin": 2,            
+            "margin": 0,            
             "mode": "RGBA",
             "background_color": None,
             "prefer_horizontal": 0.9,
@@ -383,15 +380,7 @@ class WordCloudCog(commands.Cog):
         # render words only
         wc.layout_ = word_entries
         base_img = wc.to_image().convert("RGBA")
-        
-        px = base_img.getdata()
-        new_px = []
-        for r, g, b, a in px:
-            if (r, g, b) == (0, 0, 0):
-                new_px.append((0, 0, 0, 0))
-            else:
-                new_px.append((r, g, b, a))
-        base_img.putdata(new_px)        
+                
 
         # overlay emojis
         for entry in emoji_entries:
