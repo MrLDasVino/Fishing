@@ -21,9 +21,7 @@ class PickerWheel(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890)
         self.config.register_guild(**self.DEFAULT_CONFIG)
-        self.font = ImageFont.truetype(
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20
-        )
+        self.font = ImageFont.load_default()
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
