@@ -90,7 +90,8 @@ class WordCloudCog(commands.Cog):
                     guild_id INTEGER PRIMARY KEY,
                     autogen INTEGER DEFAULT 0,
                     autogen_interval INTEGER DEFAULT 3600,
-                    autogen_channel INTEGER
+                    autogen_channel INTEGER,
+                    mask TEXT DEFAULT 'none'
                 )"""
             )
             await db.execute(
@@ -101,7 +102,19 @@ class WordCloudCog(commands.Cog):
                    )"""
             )            
             await db.commit()
+            try:
+                await db.execute("ALTER TABLE config ADD COLUMN mask TEXT DEFAULT 'none'")
+                await db.commit()
+            except aiosqlite.OperationalError:
+                pass            
         self.db_ready = True
+        
+    async def _get_mask_for_guild(self, guild_id: int) -> str:
+        await self.init_db()
+        async with aiosqlite.connect(self.db_path) as db:
+            cur = await db.execute("SELECT mask FROM config WHERE guild_id = ?", (guild_id,))
+            row = await cur.fetchone()
+        return row[0] if row else "none"        
 
     async def cog_load(self):
         """Called when the cog is loaded; start the autogen loop."""
@@ -231,7 +244,13 @@ class WordCloudCog(commands.Cog):
             rows = await cur.fetchall()
         return {r[0]: r[1] for r in rows}
 
-    async def _render_wordcloud_image(self, frequencies: dict, width=1200, height=675):
+     async def _render_wordcloud_image(
+        self,
+        frequencies: dict,
+        mask_name: str = None,
+        width=1200,
+        height=675
+     ):
         import io
         from PIL import Image
         from wordcloud import WordCloud
@@ -243,7 +262,49 @@ class WordCloudCog(commands.Cog):
             buf.seek(0)
             return buf
 
-        # build and generate full layout
+        # if mask_name is 'none' or omitted, leave the mask as None
+        mask = None
+        if mask_name and mask_name != "none":
+            imgm = Image.new("L", (width, height), 0)
+            draw = ImageDraw.Draw(imgm)
+            if mask_name == "circle":
+                draw.ellipse((0, 0, width, height), fill=255)
+            elif mask_name == "square":
+                m = width * 0.05
+                draw.rectangle((m, m, width - m, height - m), fill=255)
+            elif mask_name == "triangle":
+                draw.polygon([(width/2, 0), (width, height), (0, height)], fill=255)
+            elif mask_name == "star":
+                from math import pi, cos, sin
+                center = (width/2, height/2)
+                outer = min(width, height)/2
+                inner = outer * 0.5
+                pts = []
+                for i in range(5):
+                    ang = pi/2 + i * 2*pi/5
+                    pts.append((center[0]+outer*cos(ang), center[1]-outer*sin(ang)))
+                    ang += pi/5
+                    pts.append((center[0]+inner*cos(ang), center[1]-inner*sin(ang)))
+                draw.polygon(pts, fill=255)
+            elif mask_name == "heart":
+                top = height * 0.3
+                r = width * 0.25
+                left = (width/2 - r/2, top)
+                right = (width/2 + r/2, top)
+                draw.pieslice([left[0]-r, left[1]-r, left[0]+r, left[1]+r], 180, 360, fill=255)
+                draw.pieslice([right[0]-r, right[1]-r, right[0]+r, right[1]+r], 180, 360, fill=255)
+                draw.polygon([(0, top+r/2), (width, top+r/2), (width/2, height)], fill=255)
+            mask = np.array(imgm)
+
+        wc_kwargs = {
+            "width": width,
+            "height": height,
+            "mask": mask,
+            "mode": "RGBA",
+            "background_color": None,
+            "prefer_horizontal": 0.9,
+            "collocations": False,
+        }
         wc_kwargs = {
             "width": width,
             "height": height,
@@ -344,7 +405,7 @@ class WordCloudCog(commands.Cog):
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
-                "SELECT guild_id, autogen_interval, autogen_channel FROM config WHERE autogen = 1"
+                "SELECT guild_id, autogen_interval, autogen_channel, mask FROM config WHERE autogen = 1"
             )
             rows = await cur.fetchall()
         for guild_id, interval, channel_id in rows:
@@ -468,11 +529,16 @@ class WordCloudCog(commands.Cog):
             await ctx.send("No data to generate a wordcloud.")
             return
 
-        buf = await self._render_wordcloud_image(freqs)
+        shape = await self._get_mask_for_guild(ctx.guild.id)
+        buf = await self._render_wordcloud_image(freqs, mask_name=shape)
         try:
             await ctx.send(content=title, file=discord.File(fp=buf, filename="wordcloud.png"))
         except Exception:
             await ctx.send("Failed to send image; check my permissions.")
+            
+    @wordcloud.command(name="shape")
+    @checks.admin()
+    async def shape(self, ctx: commands.Context, shape: str = None):            
 
     @wordcloud.command(name="stats")
     async def stats(self, ctx: commands.Context, limit: int = 20):
