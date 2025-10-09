@@ -12,6 +12,8 @@ import aiohttp
 from collections import OrderedDict
 from wordcloud import WordCloud
 
+from pathlib import Path
+from redbot.core.data_manager import cog_data_path
 from redbot.core import commands, checks
 from discord.ext import tasks 
 from redbot.core.bot import Red
@@ -31,7 +33,6 @@ for p in _EMOJI_CANDIDATES:
 else:
     EMOJI_FONT = None
 
-DB_PATH = "wordcloud_data.sqlite3"
 
 # Basic stopwords (can be extended or made per-guild later)
 STOPWORDS = {
@@ -62,6 +63,11 @@ class WordCloudCog(commands.Cog):
         self._emoji_cache: OrderedDict[str, Image.Image] = OrderedDict()
         self._cache_max = 200
 
+        data_folder: Path = Path(cog_data_path(self))
+        data_folder.mkdir(parents=True, exist_ok=True)
+        self.db_path: str = str(data_folder / "wordcloud_data.sqlite3")
+
+        # one-time DB/config setup
         self.bot.loop.create_task(self._ensure_db_and_task())
 
     async def cog_unload(self):
@@ -79,7 +85,7 @@ class WordCloudCog(commands.Cog):
     async def init_db(self):
         if self.db_ready:
             return
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 """CREATE TABLE IF NOT EXISTS counts (
                     guild_id INTEGER,
@@ -125,7 +131,7 @@ class WordCloudCog(commands.Cog):
             return
         # ─── skip if channel is ignored ───────────────────────────
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
                 "SELECT 1 FROM ignored_channels WHERE guild_id = ? AND channel_id = ?",
                 (message.guild.id, message.channel.id),
@@ -171,7 +177,7 @@ class WordCloudCog(commands.Cog):
             return
         # skip ignored channel
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
                 "SELECT 1 FROM ignored_channels WHERE guild_id = ? AND channel_id = ?",
                 (message.guild.id, message.channel.id),
@@ -193,7 +199,7 @@ class WordCloudCog(commands.Cog):
         norm_tokens = [str(t)[:200] for t in tokens if t]
         if not norm_tokens:
             return
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             cur = await db.cursor()
             for t in norm_tokens:
                 await cur.execute(
@@ -205,7 +211,7 @@ class WordCloudCog(commands.Cog):
 
     async def _get_frequencies_for_guild(self, guild_id: int):
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
                 "SELECT token, SUM(count) as count FROM counts WHERE guild_id = ? GROUP BY token ORDER BY count DESC",
                 (guild_id,)
@@ -215,7 +221,7 @@ class WordCloudCog(commands.Cog):
 
     async def _get_frequencies_for_user(self, guild_id: int, user_id: int):
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
                 "SELECT token, count FROM counts WHERE guild_id = ? AND user_id = ? ORDER BY count DESC",
                 (guild_id, user_id)
@@ -230,7 +236,7 @@ class WordCloudCog(commands.Cog):
         placeholders = ",".join("?" for _ in user_ids)
         query = f"SELECT token, SUM(count) as count FROM counts WHERE guild_id = ? AND user_id IN ({placeholders}) GROUP BY token ORDER BY count DESC"
         params = [guild_id] + user_ids
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(query, params)
             rows = await cur.fetchall()
         return {r[0]: r[1] for r in rows}
@@ -340,7 +346,7 @@ class WordCloudCog(commands.Cog):
     async def autogen_loop(self):
         """Periodic wordcloud generation for all guilds with autogen=1."""
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
                 "SELECT guild_id, autogen_interval, autogen_channel FROM config WHERE autogen = 1"
             )
@@ -385,7 +391,7 @@ class WordCloudCog(commands.Cog):
     async def ignore(self, ctx, channel: discord.TextChannel):
         """Ignore data collection in a channel."""
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 "INSERT OR IGNORE INTO ignored_channels (guild_id, channel_id) VALUES (?, ?)",
                 (ctx.guild.id, channel.id),
@@ -398,7 +404,7 @@ class WordCloudCog(commands.Cog):
     async def unignore(self, ctx, channel: discord.TextChannel):
         """Stop ignoring a channel."""
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 "DELETE FROM ignored_channels WHERE guild_id = ? AND channel_id = ?",
                 (ctx.guild.id, channel.id),
@@ -411,7 +417,7 @@ class WordCloudCog(commands.Cog):
     async def ignored(self, ctx):
         """List all ignored channels."""
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
                 "SELECT channel_id FROM ignored_channels WHERE guild_id = ?",
                 (ctx.guild.id,),
@@ -476,7 +482,7 @@ class WordCloudCog(commands.Cog):
     async def stats(self, ctx: commands.Context, limit: int = 20):
         """Show top emojis and words for guild, paginated by reactions."""
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
                 "SELECT token, SUM(count) AS count "
                 "FROM counts WHERE guild_id = ? "
@@ -552,7 +558,7 @@ class WordCloudCog(commands.Cog):
     async def reset(self, ctx: commands.Context):
         """Reset stored counts for this guild."""
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute("DELETE FROM counts WHERE guild_id = ?", (ctx.guild.id,))
             await db.execute("DELETE FROM config WHERE guild_id = ?", (ctx.guild.id,))
             await db.commit()
@@ -563,7 +569,7 @@ class WordCloudCog(commands.Cog):
     async def set_autogen(self, ctx: commands.Context, enabled: bool):
         """Enable or disable periodic generation."""
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 "INSERT INTO config(guild_id, autogen) VALUES(?, ?) ON CONFLICT(guild_id) DO UPDATE SET autogen = ?",
                 (ctx.guild.id, 1 if enabled else 0, 1 if enabled else 0)
@@ -577,7 +583,7 @@ class WordCloudCog(commands.Cog):
         """Set channel where autogen will post. If omitted sets current channel."""
         ch = channel or ctx.channel
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 "INSERT INTO config(guild_id, autogen_channel) VALUES(?, ?) ON CONFLICT(guild_id) DO UPDATE SET autogen_channel = ?",
                 (ctx.guild.id, ch.id, ch.id)
@@ -593,7 +599,7 @@ class WordCloudCog(commands.Cog):
             await ctx.send("Interval must be at least 60 seconds.")
             return
         await self.init_db()
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 "INSERT INTO config(guild_id, autogen_interval) VALUES(?, ?) ON CONFLICT(guild_id) DO UPDATE SET autogen_interval = ?",
                 (ctx.guild.id, seconds, seconds)
