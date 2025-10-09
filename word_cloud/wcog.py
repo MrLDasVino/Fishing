@@ -334,6 +334,18 @@ class WordCloudCog(commands.Cog):
                 )
             mask = np.array(imgm)
 
+        mask = None
+        if mask_name and mask_name != "none":
+            from PIL import ImageDraw
+            import numpy as np
+
+            imgm = Image.new("L", (width, height), 0)
+            draw = ImageDraw.Draw(imgm)
+            if mask_name == "circle":
+                draw.ellipse((0, 0, width, height), fill=255)
+            # … your other shapes here …
+            mask = np.array(imgm)
+
         wc_kwargs = {
             "width": width,
             "height": height,
