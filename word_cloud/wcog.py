@@ -577,11 +577,11 @@ class WordCloudCog(commands.Cog):
             while True:
                 r, u = await self.bot.wait_for("reaction_add", timeout=60, check=check)
                 idx = (idx + (1 if r.emoji == "▶️" else -1)) % len(pages)
-                await message.edit(embed=pages[idx])
-                await message.remove_reaction(r.emoji, u)
+                await msg.edit(embed=pages[idx])
+                await msg.remove_reaction(r.emoji, u)
         except asyncio.TimeoutError:
             try:
-                await message.clear_reactions()
+                await msg.clear_reactions()
             except:
                 pass
                 
