@@ -94,13 +94,13 @@ class WordCloudCog(commands.Cog):
             )
             await db.execute(
                 """CREATE TABLE IF NOT EXISTS config (
-                     guild_id INTEGER PRIMARY KEY,
-                     autogen INTEGER DEFAULT 0,
-                     autogen_interval INTEGER DEFAULT 3600,
-                     autogen_channel INTEGER,
-                     mask TEXT DEFAULT 'none'
-                   )"""
-            )
+                    guild_id         INTEGER PRIMARY KEY,
+                    autogen          INTEGER DEFAULT 0,
+                    autogen_interval INTEGER DEFAULT 3600,
+                    autogen_channel  INTEGER,
+                    mask             TEXT    DEFAULT 'none'
+                )"""
+            )            
             await db.execute(
                 """CREATE TABLE IF NOT EXISTS ignored_channels (
                      guild_id   INTEGER,
@@ -109,6 +109,15 @@ class WordCloudCog(commands.Cog):
                    )"""
             )
             await db.commit()
+            try:
+                await db.execute(
+                    "ALTER TABLE config ADD COLUMN mask TEXT DEFAULT 'none'"
+                )
+                await db.commit()
+            except aiosqlite.OperationalError:
+                # column already exists, or older SQLite without support—ignore
+                pass
+                
         self.db_ready = True
 
     async def _get_mask_for_guild(self, guild_id: int) -> str:
