@@ -284,69 +284,11 @@ class WordCloudCog(commands.Cog):
             img.save(buf, format="PNG")
             buf.seek(0)
             return buf
-
-        # Build mask array if requested
-        mask = None
-        if mask_name and mask_name != "none":
-            imgm = Image.new("L", (width, height), 0)
-            draw = ImageDraw.Draw(imgm)
-
-            if mask_name == "circle":
-                draw.ellipse((0, 0, width, height), fill=255)
-            elif mask_name == "square":
-                m = width * 0.05
-                draw.rectangle((m, m, width - m, height - m), fill=255)
-            elif mask_name == "triangle":
-                draw.polygon(
-                    [(width / 2, 0), (width, height), (0, height)],
-                    fill=255,
-                )
-            elif mask_name == "star":
-                from math import pi, cos, sin
-
-                cx, cy = width / 2, height / 2
-                outer, inner = min(cx, cy), min(cx, cy) * 0.5
-                pts = []
-                for i in range(5):
-                    a = pi / 2 + i * 2 * pi / 5
-                    pts.append((cx + outer * cos(a), cy - outer * sin(a)))
-                    a += pi / 5
-                    pts.append((cx + inner * cos(a), cy - inner * sin(a)))
-                draw.polygon(pts, fill=255)
-            elif mask_name == "heart":
-                cx, cy = width / 2, height / 2
-                top = height * 0.35
-                r = width * 0.25
-                # left lobe
-                draw.pieslice(
-                    [cx - r * 1.5, top - r / 2, cx - r / 2, top + r / 2],
-                    180,
-                    360,
-                    fill=255,
-                )
-                # right lobe
-                draw.pieslice(
-                    [cx + r / 2, top - r / 2, cx + r * 1.5, top + r / 2],
-                    180,
-                    360,
-                    fill=255,
-                )
-                # bottom point
-                draw.polygon(
-                    [
-                        (cx - r * 1.5 + r / 2, top + r / 2),
-                        (cx + r * 1.5 - r / 2, top + r / 2),
-                        (cx, height),
-                    ],
-                    fill=255,
-                )
-
-            mask = np.array(imgm, dtype="uint8")              
+              
 
         wc_kwargs = {
             "width": width,
             "height": height,
-            "mask": mask,
             "margin": 0,            
             "mode": "RGBA",
             "background_color": None,
@@ -428,10 +370,6 @@ class WordCloudCog(commands.Cog):
             x, y = position
             base_img.paste(em, (int(x), int(y)), em)
 
-            # restore mask into PIL L-mode
-            if mask is not None:
-                pil_mask = Image.fromarray(mask)
-                base_img.putalpha(pil_mask)
             
         base_img.save(buf, format="PNG")            
         buf.seek(0)
@@ -489,7 +427,7 @@ class WordCloudCog(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send_help()
 
-    @wordcloud.command(name="shape")
+    @wordcloud.command(name="shape", hidden=True)
     @checks.admin()
     async def shape(self, ctx: commands.Context, shape: str = None):
         """View or set the wordcloud shape. Available: none, circle, square, triangle, star, heart."""
