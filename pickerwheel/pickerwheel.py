@@ -284,13 +284,26 @@ class PickerWheel(commands.Cog):
 
                 url = img_map.get(opt)
                 if url:
-                    src = await self._fetch_image(url)
-                    bg = src.resize((size-20, size-20), Image.LANCZOS)
-                    mask = Image.new("L", (size, size), 0)
-                    md = ImageDraw.Draw(mask)
-                    md.pieslice([10,10,size-10,size-10], start, end, fill=255)
-                    im.paste(bg, (10,10), mask.crop((10,10,size-10,size-10)))
-                    draw.arc([10,10,size-10,size-10], start, end, fill=(0,0,0))
+                    try:
+                        src = await self._fetch_image(url)
+                        …  # resize & paste
+                    except ValueError:
+                        # 1) Remove the broken URL from persistent config
+                        all_imgs = await self.config.guild(ctx.guild).wheel_images()
+                        wheel_imgs = all_imgs.get(wheel_name, {})
+                        wheel_imgs.pop(opt, None)
+                        if wheel_imgs:
+                            all_imgs[wheel_name] = wheel_imgs
+                        else:
+                            all_imgs.pop(wheel_name, None)
+                        await self.config.guild(ctx.guild).wheel_images.set(all_imgs)
+    
+                        # 2) Fallback to a plain colored slice
+                        draw.pieslice(
+                            [10,10,size-10,size-10],
+                            start, end,
+                            fill=col, outline=(0,0,0)
+                        )
                 else:
                     draw.pieslice(
                         [10,10,size-10,size-10],
