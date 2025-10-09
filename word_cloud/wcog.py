@@ -7,7 +7,6 @@ from datetime import datetime
 
 import discord
 from PIL import Image, ImageDraw
-import os
 import aiohttp
 from collections import OrderedDict
 from wordcloud import WordCloud
@@ -15,12 +14,10 @@ from wordcloud import WordCloud
 from pathlib import Path
 from redbot.core.data_manager import cog_data_path
 from redbot.core import commands, checks
-from discord.ext import tasks 
+from discord.ext import tasks
 from redbot.core.bot import Red
 
-
-
-# Basic stopwords (can be extended or made per-guild later)
+# Basic stopwords
 STOPWORDS = {
     "the", "and", "for", "that", "with", "you", "this", "have", "are",
     "but", "not", "was", "from", "they", "she", "he", "it", "in", "on",
@@ -28,49 +25,59 @@ STOPWORDS = {
     "as", "at", "by", "or", "if", "so", "do", "did", "does", "got",
 }
 
-# Unicode emoji capture using regex module (broad)
+# Emoji regexes
 UNICODE_EMOJI_RE = re.compile(r'(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)', re.IGNORECASE)
-# Discord custom emoji like <:name:123456789012345678> or <a:name:123456789012345678>
 CUSTOM_EMOJI_RE = re.compile(r"<a?:([a-zA-Z0-9_]+):([0-9]{17,22})>")
 
-# Words: letters only, length >=2
+# Words only
 WORD_REGEX = re.compile(r"\b[^\W\d_]{2,}\b", flags=re.UNICODE)
 
 def random_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
-    return "rgb({}, {}, {})".format(random.randint(0,255), random.randint(0,255), random.randint(0,255))
+    return "rgb({}, {}, {})".format(
+        random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)
+    )
 
 class WordCloudCog(commands.Cog):
+    AVAILABLE_SHAPES = ("none", "circle", "square", "triangle", "star", "heart")
+
     def __init__(self, bot: Red):
         self.bot = bot
         self.db_ready = False
 
-        # persistent HTTP session & LRU cache
+        # HTTP session + LRU cache for emoji PNGs
         self._session = aiohttp.ClientSession()
         self._emoji_cache: OrderedDict[str, Image.Image] = OrderedDict()
         self._cache_max = 200
 
-        data_folder: Path = Path(cog_data_path(self))
+        # Where to store our SQLite DB
+        data_folder = Path(cog_data_path(self))
         data_folder.mkdir(parents=True, exist_ok=True)
-        self.db_path: str = str(data_folder / "wordcloud_data.sqlite3")
+        self.db_path = str(data_folder / "wordcloud_data.sqlite3")
 
-        # one-time DB/config setup
-        self.bot.loop.create_task(self._ensure_db_and_task())
+        # Fire off initial DB setup
+        self.bot.loop.create_task(self._ensure_db())
 
     async def cog_load(self):
-        """Start the periodic autogen loop when the cog goes live."""
+        # Start the autogen loop
         self.autogen_loop.start()
 
     async def cog_unload(self):
-        """Stop the loop and close our session on unload."""
+        # Stop the loop and close session
         if self.autogen_loop.is_running():
             self.autogen_loop.cancel()
         await self._session.close()
 
-    async def _ensure_db_and_task(self):
+    async def _ensure_db(self):
+        # Create tables and add 'mask' column if missing
         await self.init_db()
-        self.autogen = False
-        self.autogen_interval = 3600
-        self.autogen_channel = None
+        async with aiosqlite.connect(self.db_path) as db:
+            try:
+                await db.execute(
+                    "ALTER TABLE config ADD COLUMN mask TEXT DEFAULT 'none'"
+                )
+                await db.commit()
+            except aiosqlite.OperationalError:
+                pass
 
     async def init_db(self):
         if self.db_ready:
@@ -78,137 +85,126 @@ class WordCloudCog(commands.Cog):
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 """CREATE TABLE IF NOT EXISTS counts (
-                    guild_id INTEGER,
-                    user_id INTEGER,
-                    token TEXT,
-                    count INTEGER,
-                    PRIMARY KEY (guild_id, user_id, token)
-                )"""
+                     guild_id INTEGER,
+                     user_id INTEGER,
+                     token TEXT,
+                     count INTEGER,
+                     PRIMARY KEY (guild_id, user_id, token)
+                   )"""
             )
             await db.execute(
                 """CREATE TABLE IF NOT EXISTS config (
-                    guild_id INTEGER PRIMARY KEY,
-                    autogen INTEGER DEFAULT 0,
-                    autogen_interval INTEGER DEFAULT 3600,
-                    autogen_channel INTEGER,
-                    mask TEXT DEFAULT 'none'
-                )"""
+                     guild_id INTEGER PRIMARY KEY,
+                     autogen INTEGER DEFAULT 0,
+                     autogen_interval INTEGER DEFAULT 3600,
+                     autogen_channel INTEGER,
+                     mask TEXT DEFAULT 'none'
+                   )"""
             )
             await db.execute(
                 """CREATE TABLE IF NOT EXISTS ignored_channels (
-                       guild_id   INTEGER,
-                       channel_id INTEGER,
-                       PRIMARY KEY (guild_id, channel_id)
+                     guild_id   INTEGER,
+                     channel_id INTEGER,
+                     PRIMARY KEY (guild_id, channel_id)
                    )"""
-            )            
+            )
             await db.commit()
-            try:
-                await db.execute("ALTER TABLE config ADD COLUMN mask TEXT DEFAULT 'none'")
-                await db.commit()
-            except aiosqlite.OperationalError:
-                pass            
         self.db_ready = True
-        
+
     async def _get_mask_for_guild(self, guild_id: int) -> str:
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
-            cur = await db.execute("SELECT mask FROM config WHERE guild_id = ?", (guild_id,))
+            cur = await db.execute(
+                "SELECT mask FROM config WHERE guild_id = ?", (guild_id,)
+            )
             row = await cur.fetchone()
-        return row[0] if row else "none"        
+        return row[0] if row else "none"
 
-    async def cog_load(self):
-        """Called when the cog is loaded; start the autogen loop."""
-        self.autogen_loop.start()
-
-    async def cog_unload(self):
-        """Cleanly stop the loop and close resources."""
-        if self.autogen_loop.is_running():
-            self.autogen_loop.cancel()
-        await self._session.close()            
+    ###########################################################################
+    # Data collection
+    ###########################################################################
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author.bot:
+        if message.author.bot or not message.guild:
             return
-        if not message.guild:
-            return
-        # ─── skip if channel is ignored ───────────────────────────
         await self.init_db()
+        # skip ignored
         async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
                 "SELECT 1 FROM ignored_channels WHERE guild_id = ? AND channel_id = ?",
                 (message.guild.id, message.channel.id),
             )
             if await cur.fetchone():
-                return            
+                return
 
         raw = message.content or ""
         tokens = []
 
-        # 1) Pull out custom emojis, record them, and strip them from the text
-        def _repl_custom(m):
+        # custom emojis
+        def repl_custom(m):
             name, eid = m.groups()
             tokens.append(f"custom_{name}:{eid}")
             return ""
-        text = CUSTOM_EMOJI_RE.sub(_repl_custom, raw)
+        text = CUSTOM_EMOJI_RE.sub(repl_custom, raw)
 
-        # 2) Pull out unicode emojis, record them, and strip them
-        def _repl_unicode(m):
+        # unicode emojis
+        def repl_unicode(m):
             tokens.append(m.group(0))
             return ""
-        text = UNICODE_EMOJI_RE.sub(_repl_unicode, text)
+        text = UNICODE_EMOJI_RE.sub(repl_unicode, text)
 
-        # 3) Now extract only real words from the cleaned‐up text
+        # words
         for m in WORD_REGEX.finditer(text.lower()):
             w = m.group(0)
             if w in STOPWORDS:
                 continue
             tokens.append(w)
 
-        if not tokens:
-            return
-
-        await self._increment_tokens(message.guild.id, message.author.id, tokens)
+        if tokens:
+            await self._increment_tokens(message.guild.id, message.author.id, tokens)
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.abc.User):
-        # Count reaction as an emoji usage (who reacted counts)
-        if user.bot:
+        if user.bot or not reaction.message.guild:
             return
-        message = reaction.message
-        if not message.guild:
-            return
-        # skip ignored channel
         await self.init_db()
+        # skip ignored
         async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
                 "SELECT 1 FROM ignored_channels WHERE guild_id = ? AND channel_id = ?",
-                (message.guild.id, message.channel.id),
+                (reaction.message.guild.id, reaction.message.channel.id),
             )
             if await cur.fetchone():
-                return            
+                return
+
         e = reaction.emoji
         if isinstance(e, str):
-            token = e  # unicode emoji
+            token = e
         else:
-            # PartialEmoji or Emoji object
-            # Some objects may have no id (unlikely), guard accordingly
-            token = f"custom_{e.name}:{e.id}" if getattr(e, "id", None) else f"custom_{e.name}:none"
-        await self._increment_tokens(message.guild.id, user.id, [token])
+            token = (
+                f"custom_{e.name}:{e.id}"
+                if getattr(e, "id", None)
+                else f"custom_{e.name}:none"
+            )
+        await self._increment_tokens(reaction.message.guild.id, user.id, [token])
 
     async def _increment_tokens(self, guild_id: int, user_id: int, tokens: list):
         await self.init_db()
-        # Normalize tokens to str and limit token length to avoid huge keys
-        norm_tokens = [str(t)[:200] for t in tokens if t]
-        if not norm_tokens:
+        norm = [str(t)[:200] for t in tokens if t]
+        if not norm:
             return
         async with aiosqlite.connect(self.db_path) as db:
             cur = await db.cursor()
-            for t in norm_tokens:
+            for t in norm:
                 await cur.execute(
-                    "INSERT INTO counts(guild_id, user_id, token, count) VALUES(?, ?, ?, 1) "
-                    "ON CONFLICT(guild_id, user_id, token) DO UPDATE SET count = count + 1",
-                    (guild_id, user_id, t)
+                    """
+                    INSERT INTO counts(guild_id, user_id, token, count)
+                    VALUES(?, ?, ?, 1)
+                    ON CONFLICT(guild_id, user_id, token)
+                    DO UPDATE SET count = count + 1
+                    """,
+                    (guild_id, user_id, t),
                 )
             await db.commit()
 
@@ -216,8 +212,14 @@ class WordCloudCog(commands.Cog):
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
-                "SELECT token, SUM(count) as count FROM counts WHERE guild_id = ? GROUP BY token ORDER BY count DESC",
-                (guild_id,)
+                """
+                SELECT token, SUM(count) as count
+                FROM counts
+                WHERE guild_id = ?
+                GROUP BY token
+                ORDER BY count DESC
+                """,
+                (guild_id,),
             )
             rows = await cur.fetchall()
         return {r[0]: r[1] for r in rows}
@@ -226,8 +228,13 @@ class WordCloudCog(commands.Cog):
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
-                "SELECT token, count FROM counts WHERE guild_id = ? AND user_id = ? ORDER BY count DESC",
-                (guild_id, user_id)
+                """
+                SELECT token, count
+                FROM counts
+                WHERE guild_id = ? AND user_id = ?
+                ORDER BY count DESC
+                """,
+                (guild_id, user_id),
             )
             rows = await cur.fetchall()
         return {r[0]: r[1] for r in rows}
@@ -237,23 +244,30 @@ class WordCloudCog(commands.Cog):
             return {}
         await self.init_db()
         placeholders = ",".join("?" for _ in user_ids)
-        query = f"SELECT token, SUM(count) as count FROM counts WHERE guild_id = ? AND user_id IN ({placeholders}) GROUP BY token ORDER BY count DESC"
         params = [guild_id] + user_ids
+        query = f"""
+            SELECT token, SUM(count) as count
+            FROM counts
+            WHERE guild_id = ? AND user_id IN ({placeholders})
+            GROUP BY token
+            ORDER BY count DESC
+        """
         async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(query, params)
             rows = await cur.fetchall()
         return {r[0]: r[1] for r in rows}
 
-     async def _render_wordcloud_image(
+    ###########################################################################
+    # Rendering
+    ###########################################################################
+    async def _render_wordcloud_image(
         self,
         frequencies: dict,
         mask_name: str = None,
-        width=1200,
-        height=675
-     ):
-        import io
-        from PIL import Image
-        from wordcloud import WordCloud
+        width: int = 1200,
+        height: int = 675,
+    ):
+        import numpy as np
 
         buf = io.BytesIO()
         if not frequencies:
@@ -262,7 +276,7 @@ class WordCloudCog(commands.Cog):
             buf.seek(0)
             return buf
 
-        # if mask_name is 'none' or omitted, leave the mask as None
+        # Build mask array if requested
         mask = None
         if mask_name and mask_name != "none":
             imgm = Image.new("L", (width, height), 0)
@@ -273,27 +287,42 @@ class WordCloudCog(commands.Cog):
                 m = width * 0.05
                 draw.rectangle((m, m, width - m, height - m), fill=255)
             elif mask_name == "triangle":
-                draw.polygon([(width/2, 0), (width, height), (0, height)], fill=255)
+                draw.polygon(
+                    [(width / 2, 0), (width, height), (0, height)], fill=255
+                )
             elif mask_name == "star":
                 from math import pi, cos, sin
-                center = (width/2, height/2)
-                outer = min(width, height)/2
-                inner = outer * 0.5
+
+                cx, cy = width / 2, height / 2
+                outer, inner = min(cx, cy), min(cx, cy) * 0.5
                 pts = []
                 for i in range(5):
-                    ang = pi/2 + i * 2*pi/5
-                    pts.append((center[0]+outer*cos(ang), center[1]-outer*sin(ang)))
-                    ang += pi/5
-                    pts.append((center[0]+inner*cos(ang), center[1]-inner*sin(ang)))
+                    a = pi / 2 + i * 2 * pi / 5
+                    pts.append((cx + outer * cos(a), cy - outer * sin(a)))
+                    a += pi / 5
+                    pts.append((cx + inner * cos(a), cy - inner * sin(a)))
                 draw.polygon(pts, fill=255)
             elif mask_name == "heart":
-                top = height * 0.3
+                cx, cy = width / 2, height / 2
+                top = height * 0.35
                 r = width * 0.25
-                left = (width/2 - r/2, top)
-                right = (width/2 + r/2, top)
-                draw.pieslice([left[0]-r, left[1]-r, left[0]+r, left[1]+r], 180, 360, fill=255)
-                draw.pieslice([right[0]-r, right[1]-r, right[0]+r, right[1]+r], 180, 360, fill=255)
-                draw.polygon([(0, top+r/2), (width, top+r/2), (width/2, height)], fill=255)
+                # left lobe
+                draw.pieslice(
+                    [cx - r*1.5, top - r/2, cx - r/2, top + r/2],
+                    180, 360, fill=255
+                )
+                # right lobe
+                draw.pieslice(
+                    [cx + r/2, top - r/2, cx + r*1.5, top + r/2],
+                    180, 360, fill=255
+                )
+                # bottom triangle
+                draw.polygon(
+                    [(cx - r*1.5 + r/2, top + r/2),
+                     (cx + r*1.5 - r/2, top + r/2),
+                     (cx, height)],
+                    fill=255
+                )
             mask = np.array(imgm)
 
         wc_kwargs = {
@@ -305,36 +334,25 @@ class WordCloudCog(commands.Cog):
             "prefer_horizontal": 0.9,
             "collocations": False,
         }
-        wc_kwargs = {
-            "width": width,
-            "height": height,
-            "mode": "RGBA",
-            "background_color": None,
-            "prefer_horizontal": 0.9,
-            "collocations": False,
-        }
-
 
         wc = WordCloud(**wc_kwargs)
         wc.generate_from_frequencies(frequencies)
         wc.recolor(
             color_func=lambda word, font_size, position, orientation, random_state=None, **kwargs: (
-                "rgba(0,0,0,0)"
-                if str(word).startswith("custom_")
-                else random_color_func(word, font_size, position, orientation, random_state=random_state)
+                "rgba(0,0,0,0)" if word.startswith("custom_")
+                else random_color_func(word, font_size, position, orientation)
             ),
-            random_state=random.Random(42),
+            random_state=42,
         )
 
-        # split layout
+        # split layout into words vs emojis
         full_layout = wc.layout_
         word_entries, emoji_entries = [], []
         for entry in full_layout:
             raw = entry[0]
             token = raw[0] if isinstance(raw, tuple) else raw
-            # detect ANY emoji token: custom_<name>:<id> OR unicode-char
-            is_custom = isinstance(token, str) and token.startswith("custom_")
-            is_unicode = isinstance(token, str) and UNICODE_EMOJI_RE.fullmatch(token)
+            is_custom = token.startswith("custom_")
+            is_unicode = UNICODE_EMOJI_RE.fullmatch(token) is not None
             if is_custom or is_unicode:
                 emoji_entries.append(entry)
             else:
@@ -344,72 +362,73 @@ class WordCloudCog(commands.Cog):
         wc.layout_ = word_entries
         base_img = wc.to_image().convert("RGBA")
 
-        # overlay emojis with persistent session & LRU cache
-        session = self._session
+        # overlay emojis
         for entry in emoji_entries:
             raw = entry[0]
             token = raw[0] if isinstance(raw, tuple) else raw
-
-            # unpack size & position
+            # unpack
             if len(entry) == 6:
-                _, _, font_size, position, orientation, color = entry
+                _, _, font_size, position, orientation, _ = entry
             else:
-                _, font_size, position, orientation, color = entry
+                _, font_size, position, orientation, _ = entry
 
+            # build URL + cache key
             if token.startswith("custom_"):
-                # custom_<name>:<id>
                 _, rest = token.split("custom_", 1)
                 _, eid = rest.split(":", 1)
                 url = f"https://cdn.discordapp.com/emojis/{eid}.png?size=64"
-                cache_key = f"custom:{eid}"
+                key = f"custom:{eid}"
             else:
-                # unicode emoji: build codepoint path for Twemoji
                 cps = "-".join(f"{ord(c):x}" for c in token)
                 url = f"https://twemoji.maxcdn.com/v/latest/72x72/{cps}.png"
-                cache_key = f"unic:{cps}"
+                key = f"unicode:{cps}"
 
-            # cache lookup by cache_key
-            if cache_key in self._emoji_cache:
-                em = self._emoji_cache[cache_key]
-                self._emoji_cache.move_to_end(cache_key)
+            # fetch or reuse
+            if key in self._emoji_cache:
+                em = self._emoji_cache[key]
+                self._emoji_cache.move_to_end(key)
             else:
                 try:
-                    async with session.get(url) as resp:
+                    async with self._session.get(url) as resp:
                         data = await resp.read()
                         em = Image.open(io.BytesIO(data)).convert("RGBA")
                 except Exception:
                     continue
-                # resize to font_size × font_size
+                # resize
                 try:
                     resample = Image.Resampling.LANCZOS
                 except AttributeError:
                     resample = Image.LANCZOS
                 em = em.resize((font_size, font_size), resample)
-                # insert into LRU cache
-                self._emoji_cache[cache_key] = em
+                self._emoji_cache[key] = em
                 if len(self._emoji_cache) > self._cache_max:
                     self._emoji_cache.popitem(last=False)
 
-            # paste emoji on top
+            # paste
             x, y = position
-            base_img.paste(em, (x, y), em)
+            base_img.paste(em, (int(x), int(y)), em)
 
-        # save and return
+        # output
         base_img.save(buf, format="PNG")
         buf.seek(0)
         return buf
-        
+
+    ###########################################################################
+    # Autogen loop
+    ###########################################################################
+
     @tasks.loop(minutes=1)
     async def autogen_loop(self):
-        """Periodic wordcloud generation for all guilds with autogen=1."""
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
-                "SELECT guild_id, autogen_interval, autogen_channel, mask FROM config WHERE autogen = 1"
+                "SELECT guild_id, autogen_interval, autogen_channel, mask "
+                "FROM config WHERE autogen = 1"
             )
             rows = await cur.fetchall()
-        for guild_id, interval, channel_id in rows:
-            key = f"autogen_last_{guild_id}"
+
+        for guild_id, interval, channel_id, mask_name in rows:
+            key = f"last_autogen_{guild_id}"
             last = getattr(self, key, None)
             now = datetime.utcnow()
             if last is None or (now - last).total_seconds() >= interval:
@@ -425,7 +444,7 @@ class WordCloudCog(commands.Cog):
                 if not ch:
                     continue
                 freqs = await self._get_frequencies_for_guild(guild_id)
-                buf = await self._render_wordcloud_image(freqs)
+                buf = await self._render_wordcloud_image(freqs, mask_name=mask_name)
                 try:
                     await ch.send(file=discord.File(fp=buf, filename="wordcloud.png"))
                 except Exception:
@@ -436,30 +455,59 @@ class WordCloudCog(commands.Cog):
     async def before_autogen(self):
         await self.bot.wait_until_ready()
 
+    ###########################################################################
+    # Commands
+    ###########################################################################
 
     @commands.group()
     async def wordcloud(self, ctx: commands.Context):
-        """Wordcloud management commands."""
+        """Wordcloud management."""
         if ctx.invoked_subcommand is None:
             await ctx.send_help()
-            
-    @wordcloud.command(name="ignore")
+
+    @wordcloud.command(name="shape")
     @checks.admin()
-    async def ignore(self, ctx, channel: discord.TextChannel):
-        """Ignore data collection in a channel."""
+    async def shape(self, ctx: commands.Context, shape: str = None):
+        """View or set the wordcloud shape. Available: none, circle, square, triangle, star, heart."""
+        current = await self._get_mask_for_guild(ctx.guild.id)
+        if not shape:
+            await ctx.send(
+                f"Current shape: **{current}**\n"
+                f"Available shapes: {', '.join(self.AVAILABLE_SHAPES)}"
+            )
+            return
+
+        shape = shape.lower()
+        if shape not in self.AVAILABLE_SHAPES:
+            return await ctx.send(f"Invalid shape. Choose from: {', '.join(self.AVAILABLE_SHAPES)}")
+
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
-                "INSERT OR IGNORE INTO ignored_channels (guild_id, channel_id) VALUES (?, ?)",
+                "INSERT INTO config(guild_id, mask) VALUES(?, ?) "
+                "ON CONFLICT(guild_id) DO UPDATE SET mask = ?",
+                (ctx.guild.id, shape, shape),
+            )
+            await db.commit()
+        await ctx.send(f"Wordcloud shape set to **{shape}**.")
+
+    @wordcloud.command(name="ignore")
+    @checks.admin()
+    async def ignore(self, ctx, channel: discord.TextChannel):
+        """Ignore a channel from data collection."""
+        await self.init_db()
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "INSERT OR IGNORE INTO ignored_channels(guild_id, channel_id) VALUES(?, ?)",
                 (ctx.guild.id, channel.id),
             )
             await db.commit()
-        await ctx.send(f"Ignoring data in {channel.mention}.")
+        await ctx.send(f"Ignoring {channel.mention}.")
 
     @wordcloud.command(name="unignore")
     @checks.admin()
     async def unignore(self, ctx, channel: discord.TextChannel):
-        """Stop ignoring a channel."""
+        """Resume data collection in a channel."""
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
@@ -467,11 +515,11 @@ class WordCloudCog(commands.Cog):
                 (ctx.guild.id, channel.id),
             )
             await db.commit()
-        await ctx.send(f"Resumed data collection in {channel.mention}.")
+        await ctx.send(f"Resumed collection in {channel.mention}.")
 
     @wordcloud.command(name="ignored")
     @checks.admin()
-    async def ignored(self, ctx):
+    async def ignored(self, ctx: commands.Context):
         """List all ignored channels."""
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
@@ -488,133 +536,93 @@ class WordCloudCog(commands.Cog):
             mentions.append(ch.mention if ch else f"<#{cid}>")
         await ctx.send("Ignored channels: " + ", ".join(mentions))
 
-    @wordcloud.command(name="me")
-    async def me(self, ctx):
-        """Generate your personal wordcloud."""
-        freqs = await self._get_frequencies_for_user(ctx.guild.id, ctx.author.id)
-        if not freqs:
-            return await ctx.send("No data collected for you yet.")
-        buf = await self._render_wordcloud_image(freqs)
-        await ctx.send(
-            content=f"Wordcloud for {ctx.author.display_name}",
-            file=discord.File(fp=buf, filename="wordcloud.png"),
-        )
-            
-
-    @wordcloud.command()
+    @wordcloud.command(name="generate")
     async def generate(self, ctx: commands.Context, *members: discord.Member):
-        """Generate and post the wordcloud.
-
-        No args = aggregated guild cloud.
-        Mention users = per-user or merged user cloud.
-        Examples:
-        [p]wordcloud generate
-        [p]wordcloud generate @user
-        [p]wordcloud generate @user1 @user2
-        """
+        """Generate a wordcloud. No args=all, mention users to limit."""
         if not members:
             freqs = await self._get_frequencies_for_guild(ctx.guild.id)
-            title = f"Wordcloud for guild: {ctx.guild.name}"
+            title = f"Guild cloud: {ctx.guild.name}"
         elif len(members) == 1:
-            target = members[0]
-            freqs = await self._get_frequencies_for_user(ctx.guild.id, target.id)
-            title = f"Wordcloud for user: {target.display_name}"
+            freqs = await self._get_frequencies_for_user(ctx.guild.id, members[0].id)
+            title = f"User cloud: {members[0].display_name}"
         else:
-            user_ids = [m.id for m in members]
-            freqs = await self._get_frequencies_for_users(ctx.guild.id, user_ids)
+            ids = [m.id for m in members]
+            freqs = await self._get_frequencies_for_users(ctx.guild.id, ids)
             names = ", ".join(m.display_name for m in members)
-            title = f"Wordcloud for users: {names}"
+            title = f"Cloud for: {names}"
 
         if not freqs:
-            await ctx.send("No data to generate a wordcloud.")
-            return
+            return await ctx.send("No data to generate.")
 
         shape = await self._get_mask_for_guild(ctx.guild.id)
         buf = await self._render_wordcloud_image(freqs, mask_name=shape)
-        try:
-            await ctx.send(content=title, file=discord.File(fp=buf, filename="wordcloud.png"))
-        except Exception:
-            await ctx.send("Failed to send image; check my permissions.")
-            
-    @wordcloud.command(name="shape")
-    @checks.admin()
-    async def shape(self, ctx: commands.Context, shape: str = None):            
+        await ctx.send(content=title, file=discord.File(fp=buf, filename="wordcloud.png"))
+
+    @wordcloud.command(name="me")
+    async def me(self, ctx: commands.Context):
+        """Your personal wordcloud."""
+        freqs = await self._get_frequencies_for_user(ctx.guild.id, ctx.author.id)
+        if not freqs:
+            return await ctx.send("No data for you yet.")
+        shape = await self._get_mask_for_guild(ctx.guild.id)
+        buf = await self._render_wordcloud_image(freqs, mask_name=shape)
+        await ctx.send(
+            f"Wordcloud for {ctx.author.display_name}",
+            file=discord.File(fp=buf, filename="wordcloud.png"),
+        )
 
     @wordcloud.command(name="stats")
     async def stats(self, ctx: commands.Context, limit: int = 20):
-        """Show top emojis and words for guild, paginated by reactions."""
+        """Show top words & emojis by reactions."""
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
             cur = await db.execute(
-                "SELECT token, SUM(count) AS count "
-                "FROM counts WHERE guild_id = ? "
-                "GROUP BY token ORDER BY count DESC LIMIT ?",
-                (ctx.guild.id, limit * 2),  # fetch extra to split pages
+                "SELECT token, SUM(count) FROM counts "
+                "WHERE guild_id = ? GROUP BY token ORDER BY SUM(count) DESC LIMIT ?",
+                (ctx.guild.id, limit * 2),
             )
             rows = await cur.fetchall()
-
         if not rows:
             return await ctx.send("No data yet.")
 
-        # Helpers
-        def display_token(token: str) -> str:
-            if token.startswith("custom_"):
-                name, eid = token.split("custom_", 1)[1].split(":", 1)
+        def disp(tok):
+            if tok.startswith("custom_"):
+                name, eid = tok.split("custom_", 1)[1].split(":", 1)
                 return f"<:{name}:{eid}>"
-            return token
+            return tok
 
-        # Split rows into emojis vs words
-        emojis = [(display_token(tok), cnt) for tok, cnt in rows if tok.startswith("custom_")]
-        words  = [(tok, cnt)            for tok, cnt in rows if not tok.startswith("custom_")]
+        emojis = [(disp(tok), cnt) for tok, cnt in rows if tok.startswith("custom_")]
+        words  = [(tok, cnt) for tok, cnt in rows if not tok.startswith("custom_")]
 
-        # Build two pages
-        embed_emoji = discord.Embed(
+        e_emb = discord.Embed(
             title="📊 Top Emojis",
             description="\n".join(f"{t}: {c}" for t, c in emojis[:limit]) or "None",
-            color=discord.Color.random(),
         )
-        embed_words = discord.Embed(
+        w_emb = discord.Embed(
             title="📊 Top Words",
             description="\n".join(f"{t}: {c}" for t, c in words[:limit]) or "None",
-            color=discord.Color.random(),
         )
-        pages = [embed_emoji, embed_words]
+        pages = [e_emb, w_emb]
+        msg = await ctx.send(embed=pages[0])
+        await msg.add_reaction("◀️")
+        await msg.add_reaction("▶️")
 
-        # Send first page and add reactions
-        message = await ctx.send(embed=pages[0])
-        await message.add_reaction("◀️")
-        await message.add_reaction("▶️")
+        def check(r, u):
+            return u == ctx.author and r.message.id == msg.id and str(r.emoji) in ("◀️","▶️")
 
-        # Reaction check: only the invoker can flip pages
-        def check(reaction, user):
-            return (
-                user == ctx.author
-                and reaction.message.id == message.id
-                and str(reaction.emoji) in ("◀️", "▶️")
-            )
-
-        page = 0
-        # Listen for reactions
+        idx = 0
         try:
             while True:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
-                # Flip page
-                if str(reaction.emoji) == "▶️":
-                    page = (page + 1) % len(pages)
-                else:
-                    page = (page - 1) % len(pages)
-                await message.edit(embed=pages[page])
-                # Remove the user's reaction for cleanliness
-                await message.remove_reaction(reaction.emoji, user)
+                r, u = await self.bot.wait_for("reaction_add", timeout=60, check=check)
+                idx = (idx + (1 if r.emoji == "▶️" else -1)) % len(pages)
+                await message.edit(embed=pages[idx])
+                await message.remove_reaction(r.emoji, u)
         except asyncio.TimeoutError:
-            # Timeout: remove controls (optional)
             try:
                 await message.clear_reactions()
-            except Exception:
+            except:
                 pass
-
-
-
+                
     @wordcloud.command()
     @checks.admin()
     async def reset(self, ctx: commands.Context):
@@ -633,8 +641,9 @@ class WordCloudCog(commands.Cog):
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
-                "INSERT INTO config(guild_id, autogen) VALUES(?, ?) ON CONFLICT(guild_id) DO UPDATE SET autogen = ?",
-                (ctx.guild.id, 1 if enabled else 0, 1 if enabled else 0)
+                "INSERT INTO config(guild_id, autogen) VALUES(?, ?) "
+                "ON CONFLICT(guild_id) DO UPDATE SET autogen = ?",
+                (ctx.guild.id, int(enabled), int(enabled)),
             )
             await db.commit()
         await ctx.send(f"Autogen set to {enabled}.")
@@ -642,34 +651,34 @@ class WordCloudCog(commands.Cog):
     @wordcloud.command()
     @checks.admin()
     async def set_autogen_channel(self, ctx: commands.Context, channel: discord.TextChannel = None):
-        """Set channel where autogen will post. If omitted sets current channel."""
+        """Set channel where autogen will post. If omitted, uses the current channel."""
         ch = channel or ctx.channel
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
-                "INSERT INTO config(guild_id, autogen_channel) VALUES(?, ?) ON CONFLICT(guild_id) DO UPDATE SET autogen_channel = ?",
-                (ctx.guild.id, ch.id, ch.id)
+                "INSERT INTO config(guild_id, autogen_channel) VALUES(?, ?) "
+                "ON CONFLICT(guild_id) DO UPDATE SET autogen_channel = ?",
+                (ctx.guild.id, ch.id, ch.id),
             )
             await db.commit()
-        await ctx.send(f"Autogen channel set to {ch.mention}")
+        await ctx.send(f"Autogen channel set to {ch.mention}.")
 
     @wordcloud.command()
     @checks.admin()
     async def set_autogen_interval(self, ctx: commands.Context, seconds: int):
         """Set autogen interval in seconds (minimum 60)."""
         if seconds < 60:
-            await ctx.send("Interval must be at least 60 seconds.")
-            return
+            return await ctx.send("Interval must be at least 60 seconds.")
         await self.init_db()
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
-                "INSERT INTO config(guild_id, autogen_interval) VALUES(?, ?) ON CONFLICT(guild_id) DO UPDATE SET autogen_interval = ?",
-                (ctx.guild.id, seconds, seconds)
+                "INSERT INTO config(guild_id, autogen_interval) VALUES(?, ?) "
+                "ON CONFLICT(guild_id) DO UPDATE SET autogen_interval = ?",
+                (ctx.guild.id, seconds, seconds),
             )
             await db.commit()
         await ctx.send(f"Autogen interval set to {seconds} seconds.")
 
 async def setup(bot):
     cog = WordCloudCog(bot)
-    await bot.add_cog(cog)
-    
+    await bot.add_cog(cog)                
