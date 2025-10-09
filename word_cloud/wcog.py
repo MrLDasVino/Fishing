@@ -12,7 +12,8 @@ import aiohttp
 from collections import OrderedDict
 from wordcloud import WordCloud
 
-from redbot.core import commands, checks, tasks
+from redbot.core import commands, checks
+from discord.ext import tasks 
 from redbot.core.bot import Red
 
 
