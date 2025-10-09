@@ -349,6 +349,7 @@ class WordCloudCog(commands.Cog):
             "width": width,
             "height": height,
             "mask": mask,
+            "margin": 2,            
             "mode": "RGBA",
             "background_color": None,
             "prefer_horizontal": 0.9,
@@ -381,6 +382,15 @@ class WordCloudCog(commands.Cog):
         # render words only
         wc.layout_ = word_entries
         base_img = wc.to_image().convert("RGBA")
+        
+        px = base_img.getdata()
+        new_px = []
+        for r, g, b, a in px:
+            if (r, g, b) == (0, 0, 0):
+                new_px.append((0, 0, 0, 0))
+            else:
+                new_px.append((r, g, b, a))
+        base_img.putdata(new_px)        
 
         # overlay emojis
         for entry in emoji_entries:
@@ -428,7 +438,6 @@ class WordCloudCog(commands.Cog):
             x, y = position
             base_img.paste(em, (int(x), int(y)), em)
 
-        if mask_name and mask_name != "none":
             # restore mask into PIL L-mode
             pil_mask = Image.fromarray((mask_bool * 255).astype("uint8"))
             # apply as alpha channel → outside pixels become transparent
