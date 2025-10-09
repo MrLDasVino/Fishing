@@ -287,6 +287,7 @@ class WordCloudCog(commands.Cog):
 
         # Build mask array if requested
         mask = None
+        mask_bool = None
         if mask_name and mask_name != "none":
             imgm = Image.new("L", (width, height), 0)
             draw = ImageDraw.Draw(imgm)
@@ -439,9 +440,9 @@ class WordCloudCog(commands.Cog):
             base_img.paste(em, (int(x), int(y)), em)
 
             # restore mask into PIL L-mode
-            pil_mask = Image.fromarray((mask_bool * 255).astype("uint8"))
-            # apply as alpha channel → outside pixels become transparent
-            base_img.putalpha(pil_mask)
+            if mask_bool is not None:
+                pil_mask = Image.fromarray((mask_bool * 255).astype("uint8"))
+                base_img.putalpha(pil_mask)
             
         base_img.save(buf, format="PNG")            
         buf.seek(0)
