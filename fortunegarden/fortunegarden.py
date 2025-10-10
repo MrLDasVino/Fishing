@@ -352,7 +352,11 @@ class FortuneGarden(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=9876543210987)
-        default_guild = {"fortunes": {}}
+        default_guild = {
+            "fortunes": {},
+            "min_credits": MIN_CREDITS,
+            "max_credits": MAX_CREDITS,
+        }
         default_member = {"seeds": 0, "last_earned": None}
         self.config.register_guild(**default_guild)
         self.config.register_member(**default_member)
@@ -368,6 +372,8 @@ class FortuneGarden(commands.Cog):
 
         for guild_id, data in all_guilds.items():
             fortunes = data["fortunes"]
+            min_amt = data.get("min_credits", MIN_CREDITS)
+            max_amt = data.get("max_credits", MAX_CREDITS)            
             changed = False
 
             for fid, info in list(fortunes.items()):
@@ -390,7 +396,7 @@ class FortuneGarden(commands.Cog):
                     # pick reward
                     reward_type = random.choice(["currency", "prompt", "fortune", "advice"])
                     if reward_type == "currency":
-                        amount = random.randint(MIN_CREDITS, MAX_CREDITS)
+                        amount = random.randint(min_amt, max_amt)
                         await bank.deposit_credits(member, amount)
                         currency = await bank.get_currency_name(member.guild, amount)
                         desc = f"💰 You received **{amount}** {currency}!"
@@ -561,3 +567,23 @@ class FortuneGarden(commands.Cog):
         fortunes.pop(fid)
         await guild_conf.fortunes.set(fortunes)
         await ctx.send(f"🗑️ Removed fortune seed `{fid}`.")
+        
+    @commands.guild_only()
+    @commands.has_guild_permissions(manage_guild=True)
+    @commands.command(
+        name="setfortunepayout",
+        help="Set the min and max credits granted when a seed blooms."
+    )
+    async def setfortunepayout(self, ctx, min_amt: int, max_amt: int):
+        """
+        Usage:  setfortunepayout <min> <max>
+        Example: setfortunepayout 50 500
+        """
+        if min_amt < 0 or max_amt < min_amt:
+            return await ctx.send("⚠️ Invalid range. Ensure 0 ≤ min ≤ max.")
+
+        guild_conf = self.config.guild(ctx.guild)
+        await guild_conf.min_credits.set(min_amt)
+        await guild_conf.max_credits.set(max_amt)
+        await ctx.send(f"✅ Fortune payout range updated to **{min_amt}**–**{max_amt}** credits.")
+        
