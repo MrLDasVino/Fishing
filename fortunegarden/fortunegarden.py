@@ -420,8 +420,17 @@ class FortuneGarden(commands.Cog):
                     if reward_type == "currency":
                         amount = random.randint(min_amt, max_amt)
                         await bank.deposit_credits(member, amount)
-                        embed.title = "💰 Fortune Pays!"
-                        embed.add_field(name="Credits Earned", value=str(amount), inline=False)
+    
+                        # fetch the guild’s currency name (singular, plural)
+                        singular, plural = await bank.get_currency_name(guild)
+                        label = singular if amount == 1 else plural
+    
+                        embed.title = f"💰 Fortune Pays!"
+                        embed.add_field(
+                            name=f"{label.title()} Earned",
+                            value=f"{amount} {label}",
+                            inline=False
+                        )
 
                     elif reward_type == "prompt":
                         embed.title = "✏️ Writing Prompt"
