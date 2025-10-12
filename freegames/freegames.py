@@ -39,6 +39,14 @@ class freegames(commands.Cog):
         for task in self._tasks.values():
             task.cancel()
             
+    async def cog_load(self):
+        # auto-resume tasks whenever this cog is (re)loaded
+        for guild in self.bot.guilds:
+            if await self.config.guild(guild).running():
+                task = self.bot.loop.create_task(self._poll_loop(guild))
+                self._tasks[guild.id] = task
+                log.info("Resumed freegames polling for guild %s on cog_load", guild.id)            
+            
     @commands.Cog.listener()
     async def on_ready(self):
         # Resume any polls that were running before a restart
