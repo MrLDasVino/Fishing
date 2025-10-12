@@ -38,6 +38,16 @@ class freegames(commands.Cog):
     def cog_unload(self):
         for task in self._tasks.values():
             task.cancel()
+            
+    @commands.Cog.listener()
+    async def on_ready(self):
+        # Resume any polls that were running before a restart
+        for guild in self.bot.guilds:
+            is_running = await self.config.guild(guild).running()
+            if is_running and guild.id not in self._tasks:
+                task = self.bot.loop.create_task(self._poll_loop(guild))
+                self._tasks[guild.id] = task
+                log.info("Resumed freegames polling for guild %s", guild.id)            
 
     async def _get_session(self):
         if self._session is None or self._session.closed:
@@ -99,7 +109,9 @@ class freegames(commands.Cog):
 
     async def _poll_loop(self, guild):
         gid = guild.id
-        while True:
+        log.info("Starting freegames poll loop for guild %s", gid)
+        try:
+            while True:
             cfg = await self.config.guild(guild).all()
             channel_id = cfg["channel_id"]
             role_id = cfg["role_id"]
@@ -150,6 +162,10 @@ class freegames(commands.Cog):
                 await self.config.guild(guild).seen_ids.set(list(seen_ids))
 
             await asyncio.sleep(max(10, interval))
+        except asyncio.CancelledError:
+            log.info("Polling cancelled for guild %s", gid)
+        except Exception:
+            log.exception("Polling crashed for guild %s", gid)            
 
     # Configuration commands
 
