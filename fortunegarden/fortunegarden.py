@@ -1034,6 +1034,6 @@ class FortuneGarden(commands.Cog):
             inline=False
         )
 
-        await ctx.send(content=member.mention, 
+        await ctx.send(content=member.mention, embed=embed) 
         
         
