@@ -1000,21 +1000,21 @@ class FortuneGarden(commands.Cog):
     )
     async def testcurrency(self, ctx, member: discord.Member = None):
         """
-        Immediately send a currency-style bloom embed and deposit rand(min,max) credits.
+        Immediately send a currency‐style bloom embed and deposit rand(min,max) credits.
         """
         member = member or ctx.author
-        guild_conf = self.config.guild(ctx.guild)
 
         # grab configured payout bounds
+        guild_conf = self.config.guild(ctx.guild)
         min_amt = await guild_conf.min_credits()
         max_amt = await guild_conf.max_credits()
         amount = random.randint(min_amt, max_amt)
 
-        # actually deposit
+        # deposit and then fetch the correct currency name
         await bank.deposit_credits(member, amount)
-        currency_name = await bank.get_currency_name(amount)
+        currency_name = await bank.get_currency_name(ctx.guild, amount)
 
-        # build exactly the same embed your loop would
+        # build the embed exactly like the bloom_loop would
         embed = discord.Embed(
             title="🌸 Test Currency Bloom",
             color=discord.Color.random(),
