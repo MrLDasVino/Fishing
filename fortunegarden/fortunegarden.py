@@ -1006,15 +1006,17 @@ class FortuneGarden(commands.Cog):
 
         # grab configured payout bounds
         guild_conf = self.config.guild(ctx.guild)
-        min_amt = await guild_conf.min_credits()
-        max_amt = await guild_conf.max_credits()
-        amount = random.randint(min_amt, max_amt)
+        min_amt    = await guild_conf.min_credits()
+        max_amt    = await guild_conf.max_credits()
+        amount     = random.randint(min_amt, max_amt)
 
-        # deposit and then fetch the correct currency name
+        # deposit into their wallet
         await bank.deposit_credits(member, amount)
-        currency_name = await bank.get_currency_name(ctx.guild, amount)
 
-        # build the embed exactly like the bloom_loop would
+        # fetch proper currency name (keyword‐only)
+        currency_name = await bank.get_currency_name(amount=amount)
+
+        # build the embed exactly like your bloom_loop does
         embed = discord.Embed(
             title="🌸 Test Currency Bloom",
             color=discord.Color.random(),
