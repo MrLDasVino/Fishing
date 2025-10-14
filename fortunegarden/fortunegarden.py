@@ -731,7 +731,7 @@ class FortuneGarden(commands.Cog):
                         await bank.deposit_credits(member, amount)
     
                         #  single-string API: pass `amount` to get the correct form
-                        currency_name = await bank.get_currency_name(amount)
+                        currency_name = await bank.get_currency_name(guild)
                         embed.add_field(
                             name="💰 You received",
                             value=f"**{amount}** {currency_name}",
@@ -992,48 +992,5 @@ class FortuneGarden(commands.Cog):
         else:
             await ctx.send("✅ Fortune-discover message reset to default.")
         
-    @commands.guild_only()
-    @commands.has_guild_permissions(manage_guild=True)
-    @commands.command(
-        name="testcurrency",
-        help="Force a currency bloom embed & deposit for yourself or another member."
-    )
-    async def testcurrency(self, ctx, member: discord.Member = None):
-        """
-        Immediately send a currency‐style bloom embed and deposit rand(min,max) credits.
-        """
-        member = member or ctx.author
-
-        # 1) pull your configured payout bounds
-        guild_conf = self.config.guild(ctx.guild)
-        min_amt = await guild_conf.min_credits()
-        max_amt = await guild_conf.max_credits()
-        amount = random.randint(min_amt, max_amt)
-
-        # 2) deposit the credits
-        await bank.deposit_credits(member, amount)
-
-        # 3) fetch the currency name (singular/plural is up to your guild config)
-        currency_name = await bank.get_currency_name(ctx.guild)
-
-        # 4) build the same embed your bloom_loop would
-        embed = discord.Embed(
-            title="🌸 Test Currency Bloom",
-            color=discord.Color.random(),
-            timestamp=datetime.utcnow()
-        )
-        embed.set_author(
-            name=member.display_name,
-            icon_url=member.display_avatar.url
-        )
-        embed.set_image(url=REWARD_BANNERS["currency"])
-        embed.set_footer(text="Test Mode")
-        embed.add_field(
-            name="💰 You received",
-            value=f"**{amount}** {currency_name}",
-            inline=False
-        )
-
-        await ctx.send(content=member.mention, embed=embed)
         
         
