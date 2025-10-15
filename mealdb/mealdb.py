@@ -44,6 +44,9 @@ class MealDB(commands.Cog):
 
         meal = meals[0]
         embed = await self.build_embed(meal)
+        if not embed:
+            return await ctx.send_help()        
+        
         await ctx.send(embed=embed)
 
     async def build_embed(self, meal: dict) -> discord.Embed:
@@ -73,4 +76,4 @@ class MealDB(commands.Cog):
         for page in pagify(instructions, page_length=1024):
             embed.add_field(name="Instructions", value=page, inline=False)
 
-        return 
+        return embed
