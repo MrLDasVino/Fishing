@@ -31,13 +31,22 @@ class UrbanDictionary(commands.Cog):
             display = query.title()
 
         try:
+            self.bot.log.info("UD Fetch URL: %s", url)
             async with self.session.get(url) as resp:
+                # read raw text for logging
+                text = await resp.text()
+                self.bot.log.info("UD Response Status: %s", resp.status)
+                self.bot.log.debug("UD Response Body: %.500s", text)
+
                 if resp.status != 200:
-                    return await ctx.send("❌ Could not reach Urban Dictionary.")
+                    return await ctx.send(f"❌ HTTP {resp.status} from Urban Dictionary.")
                 data = await resp.json()
-                self.bot.log.info("UD entry example: %s", data.get("list", [])[:1])
-        except Exception:
-            return await ctx.send("❌ Error fetching data from Urban Dictionary.")
+        except aiohttp.ClientError as e:
+            self.bot.log.error("UD ClientError: %s", e, exc_info=True)
+            return await ctx.send("❌ Network error when contacting Urban Dictionary.")
+        except Exception as e:
+            self.bot.log.error("UD Unexpected Error: %s", e, exc_info=True)
+            return await ctx.send("❌ Unexpected error fetching data.")
 
         entries = data.get("list", [])
         if not entries:
