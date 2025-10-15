@@ -27,16 +27,17 @@ class MealDB(commands.Cog):
           [p]meal random
           [p]meal <search term>
         """
-        if not query or query.lower() == "random":
-            data = await self.fetch_json(
-                "https://www.themealdb.com/api/json/v1/1/random.php"
-            )
-            meals = data.get("meals") or []
+        if not query or query.lower() in ("help", "-h", "--help", "?"):
+            return await ctx.send_help()
+
+        # pick endpoint based on “random” vs search
+        if query.lower() == "random":
+            url = "https://www.themealdb.com/api/json/v1/1/random.php"
         else:
-            data = await self.fetch_json(
-                f"https://www.themealdb.com/api/json/v1/1/search.php?s={query}"
-            )
-            meals = data.get("meals") or []
+            url = f"https://www.themealdb.com/api/json/v1/1/search.php?s={query}"
+
+        data = await self.fetch_json(url)
+        meals = data.get("meals") or []
 
         if not meals:
             return await ctx.send(f"No meals found for `{query}`.")
