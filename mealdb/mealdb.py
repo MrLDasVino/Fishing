@@ -88,8 +88,11 @@ class MealDB(commands.Cog):
 
         # Paginated Instructions
         instructions = meal.get("strInstructions", "No instructions provided.").strip()
-        for page in pagify(instructions, page_length=1024):
-            embed.add_field(name="Instructions", value=page, inline=False)
+        pages = pagify(instructions, page_length=1024)
+        total = len(pages)
+        for idx, page in enumerate(pages, start=1):
+            field_name = f"Instructions ({idx}/{total})"
+            embed.add_field(name=field_name, value=page, inline=False)
 
         # Banner image at bottom instead of thumbnail
         embed.set_image(url=meal["strMealThumb"])
