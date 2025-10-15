@@ -1,4 +1,5 @@
 import aiohttp
+import asyncio 
 import discord
 import random
 from urllib.parse import quote_plus
@@ -51,11 +52,14 @@ class UrbanDictionary(commands.Cog):
             author     = item.get("author", "Unknown")
             link       = item.get("permalink")
 
+            # Determine each entry’s term (for random queries)
+            entry_term = item.get("word", display)
+
             # Random colour for each embed
             rand_colour = discord.Colour(random.randint(0x000000, 0xFFFFFF))
 
             embed = discord.Embed(
-                title=display,
+                title=entry_term,
                 url=link,
                 description=definition or "No definition provided.",
                 colour=rand_colour
@@ -82,12 +86,25 @@ class UrbanDictionary(commands.Cog):
 
         while True:
             try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=120.0, check=check)
-                await msg.remove_reaction(reaction, user)
+                reaction, user = await self.bot.wait_for(
+                    "reaction_add", timeout=120.0, check=check
+                )
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                # optional: clear all reactions to show pagination ended
+                try:
+                    await msg.clear_reactions()
+                except discord.HTTPException:
+                    pass
+                break
+            else:
+                # safely remove the user's reaction and turn page
+                try:
+                    await msg.remove_reaction(reaction, user)
+                except discord.HTTPException:
+                    pass
+
                 if str(reaction.emoji) == "◀️":
                     index = (index - 1) % len(pages)
                 else:
                     index = (index + 1) % len(pages)
                 await msg.edit(embed=pages[index])
-            except asyncio.TimeoutError:
-                break
