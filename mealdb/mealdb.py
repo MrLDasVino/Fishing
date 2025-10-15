@@ -69,7 +69,6 @@ class MealDB(commands.Cog):
             description=f"Category: {category} • Cuisine: {cuisine}",
             color=Color.random(),
         )
-        embed.set_thumbnail(url=meal["strMealThumb"])
         embed.timestamp = datetime.utcnow()
 
         # Optional Tags field
@@ -91,5 +90,8 @@ class MealDB(commands.Cog):
         instructions = meal.get("strInstructions", "No instructions provided.").strip()
         for page in pagify(instructions, page_length=1024):
             embed.add_field(name="Instructions", value=page, inline=False)
+
+        # Banner image at bottom instead of thumbnail
+        embed.set_image(url=meal["strMealThumb"])
 
         return embed
