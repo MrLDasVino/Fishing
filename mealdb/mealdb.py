@@ -1,8 +1,12 @@
+
 import aiohttp
 import discord
+from datetime import datetime
 
+from discord import Color
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
+
 
 class MealDB(commands.Cog):
     """Fetch recipes via TheMealDB API."""
@@ -12,9 +16,11 @@ class MealDB(commands.Cog):
         self.session = aiohttp.ClientSession()
 
     def cog_unload(self):
+        # Cleanly close our HTTP session when the cog unloads
         self.bot.loop.create_task(self.session.close())
 
     async def fetch_json(self, url: str) -> dict:
+        """Helper to GET JSON from a URL."""
         async with self.session.get(url) as resp:
             resp.raise_for_status()
             return await resp.json()
@@ -27,10 +33,11 @@ class MealDB(commands.Cog):
           [p]meal random
           [p]meal <search term>
         """
+        # Show help if no query or help flags passed
         if not query or query.lower() in ("help", "-h", "--help", "?"):
             return await ctx.send_help()
 
-        # pick endpoint based on “random” vs search
+        # Choose endpoint
         if query.lower() == "random":
             url = "https://www.themealdb.com/api/json/v1/1/random.php"
         else:
@@ -38,40 +45,49 @@ class MealDB(commands.Cog):
 
         data = await self.fetch_json(url)
         meals = data.get("meals") or []
-
         if not meals:
             return await ctx.send(f"No meals found for `{query}`.")
 
-        meal = meals[0]
-        embed = await self.build_embed(meal)
+        meal_data = meals[0]
+        embed = await self.build_embed(meal_data)
         if not embed:
-            return await ctx.send_help()        
-        
+            return await ctx.send_help()
+
         await ctx.send(embed=embed)
 
     async def build_embed(self, meal: dict) -> discord.Embed:
+        """Constructs a polished embed for a given meal dict."""
         title = meal["strMeal"]
-        source = meal.get("strSource") or meal.get("strYoutube") or None
+        source_url = meal.get("strSource") or meal.get("strYoutube") or None
+        category = meal.get("strCategory", "Unknown")
+        cuisine = meal.get("strArea", "Unknown")
+        tags = meal.get("strTags")
+
         embed = discord.Embed(
             title=title,
-            url=source,
-            description=meal.get("strCategory", ""),
-            color=0xE67E22
+            url=source_url,
+            description=f"Category: {category} • Cuisine: {cuisine}",
+            color=Color.random(),
         )
         embed.set_thumbnail(url=meal["strMealThumb"])
+        embed.timestamp = datetime.utcnow()
 
-        # List ingredients with clickable links
+        # Optional Tags field
+        if tags:
+            tag_list = ", ".join(tag.strip() for tag in tags.split(","))
+            embed.add_field(name="Tags", value=tag_list, inline=False)
+
+        # Ingredients as plain text bullets
         ingredients = []
         for i in range(1, 21):
-            ing = meal.get(f"strIngredient{i}")
-            meas = meal.get(f"strMeasure{i}")
-            if ing and ing.strip():
-                link = f"https://www.themealdb.com/search.php?i={ing.replace(' ', '%20')}"
-                ingredients.append(f"[{ing} →]({link}) • {meas}")
-
+            name = meal.get(f"strIngredient{i}")
+            measure = meal.get(f"strMeasure{i}")
+            if name and name.strip():
+                measure_text = measure.strip() if measure and measure.strip() else "—"
+                ingredients.append(f"• {name.strip()}: {measure_text}")
         embed.add_field(name="Ingredients", value="\n".join(ingredients), inline=False)
 
-        # Paginate instructions
+        # Paginated Instructions
         instructions = meal.get("strInstructions", "No instructions provided.").strip()
         for page in pagify(instructions, page_length=1024):
             embed.add_field(name="Instructions", value=page, inline=False)
