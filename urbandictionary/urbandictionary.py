@@ -1,5 +1,5 @@
 import aiohttp
-import asyncio 
+import asyncio
 import discord
 import random
 from urllib.parse import quote_plus
@@ -23,29 +23,21 @@ class UrbanDictionary(commands.Cog):
         """
         query = term.strip()
         if query.lower() == "random":
-            url = "http://api.urbandictionary.com/v0/random"
+            url = "https://api.urbandictionary.com/v0/random"
             display = "Random Entry"
         else:
             safe = quote_plus(query)
-            url = f"http://api.urbandictionary.com/v0/define?term={safe}"
+            url = f"https://api.urbandictionary.com/v0/define?term={safe}"
             display = query.title()
 
         try:
-            self.bot.log.info("UD Fetch URL: %s", url)
             async with self.session.get(url) as resp:
-                # read raw text for logging
-                text = await resp.text()
-                self.bot.log.info("UD Response Status: %s", resp.status)
-                self.bot.log.debug("UD Response Body: %.500s", text)
-
                 if resp.status != 200:
                     return await ctx.send(f"❌ HTTP {resp.status} from Urban Dictionary.")
                 data = await resp.json()
-        except aiohttp.ClientError as e:
-            self.bot.log.error("UD ClientError: %s", e, exc_info=True)
+        except aiohttp.ClientError:
             return await ctx.send("❌ Network error when contacting Urban Dictionary.")
-        except Exception as e:
-            self.bot.log.error("UD Unexpected Error: %s", e, exc_info=True)
+        except Exception:
             return await ctx.send("❌ Unexpected error fetching data.")
 
         entries = data.get("list", [])
@@ -56,13 +48,13 @@ class UrbanDictionary(commands.Cog):
         for item in entries:
             # Clean up text
             definition = item.get("definition", "").replace("[", "").replace("]", "")
-            example    = item.get("example", "").strip().replace("[", "").replace("]", "")
-            ups        = item.get("thumbs_up", 0)
-            downs      = item.get("thumbs_down", 0)
-            author     = item.get("author", "Unknown")
-            link       = item.get("permalink")
+            example = item.get("example", "").strip().replace("[", "").replace("]", "")
+            ups = item.get("thumbs_up", 0)
+            downs = item.get("thumbs_down", 0)
+            author = item.get("author", "Unknown")
+            link = item.get("permalink")
 
-            # Determine each entry’s term (for random queries)
+            # Use the actual term for random entries
             entry_term = item.get("word", display)
 
             # Random colour for each embed
@@ -100,14 +92,13 @@ class UrbanDictionary(commands.Cog):
                     "reaction_add", timeout=120.0, check=check
                 )
             except (asyncio.TimeoutError, asyncio.CancelledError):
-                # optional: clear all reactions to show pagination ended
+                # Optionally clear reactions when pagination ends
                 try:
                     await msg.clear_reactions()
                 except discord.HTTPException:
                     pass
                 break
             else:
-                # safely remove the user's reaction and turn page
                 try:
                     await msg.remove_reaction(reaction, user)
                 except discord.HTTPException:
