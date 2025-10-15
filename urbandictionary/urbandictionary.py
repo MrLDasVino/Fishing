@@ -35,6 +35,7 @@ class UrbanDictionary(commands.Cog):
                 if resp.status != 200:
                     return await ctx.send("❌ Could not reach Urban Dictionary.")
                 data = await resp.json()
+                self.bot.log.info("UD entry example: %s", data.get("list", [])[:1])
         except Exception:
             return await ctx.send("❌ Error fetching data from Urban Dictionary.")
 
