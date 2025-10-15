@@ -88,7 +88,7 @@ class MealDB(commands.Cog):
 
         # Paginated Instructions
         instructions = meal.get("strInstructions", "No instructions provided.").strip()
-        pages = pagify(instructions, page_length=1024)
+        pages = list(pagify(instructions, page_length=1024))
         total = len(pages)
         for idx, page in enumerate(pages, start=1):
             field_name = f"Instructions ({idx}/{total})"
