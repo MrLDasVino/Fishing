@@ -270,8 +270,11 @@ class Vania(commands.Cog):
 
         # Gather participants who reacted with ✅ (excluding bots)
         reaction = discord.utils.get(msg.reactions, emoji="✅")
-        users = await reaction.users().flatten() if reaction else []
-        participants = [u for u in users if not u.bot]
+        participants = (
+            [user async for user in reaction.users() if not user.bot]
+            if reaction
+            else []
+        )
         if not participants:
             return await ctx.send("No participants joined the raid.")
 
