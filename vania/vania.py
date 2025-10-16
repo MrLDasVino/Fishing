@@ -88,33 +88,33 @@ class Vania(commands.Cog):
 
     
     
-        @vania.command(name="stats")
-        async def stats(self, ctx: commands.Context):
-            """View your hunter’s level, XP, and equipped whip."""
-            profiles = self._load_profiles()
-            uid = str(ctx.author.id)
-            profile = profiles.get(uid)
-            if not profile:
-                return await ctx.send("No profile found. Start hunting with `vania hunt`.")
+    @vania.command(name="stats")
+    async def stats(self, ctx: commands.Context):
+        """View your hunter’s level, XP, and equipped whip."""
+        profiles = self._load_profiles()
+        uid = str(ctx.author.id)
+        profile = profiles.get(uid)
+        if not profile:
+            return await ctx.send("No profile found. Start hunting with `vania hunt`.")
     
-            xp = profile["xp"]
-            level = xp // 100 + 1
-            whip = profile.get("whip", "Vine Whip")
-            skills = profile.get("skills", {})
+        xp = profile["xp"]
+        level = xp // 100 + 1
+        whip = profile.get("whip", "Vine Whip")
+        skills = profile.get("skills", {})
     
-            embed = discord.Embed(
-                title=f"{ctx.author.display_name}'s Profile",
-                color=discord.Color.dark_blue()
-            )
-            embed.add_field(name="Level", value=level, inline=True)
-            embed.add_field(name="XP", value=xp, inline=True)
-            embed.add_field(name="Equipped Whip", value=whip, inline=False)
+        embed = discord.Embed(
+            title=f"{ctx.author.display_name}'s Profile",
+            color=discord.Color.dark_blue()
+        )
+        embed.add_field(name="Level", value=level, inline=True)
+        embed.add_field(name="XP", value=xp, inline=True)
+        embed.add_field(name="Equipped Whip", value=whip, inline=False)
     
-            if skills:
-                skill_list = "\n".join(f"{name}: Lv {lvl}" for name, lvl in skills.items())
-                embed.add_field(name="Skills", value=skill_list, inline=False)
+        if skills:
+            skill_list = "\n".join(f"{name}: Lv {lvl}" for name, lvl in skills.items())
+            embed.add_field(name="Skills", value=skill_list, inline=False)
     
-            await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
     @vania.command(name="train")
     async def train(self, ctx: commands.Context, skill: str):
