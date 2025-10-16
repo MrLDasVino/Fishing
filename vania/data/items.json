@@ -1,0 +1,16 @@
+[
+  {
+    "id": "holy_water",
+    "name": "Holy Water",
+    "effect": "reduce_damage",
+    "value": 10,
+    "price": 50
+  },
+  {
+    "id": "healing_potion",
+    "name": "Healing Potion",
+    "effect": "heal",
+    "value": 30,
+    "price": 75
+  }
+]

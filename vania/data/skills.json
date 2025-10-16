@@ -1,0 +1,14 @@
+[
+  {
+    "id": "WhipMastery",
+    "name": "Whip Mastery",
+    "description": "Increase whip damage by 5% per level",
+    "base_cost": 50
+  },
+  {
+    "id": "CrossThrow",
+    "name": "Cross Throw",
+    "description": "Chance to throw a holy cross",
+    "base_cost": 75
+  }
+]

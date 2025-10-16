@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Vampire Bat",
+    "hp": 20,
+    "xp_reward": 15,
+    "win_chance": 0.8
+  },
+  {
+    "name": "Skeleton Warrior",
+    "hp": 35,
+    "xp_reward": 25,
+    "win_chance": 0.6
+  }
+]
