@@ -1,0 +1,18 @@
+[
+  {
+    "id": "dracula",
+    "name": "Dracula",
+    "hp": 500,
+    "xp_reward": 200,
+    "heart_reward": 100,
+    "relic_pool": ["Crissaegrim", "Soul of Bat", "Vampire Killer"]
+  },
+  {
+    "id": "gremlin_king",
+    "name": "Gremlin King",
+    "hp": 300,
+    "xp_reward": 120,
+    "heart_reward": 60,
+    "relic_pool": ["Gremlin’s Eye", "Frenzy Amulet"]
+  }
+]

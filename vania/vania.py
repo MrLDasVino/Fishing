@@ -17,6 +17,14 @@ class Vania(commands.Cog):
         self.items = self._load_file(data_pkg / "items.json")
         self.skills_def = self._load_file(data_pkg / "skills.json")
         self.equipment = self._load_file(data_pkg / "equipment.json")
+        self.bosses     = self._load_file(data_pkg / "bosses.json")
+        
+        # Raid state file
+        data_folder = cog_data_path(self)
+        data_folder.mkdir(parents=True, exist_ok=True)
+        self.raid_file = data_folder / "raids.json"
+        if not self.raid_file.exists():
+            self.raid_file.write_text(json.dumps({}))        
         
         # Prepare JSON storage in Red’s cog data path
         data_folder = cog_data_path(self)
@@ -35,6 +43,21 @@ class Vania(commands.Cog):
 
     def _save_profiles(self, data: dict):
         self.data_file.write_text(json.dumps(data, indent=2))
+        
+    # ─── Raid & Data Helpers ──────────────────────────────────────────────
+    def _load_raids(self) -> dict:
+        """Load active raid state from raids.json."""
+        return json.loads(self.raid_file.read_text())
+
+    def _save_raids(self, data: dict):
+        """Persist active raid state back to raids.json."""
+        self.raid_file.write_text(json.dumps(data, indent=2))
+
+    def _health_bar(self, current: int, maximum: int, length: int = 20) -> str:
+        """Render a text health bar of given length."""
+        filled = int(current / maximum * length)
+        return "█" * filled + "─" * (length - filled)
+    # ────────────────────────────────────────────────────────────────────        
 
     @commands.group(name="vania", invoke_without_command=True)
     async def vania(self, ctx: commands.Context):
@@ -194,3 +217,105 @@ class Vania(commands.Cog):
         self._save_profiles(profiles)
         await ctx.send(f"You have equipped **{item['name']}** as your {item['category']}.")
        
+
+    @vania.group(name="raid", invoke_without_command=True)
+    async def raid(self, ctx: commands.Context):
+        """Raid commands: schedule and start boss fights."""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @raid.command(name="schedule")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def raid_schedule(self, ctx: commands.Context, boss_id: str, channel: discord.TextChannel):
+        """Schedule a raid against <boss_id> in the specified channel."""
+        boss = next((b for b in self.bosses if b["id"] == boss_id), None)
+        if not boss:
+            return await ctx.send(f"No boss found with ID `{boss_id}`.")
+
+        embed = discord.Embed(
+            title=f"Raid Sign-Up: {boss['name']}",
+            description="React with ✅ to join the raid!",
+            color=discord.Color.purple()
+        )
+        embed.add_field(name="Boss HP", value=str(boss["hp"]), inline=False)
+        msg = await channel.send(embed=embed)
+        await msg.add_reaction("✅")
+
+        raids = self._load_raids()
+        raids[boss_id] = {
+            "channel_id": channel.id,
+            "message_id": msg.id
+        }
+        self._save_raids(raids)
+        await ctx.send(f"Raid vs **{boss['name']}** scheduled in {channel.mention}.")
+
+    @raid.command(name="start")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def raid_start(self, ctx: commands.Context, boss_id: str):
+        """Start the scheduled raid against <boss_id> and resolve combat."""
+        raids = self._load_raids()
+        entry = raids.get(boss_id)
+        if not entry:
+            return await ctx.send(f"No active raid found for `{boss_id}`.")
+
+        boss = next((b for b in self.bosses if b["id"] == boss_id), None)
+        if not boss:
+            return await ctx.send(f"Boss definition for `{boss_id}` missing.")
+
+        channel = self.bot.get_channel(entry["channel_id"])
+        try:
+            msg = await channel.fetch_message(entry["message_id"])
+        except discord.NotFound:
+            return await ctx.send("Raid signup message not found.")
+
+        # Gather participants who reacted with ✅ (excluding bots)
+        reaction = discord.utils.get(msg.reactions, emoji="✅")
+        users = await reaction.users().flatten() if reaction else []
+        participants = [u for u in users if not u.bot]
+        if not participants:
+            return await ctx.send("No participants joined the raid.")
+
+        # Simulate group damage on boss
+        boss_hp = boss["hp"]
+        damage_reports = []
+        for member in participants:
+            dmg = random.randint(20, 50)
+            boss_hp = max(0, boss_hp - dmg)
+            damage_reports.append(f"**{member.display_name}** hits for {dmg}")
+            if boss_hp == 0:
+                break
+
+        bar = self._health_bar(boss_hp, boss["hp"])
+        desc = "\n".join(damage_reports)
+        desc += f"\n\nBoss HP: `{boss_hp}/{boss['hp']}`\n{bar}"
+
+        embed = discord.Embed(title=f"Raid vs {boss['name']}", description=desc)
+        await channel.send(embed=embed)
+
+        # Handle victory
+        if boss_hp == 0:
+            profiles = self._load_profiles()
+            reward_lines = []
+            for member in participants:
+                uid = str(member.id)
+                profile = profiles.get(uid, {"xp":0,"hearts":0,"relics":[]})
+                xp = boss["xp_reward"]
+                hearts = boss["heart_reward"]
+                relic = random.choice(boss["relic_pool"])
+                profile["xp"]    = profile.get("xp", 0) + xp
+                profile["hearts"]= profile.get("hearts", 0) + hearts
+                profile["relics"]= profile.get("relics", []) + [relic]
+                profiles[uid] = profile
+                reward_lines.append(f"{member.display_name}: +{xp} XP, +{hearts} Hearts, **{relic}**")
+
+            self._save_profiles(profiles)
+            reward_embed = discord.Embed(
+                title="Raid Victory! Rewards:",
+                description="\n".join(reward_lines),
+                color=discord.Color.gold()
+            )
+            await channel.send(embed=reward_embed)
+
+        # Clean up
+        del raids[boss_id]
+        self._save_raids(raids)
