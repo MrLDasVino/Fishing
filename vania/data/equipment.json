@@ -1,0 +1,32 @@
+[
+  {
+    "id": "vine_whip",
+    "name": "Vine Whip",
+    "category": "weapon",
+    "xp_mod": 1.0,
+    "damage_mod": 1.0,
+    "price": 0
+  },
+  {
+    "id": "iron_sword",
+    "name": "Iron Sword",
+    "category": "weapon",
+    "xp_mod": 1.1,
+    "damage_mod": 1.2,
+    "price": 100
+  },
+  {
+    "id": "leather_armor",
+    "name": "Leather Armor",
+    "category": "armor",
+    "defense": 5,
+    "price": 50
+  },
+  {
+    "id": "steel_plate",
+    "name": "Steel Plate",
+    "category": "armor",
+    "defense": 12,
+    "price": 200
+  }
+]
