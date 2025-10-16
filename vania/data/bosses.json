@@ -5,7 +5,8 @@
     "hp": 500,
     "xp_reward": 200,
     "heart_reward": 100,
-    "relic_pool": ["Crissaegrim", "Soul of Bat", "Vampire Killer"]
+    "relic_pool": ["Crissaegrim", "Soul of Bat", "Vampire Killer"],
+    "image": "https://i.imgur.com/YourDraculaImage.png"
   },
   {
     "id": "gremlin_king",
@@ -13,6 +14,7 @@
     "hp": 300,
     "xp_reward": 120,
     "heart_reward": 60,
-    "relic_pool": ["Gremlin’s Eye", "Frenzy Amulet"]
+    "relic_pool": ["Gremlin’s Eye", "Frenzy Amulet"],
+    "image": "https://i.imgur.com/YourGremlinKingImage.png"
   }
 ]

@@ -252,7 +252,7 @@ class Vania(commands.Cog):
     @raid.command(name="start")
     @commands.admin_or_permissions(manage_guild=True)
     async def raid_start(self, ctx: commands.Context, boss_id: str):
-        """Start the scheduled raid against <boss_id> and resolve combat."""
+        """Start the scheduled raid, resolve combat, and handle win or loss."""
         raids = self._load_raids()
         entry = raids.get(boss_id)
         if not entry:
@@ -262,13 +262,13 @@ class Vania(commands.Cog):
         if not boss:
             return await ctx.send(f"Boss definition for `{boss_id}` missing.")
 
+        # Fetch signup message and reactors
         channel = self.bot.get_channel(entry["channel_id"])
         try:
             msg = await channel.fetch_message(entry["message_id"])
         except discord.NotFound:
             return await ctx.send("Raid signup message not found.")
 
-        # Gather participants who reacted with ✅ (excluding bots)
         reaction = discord.utils.get(msg.reactions, emoji="✅")
         participants = (
             [user async for user in reaction.users() if not user.bot]
@@ -278,47 +278,74 @@ class Vania(commands.Cog):
         if not participants:
             return await ctx.send("No participants joined the raid.")
 
-        # Simulate group damage on boss
-        boss_hp = boss["hp"]
-        damage_reports = []
+        # Simulate group damage
+        boss_max_hp = boss["hp"]
+        boss_hp = boss_max_hp
+        reports = []
         for member in participants:
             dmg = random.randint(20, 50)
             boss_hp = max(0, boss_hp - dmg)
-            damage_reports.append(f"**{member.display_name}** hits for {dmg}")
+            reports.append(f"**{member.display_name}** hits for {dmg}")
             if boss_hp == 0:
                 break
 
-        bar = self._health_bar(boss_hp, boss["hp"])
-        desc = "\n".join(damage_reports)
-        desc += f"\n\nBoss HP: `{boss_hp}/{boss['hp']}`\n{bar}"
+        bar = self._health_bar(boss_hp, boss_max_hp)
+        description = "\n".join(reports)
+        description += f"\n\nBoss HP: `{boss_hp}/{boss_max_hp}`\n{bar}"
+        image_url = boss.get("image")
 
-        embed = discord.Embed(title=f"Raid vs {boss['name']}", description=desc)
+        # Build result embed
+        embed = discord.Embed(
+            title=f"Raid vs {boss['name']}",
+            description=description,
+            color=discord.Color.red() if boss_hp > 0 else discord.Color.gold()
+        )
+        if image_url:
+            embed.set_image(url=image_url)
+
         await channel.send(embed=embed)
 
-        # Handle victory
+        # Win or Loss branch
         if boss_hp == 0:
+            # Victory: reward participants
             profiles = self._load_profiles()
             reward_lines = []
             for member in participants:
                 uid = str(member.id)
-                profile = profiles.get(uid, {"xp":0,"hearts":0,"relics":[]})
+                profile = profiles.get(uid, {"xp": 0, "hearts": 0, "relics": []})
                 xp = boss["xp_reward"]
                 hearts = boss["heart_reward"]
                 relic = random.choice(boss["relic_pool"])
-                profile["xp"]    = profile.get("xp", 0) + xp
-                profile["hearts"]= profile.get("hearts", 0) + hearts
-                profile["relics"]= profile.get("relics", []) + [relic]
+                profile["xp"] += xp
+                profile["hearts"] = profile.get("hearts", 0) + hearts
+                profile["relics"] = profile.get("relics", []) + [relic]
                 profiles[uid] = profile
                 reward_lines.append(f"{member.display_name}: +{xp} XP, +{hearts} Hearts, **{relic}**")
-
             self._save_profiles(profiles)
-            reward_embed = discord.Embed(
-                title="Raid Victory! Rewards:",
-                description="\n".join(reward_lines),
-                color=discord.Color.gold()
-            )
-            await channel.send(embed=reward_embed)
 
-        # Clean up
-        del raids[boss_id]
+            victory_embed = discord.Embed(
+                title="Raid Victory! 🎉",
+                description="\n".join(reward_lines),
+                color=discord.Color.green()
+            )
+            if image_url:
+                victory_embed.set_thumbnail(url=image_url)
+            await channel.send(embed=victory_embed)
+        else:
+            # Defeat: notify participants
+            fail_embed = discord.Embed(
+                title="Raid Failed 💀",
+                description=(
+                    f"The raid against **{boss['name']}** has failed. "
+                    "The boss still stands victorious."
+                ),
+                color=discord.Color.dark_gray()
+            )
+            if image_url:
+                fail_embed.set_thumbnail(url=image_url)
+            await channel.send(embed=fail_embed)
+
+        # Cleanup raid entry
+        raids.pop(boss_id, None)
         self._save_raids(raids)
+
